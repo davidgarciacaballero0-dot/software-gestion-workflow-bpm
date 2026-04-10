@@ -26,3 +26,8 @@ ia_microservice/.env
 *.sw?
 .DS_Store
 Thumbs.db
+
+# Variables de entorno y secretos (CRÍTICO: nunca subir)
+.env
+!.env.example
+!.env.template

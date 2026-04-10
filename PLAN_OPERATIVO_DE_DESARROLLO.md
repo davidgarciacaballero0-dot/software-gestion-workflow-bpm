@@ -44,6 +44,24 @@
 - ✅ CU-13: Consultar Auditoría del Sistema (AOP + Bitácora) `[Backend: ✅ | Frontend: ✅ | Pruebas: ✅] FINALIZADO.`
 - ⏳ TAREA PENDIENTE: Configurar Servidor MCP de Google Stitch para volcado oficial de Prototipos de UI/UX.
 
+---
+
+### 🔒 REVISIÓN PRE-CICLO 2: Securización de Credenciales y Variables de Entorno (Deuda Técnica - Fase 0)
+> **Prioridad:** ALTA — Bloqueante para iniciar Ciclo 2.
+> **Asignado a:** Desarrollador Backend.
+
+- ✅ **0.5.1** Refactorizar `application.properties`: Reemplazar credenciales en duro por inyección vía `${VARIABLE_DE_ENTORNO}`.
+- ✅ **0.5.2** Crear archivo `.env` local en la raíz del proyecto con valores reales (MongoDB URI, JWT Secret, JWT Expiration).
+- ✅ **0.5.3** Crear archivo `.env.example` (plantilla sin valores sensibles) para onboarding de nuevos desarrolladores — **SÍ se sube a GitHub.**
+- ✅ **0.5.4** Actualizar `.gitignore` para ignorar `.env` a nivel raíz y permitir `.env.example`.
+- ✅ **0.5.5** Orquestar `docker-compose.yml`: Agregar directiva `env_file` y bloque `backend-spring` con variables de entorno inyectadas.
+- ✅ **0.5.6** VALIDACIÓN: Verificar que `docker-compose up` levanta correctamente con las variables del `.env`. *(ÉXITO: Contenedores levantados y vinculados).*
+- ✅ **0.5.7** VALIDACIÓN: Confirmar que el login (JWT) sigue funcionando con la nueva configuración. *(JwtUtilTest: 5/5 tests pasados con variables de entorno).*
+- ✅ **0.5.8** VALIDACIÓN: Confirmar que `application.properties` **NO** contiene contraseñas ni URIs con credenciales explícitas.
+- ✅ **0.5.9** PRUEBA DE INFRAESTRUCTURA: Actualizar WSL (`wsl --update`) y Docker Desktop para validar despliegue orquestado de MongoDB y Backend. *(FINALIZADO: Sistema booteando correctamente tras fix de package scanning).*
+
+---
+
 ### ⚠️ CICLO 2: Construcción del Motor Core y Builders (Fase de Elaboración/Construcción)
 - ⚠️ CU-04: Gestionar Políticas de Negocio (Modelado en MongoDB).
 - ⚠️ CU-05: Diseñar Flujo de Trabajo Interactivo (JSON/BPMN).

@@ -1,4 +1,7 @@
 services:
+  # ============================================================
+  # MongoDB - Base de Datos Documental
+  # ============================================================
   mongodb_bpm:
     image: mongo:latest
     container_name: mongodb_bpm
@@ -7,8 +10,30 @@ services:
     volumes:
       - mongodb_data:/data/db
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
       - MONGO_INITDB_DATABASE=bpm_workflow
+
+  # ============================================================
+  # Backend Spring Boot - API REST BPM
+  # ============================================================
+  backend-spring:
+    build:
+      context: ./backend_bpm
+      dockerfile: Dockerfile
+    container_name: backend_bpm_api
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mongodb_bpm
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - SPRING_DATA_MONGODB_URI=${MONGO_URI}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRATION_MS=${JWT_EXPIRATION_MS:-86400000}
 
 volumes:
   mongodb_data:
