@@ -1,0 +1,41 @@
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { RolService } from '../../../../data/services/rol.service';
+import { Rol } from '../../../../data/models/rol.model';
+
+@Component({
+  selector: 'app-rol-view',
+  standalone: true,
+  imports: [CommonModule],
+  template: `
+  <div class="list-card" style="font-family: 'Inter', sans-serif; padding: 2.5rem; background: #fff; border: 1px solid #cbd5e1; border-radius: 6px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03); max-width: 800px; margin: 2rem auto;">
+    <h3 style="color: #0f172a; border-bottom: 2px solid #f1f5f9; padding-bottom: 1.25rem; font-weight: 700;">Políticas de Acceso Globales (Roles)</h3>
+    <table style="width: 100%; border-collapse: collapse; margin-top: 1.5rem;">
+      <thead>
+        <tr style="background: #f8fafc; color: #475569; text-align: left; text-transform: uppercase; font-size: 0.75rem;">
+          <th style="padding: 1rem; border-bottom: 2px solid #e2e8f0; font-weight: 700;">Identificador de Seguridad</th>
+          <th style="padding: 1rem; border-bottom: 2px solid #e2e8f0; font-weight: 700;">Matriz de Permisos Habilitados</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let r of roles" style="border-bottom: 1px solid #f1f5f9;">
+          <td style="padding: 1.25rem 1rem; font-weight: 600; color: #1e293b;">{{ r.nombre }}</td>
+          <td style="padding: 1.25rem 1rem; font-family: monospace; color: #64748b; font-size: 0.9rem;">
+            <span *ngFor="let p of r.permisos" style="display:inline-block; padding: 0.2rem 0.5rem; background:#f1f5f9; border:1px solid #cbd5e1; border-radius:4px; margin-right: 0.5rem; margin-bottom: 0.2rem;">{{p}}</span>
+          </td>
+        </tr>
+        <tr *ngIf="roles.length === 0">
+           <td colspan="2" style="padding: 3rem; text-align: center; color: #64748b;">No existen directivas activas en el cluster.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  `
+})
+export class RolViewComponent implements OnInit {
+  roles: Rol[] = [];
+  constructor(private rolService: RolService) {}
+  ngOnInit() { this.rolService.listarRoles().subscribe(data => {
+      this.roles = data;
+  }); }
+}

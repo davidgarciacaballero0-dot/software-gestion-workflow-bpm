@@ -1,0 +1,36 @@
+<div class="audit-container">
+  <div class="header">
+    <h1 class="page-title">Bitácora de Auditoría del Sistema</h1>
+    <p class="page-subtitle">Registro inmutable de todas las operaciones ejecutadas por el personal sobre la infraestructura BPM.</p>
+  </div>
+
+  <div class="grid-card">
+    <div *ngIf="loading" class="loading-state">
+      <span class="spinner"></span> Recuperando eventos registrados...
+    </div>
+
+    <table class="audit-table" *ngIf="!loading">
+      <thead>
+        <tr>
+          <th>Marca Temporal</th>
+          <th>Agente Ejecutor</th>
+          <th>Operación Registrada</th>
+          <th>Módulo Afectado</th>
+          <th>Dirección IP Origen</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let e of eventos">
+          <td class="text-muted font-mono">{{ e.createdAt | date:'dd/MM/yy HH:mm:ss' }}</td>
+          <td class="font-strong">{{ e.idUsuarioActor }}</td>
+          <td><span class="badge badge-action">{{ e.accion }}</span></td>
+          <td>{{ e.entidadAfectada }}</td>
+          <td class="font-mono text-muted">{{ e.ipOrigen }}</td>
+        </tr>
+        <tr *ngIf="eventos.length === 0">
+          <td colspan="5" class="empty-state">Sin registros de actividad. El sistema se encuentra en estado limpio.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

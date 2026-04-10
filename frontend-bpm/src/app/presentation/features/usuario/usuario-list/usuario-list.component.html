@@ -1,0 +1,38 @@
+<div class="list-card">
+  <div class="header-tools">
+    <h4>Directorio de Nomina Activa</h4>
+    <span class="badge badge-primary">Fuerza Laboral: {{ usuarios.length }}</span>
+  </div>
+
+  <div *ngIf="loading" class="loading-state">
+    <span class="spinner"></span> Indexando credenciales del segmento...
+  </div>
+
+  <table class="corporate-table" *ngIf="!loading">
+    <thead>
+      <tr>
+        <th>UID Funcionario</th>
+        <th>Nombre Institucional</th>
+        <th>Acceso Restringido (Email)</th>
+        <th>Nivel de Jerarquía</th>
+        <th>Fecha de Inserción</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let u of usuarios" class="table-row">
+        <td class="font-mono">{{ u.id | slice:0:6 }}</td>
+        <td class="font-strong">{{ u.nombre }}</td>
+        <td class="text-muted">{{ u.email }}</td>
+        <td><span class="badge badge-secondary">{{ u.idRol }}</span></td>
+        <!-- NOTA DE SEGURIDAD: Password nunca es enviado por Backend -->
+        <td>{{ u.createdAt | date:'shortDate' }}</td>
+      </tr>
+      
+      <tr *ngIf="usuarios.length === 0">
+        <td colspan="5" class="empty-state">
+          Estructura intacta. No existe talento asignado a este segmento departamental.
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>

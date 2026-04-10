@@ -1,0 +1,44 @@
+/* EXTENSIÓN DATA GRID SAP CORPORTIVA */
+.list-card {
+  background: white;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 1.5rem 2rem;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03);
+  margin-top: 2rem;
+  font-family: 'Inter', 'Segoe UI', Roboto, sans-serif;
+}
+
+.header-tools {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 2px solid #f1f5f9;
+}
+
+h4 {
+  margin: 0;
+  color: #0f172a;
+  font-weight: 700;
+  font-size: 1.25rem;
+}
+
+.corporate-table { width: 100%; border-collapse: collapse; }
+.corporate-table th { background: #f8fafc; color: #475569; padding: 1rem 1.5rem; text-align: left; font-size: 0.75rem; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; font-weight: 700;}
+.corporate-table td { padding: 1.25rem 1.5rem; color: #334155; border-bottom: 1px solid #f1f5f9; font-size: 0.95rem; }
+
+.table-row:hover { background-color: #f8fafc; }
+
+.font-mono { font-family: monospace; letter-spacing: 0.05em;}
+.font-strong { font-weight: 600; color: #1e293b; }
+.text-muted { color: #64748b; }
+
+.badge { padding: 0.35rem 0.75rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
+.badge-primary { background: #1e293b; color: white; }
+.badge-secondary { background: #e2e8f0; color: #475569; border: 1px solid #cbd5e1; }
+
+.empty-state, .loading-state { text-align: center; padding: 3rem; color: #64748b; font-size:0.95rem;}
+.spinner { display: inline-block; width: 1.2rem; height: 1.2rem; border: 2px solid #cbd5e1; border-top-color: #3b82f6; border-radius: 50%; animation: spin 0.8s linear infinite; margin-right: 0.5rem; vertical-align: middle;}
+@keyframes spin { to { transform: rotate(360deg); } }

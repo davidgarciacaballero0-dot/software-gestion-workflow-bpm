@@ -1,0 +1,90 @@
+/* BITÁCORA DE AUDITORÍA - ESTILO FORENSE / SYSLOG CORPORATIVO */
+.audit-container {
+  padding: 2.5rem 3.5rem;
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+  background-color: #f8fafc;
+  min-height: 100vh;
+}
+
+.header { margin-bottom: 2rem; }
+
+.page-title {
+  color: #0f172a;
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.page-subtitle {
+  color: #64748b;
+  font-size: 0.95rem;
+  margin-top: 0.4rem;
+}
+
+.grid-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.04);
+  overflow: hidden;
+}
+
+.audit-table { width: 100%; border-collapse: collapse; }
+
+.audit-table th {
+  background: #0f172a; /* Cabecera oscura estilo terminal de logs */
+  color: #e2e8f0;
+  padding: 0.85rem 1.5rem;
+  text-align: left;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+}
+
+.audit-table td {
+  padding: 1rem 1.5rem;
+  color: #334155;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 0.9rem;
+}
+
+.audit-table tbody tr:hover {
+  background-color: #fffbeb; /* Highlight amarillo forense */
+}
+
+.font-mono { font-family: 'SFMono-Regular', Consolas, monospace; font-size: 0.85rem; }
+.font-strong { font-weight: 600; color: #1e293b; }
+.text-muted { color: #64748b; }
+
+.badge-action {
+  display: inline-block;
+  padding: 0.3rem 0.65rem;
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  font-family: monospace;
+  font-weight: 600;
+}
+
+.empty-state, .loading-state {
+  text-align: center;
+  padding: 4rem;
+  color: #64748b;
+}
+
+.spinner {
+  display: inline-block;
+  width: 1.2rem;
+  height: 1.2rem;
+  border: 2px solid #cbd5e1;
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-right: 0.5rem;
+  vertical-align: middle;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }

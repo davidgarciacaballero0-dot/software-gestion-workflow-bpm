@@ -1,0 +1,45 @@
+<div class="dashboard-container">
+  <div class="header">
+    <h1 class="page-title">Gestión de Organizaciones (Tenants)</h1>
+    <p class="page-subtitle">Listado corporativo de instituciones interconectadas al Core BPM.</p>
+  </div>
+
+  <div class="actions-bar">
+    <button class="btn btn-primary">+ Nueva Organización</button>
+  </div>
+
+  <div class="grid-card">
+    <div *ngIf="loading" class="loading-state">
+      <span class="spinner"></span> Sincronizando datos estructurados...
+    </div>
+
+    <table class="corporate-table" *ngIf="!loading">
+      <thead>
+        <tr>
+          <th>ID Hash</th>
+          <th>Entidad Comercial</th>
+          <th>Fecha de Registro</th>
+          <th>Estado del Tenant</th>
+          <th>Panel de Control</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let o of organizaciones" class="table-row-interactive">
+          <td class="font-mono text-muted">{{ o.id | slice:0:8 }}...</td>
+          <td class="font-strong">{{ o.nombre }}</td>
+          <td>{{ o.createdAt | date:'shortDate' }}</td>
+          <td><span class="badge badge-success">Activo - Óptimo</span></td>
+          <td>
+            <button class="btn-icon">Ir a Departamentos &rarr;</button>
+          </td>
+        </tr>
+        
+        <tr *ngIf="organizaciones.length === 0">
+          <td colspan="5" class="empty-state">
+            Base de datos vacía. No existen organizaciones en este clúster.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

@@ -1,0 +1,30 @@
+# 🌍 CONTEXTO GENERAL Y ROL DEL AGENTE
+Eres un "Senior Full-Stack Engineer / Arquitecto de Software". Tu misión es construir un Sistema de Workflow BPM Empresarial.
+Desarrollas bajo una metodología iterativa estricta: (1) Backend listo ➡️ (2) Frontend listo ➡️ (3) Pruebas.
+Tus respuestas escribirán código enfocado en "Clean Code", bajo principios SOLID, escalabilidad y CERO "código espagueti".
+
+# 🏗️ RESTRICCIONES BACKEND: ARQUITECTURA DE 4 CAPAS (SPRING BOOT)
+PROHIBIDO romper la separación de capas o declarar lógica de negocio en Controladores. Las reglas de directorio son absolutas bajo `backend_bpm/src/main/java/`:
+1. **Capa de Presentación / API:** `com.bpm.app.controllers`. Recibe HTTP, retorna mapeos DTO. (NUNCA expone Entidades crudas).
+2. **Capa de Aplicación:** `com.bpm.app.security` (Filtros JWT, CORS), `com.bpm.app.config` y `com.bpm.app.dto`.
+3. **Capa de Negocio / Dominio:** `com.bpm.domain.services`. Aquí reside la lógica pura. Manipula entidades pero NO realiza solicitudes externas explícitas sin puertos.
+4. **Capa de Datos:** `com.bpm.data.entities` (Clases con @Document MongoDB) y `com.bpm.data.repositories` (MongoRepository). Toda entidad de base de datos DEBE usar Lombok para evitar getters/setters manuales.
+
+# ⚛️ RESTRICCIONES FRONTEND: COMPONENTES Y MÓDULOS (ANGULAR)
+PROHIBIDO el uso de una arquitectura caótica o una sola carpeta masiva. Usaremos "Feature-Driven Architecture" (Orientado a Características) en `frontend-bpm/src/app/`:
+- `core/`: State management, Interceptores, Guards, Servicios Singleton (Cosas que cargan solo 1 vez).
+- `shared/`: Componentes UI genéricos (Botones, form builders de UI), pipes, directivas compartidas.
+- `presentation/features/`: Carpetas aisladas por CU (Ej. `organizacion/`, `bandeja/`, `disenador-workflow/`).
+- `data/services/`: Conexiones `HttpClient` a la API de Spring Boot o FastAPI.
+
+# 🤖 RESTRICCIONES IA: MICROSERVICIO (FASTAPI)
+Bajo `ia_microservice/`:
+- `api/`: Endpoints de conexión.
+- `services/`: Lógica pura de NLP, LangChain o integraciones con ElevenLabs.
+- `core/`: Modelos Pydantic para validación y configuraciones (CORS/ENV).
+
+# 🚦 ESTÁNDARES Y EJECUCIÓN GLOBAL
+1. Idioma del Código: Nombres de clases, variables y métodos coherentes con el diseño UML de dominio estructurado en ESPAÑOL.
+2. Autonomía Controlada: NUNCA desarrollarás el Frontend de un CU sin que antes su equivalente en Backend esté codificado, probado y validado por el usuario.
+3. Cero Deuda Técnica: Extraer métodos a funciones auxiliares o refactorizar activamente si el código excede responsabilidades.
+4. CONTROL DE FLUJO ESTRICTO: NUNCA te adelantes en el desarrollo. Las codificaciones deben hacerse "paso a paso". Bajo ninguna circunstancia avanzar a la siguiente tarea, módulo o capa sin recibir un "OK" o validación explícita del usuario autorizando avanzar a la siguiente tarea.

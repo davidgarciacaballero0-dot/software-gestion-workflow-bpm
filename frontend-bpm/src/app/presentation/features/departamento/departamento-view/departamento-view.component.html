@@ -1,0 +1,56 @@
+<div class="row-layout">
+  <!-- Módulo Izquierdo: Data Grid Recursiva -->
+  <div class="list-module">
+    <h3>Organigrama de Áreas</h3>
+    <div *ngIf="loading" class="loading-state">
+      <span class="spinner"></span> Consultando topología de Tenant...
+    </div>
+
+    <table class="corporate-table" *ngIf="!loading">
+      <thead>
+        <tr>
+          <th>UID</th>
+          <th>Nombre del Área</th>
+          <th>Cód. de Identificación</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let d of departamentos">
+          <td class="font-mono text-muted">{{ d.id | slice:0:6 }}</td>
+          <td class="font-strong">{{ d.nombre }}</td>
+          <td><span class="badge badge-neutral">{{ d.codigoArea }}</span></td>
+        </tr>
+        <!-- Estado Vacío -->
+        <tr *ngIf="departamentos.length === 0">
+          <td colspan="3" class="empty-state">
+            Este Tenant actualmente no cuenta con organigrama jerárquico.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Módulo Derecho: Formulario Embebido Angular Reactive -->
+  <div class="form-module form-card">
+    <h3>Designar Nuevo Departamento</h3>
+    <form [formGroup]="depForm" (ngSubmit)="onSubmit()">
+      
+      <div class="form-group">
+        <label>Designación o Jefatura <span class="required">*</span></label>
+        <input type="text" formControlName="nombre" class="form-control" autocomplete="off" placeholder="Recursos Humanos">
+      </div>
+
+      <div class="form-group">
+        <label>Código Interno de Operación <span class="required">*</span></label>
+        <input type="text" formControlName="codigoArea" class="form-control" autocomplete="off" placeholder="RRHH-01">
+      </div>
+
+      <div class="form-actions mt-cmd">
+        <button type="submit" class="btn btn-primary" [disabled]="depForm.invalid || isSubmitting">
+          <span *ngIf="isSubmitting" class="spinner"></span>
+          {{ isSubmitting ? 'Bifurcando Datos...' : 'Crear Jerarquía' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

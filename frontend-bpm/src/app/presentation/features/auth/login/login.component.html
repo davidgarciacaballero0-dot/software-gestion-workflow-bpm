@@ -1,0 +1,40 @@
+<div class="login-wrapper">
+  <div class="login-card">
+    
+    <!-- Cabecera Institucional -->
+    <div class="brand-header">
+      <div class="brand-icon">BPM</div>
+      <h2>Sistema de Gestión de Procesos</h2>
+      <p>Acceso restringido a personal autorizado</p>
+    </div>
+
+    <!-- Alerta de Error -->
+    <div *ngIf="errorMessage" class="alert alert-error">
+      <strong>⚠ Alerta de Seguridad:</strong> {{ errorMessage }}
+    </div>
+
+    <!-- Formulario de Acceso -->
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+      
+      <div class="form-group">
+        <label for="email">Correo Electrónico Corporativo</label>
+        <input type="email" id="email" formControlName="email" class="form-control" autocomplete="username" placeholder="nomina@institucion.gob">
+      </div>
+
+      <div class="form-group">
+        <label for="password">Contraseña de Sistema</label>
+        <input type="password" id="password" formControlName="password" class="form-control font-mono" autocomplete="current-password">
+      </div>
+
+      <button type="submit" class="btn btn-login" [disabled]="loginForm.invalid || isSubmitting">
+        <span *ngIf="isSubmitting" class="spinner"></span>
+        {{ isSubmitting ? 'Autenticando Sesión...' : 'Iniciar Sesión Segura' }}
+      </button>
+
+    </form>
+
+    <div class="footer-text">
+      Protegido por cifrado JWT + BCrypt &bull; Sesión Stateless
+    </div>
+  </div>
+</div>

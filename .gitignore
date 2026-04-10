@@ -1,0 +1,28 @@
+# Backend (Spring Boot)
+backend_bpm/target/
+backend_bpm/.mvn/wrapper/maven-wrapper.jar
+!backend_bpm/.mvn/wrapper/maven-wrapper.properties
+
+# Frontend (Angular)
+frontend-bpm/dist/
+frontend-bpm/tmp/
+frontend-bpm/out-tsc/
+frontend-bpm/node_modules/
+frontend-bpm/.angular/
+
+# Microservicio IA (Python)
+ia_microservice/venv/
+ia_microservice/__pycache__/
+ia_microservice/.pytest_cache/
+ia_microservice/.env
+
+# IDEs y OS
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+Thumbs.db

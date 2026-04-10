@@ -1,0 +1,14 @@
+services:
+  mongodb_bpm:
+    image: mongo:latest
+    container_name: mongodb_bpm
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    restart: unless-stopped
+    environment:
+      - MONGO_INITDB_DATABASE=bpm_workflow
+
+volumes:
+  mongodb_data:
