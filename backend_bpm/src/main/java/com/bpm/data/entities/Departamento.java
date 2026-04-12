@@ -26,6 +26,7 @@ public class Departamento {
 
     private String nombre;
     private String codigoArea;
+    private String idJefe; // Usuario designado como Jefe (CU-17)
 
     @CreatedDate
     private LocalDateTime createdAt;

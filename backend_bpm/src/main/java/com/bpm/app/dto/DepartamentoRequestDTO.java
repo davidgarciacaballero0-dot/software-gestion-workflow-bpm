@@ -8,4 +8,5 @@ public class DepartamentoRequestDTO {
     private String idDepartamentoPadre; // Opcional, puede venir nulo si es el dep. Raíz
     private String nombre;
     private String codigoArea;
+    private String idJefe; // Asociar puesto de Jefatura (CU-17)
 }

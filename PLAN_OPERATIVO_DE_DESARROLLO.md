@@ -21,6 +21,7 @@
 - ✅ Completado
 - 🚧 En Progreso
 - ⚠️ Revisión Pendiente / Por Iniciar
+- ⏳ Pausado / Bloqueado
 
 ---
 
@@ -30,52 +31,53 @@
 - ✅ **0.3 Scaffolding Microservicio IA (FastAPI):** Inicializar entorno virtual Python y paquetes completado.
 - ✅ **0.4 Scaffolding Frontend (Angular):** Inicializar proyecto con Angular CLI, enrutamiento y estructura por features.
 
-> **NOTA:** Hasta este punto (Fase 0) se generará la base de los ecosistemas (Backend, Frontend, IA, DB). Quedamos en pausa para recibir la instrucción del usuario sobre si procedemos a construir u observamos algo en particular antes.
-
 ---
 
-## CICLOS DE DESARROLLO (A la espera de confirmación para iniciar)
+## CICLOS DE DESARROLLO
 
-### 🚧 CICLO 1: Cimientos y Seguridad (Fase de Inicio/Elaboración)
+### ✅ CICLO 1: Cimientos y Seguridad (Fase de Inicio/Elaboración)
 - ✅ CU-00: Definir Capa de Base de Datos (Models & Repositories MongoDB).
 - ✅ CU-01: Gestionar Organización y Departamentos (Multitenant) `[Backend: ✅ | Frontend: ✅ | Pruebas: ✅] FINALIZADO.`
-- ✅ CU-02: Gestionar Usuarios y Roles `[Backend: ✅ | Frontend: ✅ | Pruebas: ✅] FINALIZADO.`
+- ✅ CU-02: Gestionar Usuarios, Roles y Transferencias de Área `[Backend: ✅ | Frontend: ✅ | Pruebas: ✅] FINALIZADO.`
 - ✅ CU-03: Autenticar Usuario (JWT + Spring Security) `[Backend: ✅ | Frontend: ✅ | Pruebas: ✅] FINALIZADO.`
 - ✅ CU-13: Consultar Auditoría del Sistema (AOP + Bitácora) `[Backend: ✅ | Frontend: ✅ | Pruebas: ✅] FINALIZADO.`
-- ⏳ TAREA PENDIENTE: Configurar Servidor MCP de Google Stitch para volcado oficial de Prototipos de UI/UX.
+- ✅ **CU-17 [NUEVO]:** Gestionar Jerarquía de Privilegios y Jefaturas (Asignación de Jefes por Área) `[Backend: ✅ | Frontend: ✅ | Pruebas: ✅] FINALIZADO.`
 
 ---
 
-### 🔒 REVISIÓN PRE-CICLO 2: Securización de Credenciales y Variables de Entorno (Deuda Técnica - Fase 0)
-> **Prioridad:** ALTA — Bloqueante para iniciar Ciclo 2.
-> **Asignado a:** Desarrollador Backend.
-
-- ✅ **0.5.1** Refactorizar `application.properties`: Reemplazar credenciales en duro por inyección vía `${VARIABLE_DE_ENTORNO}`.
-- ✅ **0.5.2** Crear archivo `.env` local en la raíz del proyecto con valores reales (MongoDB URI, JWT Secret, JWT Expiration).
-- ✅ **0.5.3** Crear archivo `.env.example` (plantilla sin valores sensibles) para onboarding de nuevos desarrolladores — **SÍ se sube a GitHub.**
-- ✅ **0.5.4** Actualizar `.gitignore` para ignorar `.env` a nivel raíz y permitir `.env.example`.
-- ✅ **0.5.5** Orquestar `docker-compose.yml`: Agregar directiva `env_file` y bloque `backend-spring` con variables de entorno inyectadas.
-- ✅ **0.5.6** VALIDACIÓN: Verificar que `docker-compose up` levanta correctamente con las variables del `.env`. *(ÉXITO: Contenedores levantados y vinculados).*
-- ✅ **0.5.7** VALIDACIÓN: Confirmar que el login (JWT) sigue funcionando con la nueva configuración. *(JwtUtilTest: 5/5 tests pasados con variables de entorno).*
-- ✅ **0.5.8** VALIDACIÓN: Confirmar que `application.properties` **NO** contiene contraseñas ni URIs con credenciales explícitas.
-- ✅ **0.5.9** PRUEBA DE INFRAESTRUCTURA: Actualizar WSL (`wsl --update`) y Docker Desktop para validar despliegue orquestado de MongoDB y Backend. *(FINALIZADO: Sistema booteando correctamente tras fix de package scanning).*
+### ✅ REVISIÓN PRE-CICLO 2: Securización de Credenciales (Deuda Técnica)
+- ✅ **0.5.1** Refactorizar `application.properties` (Inyección de variables).
+- ✅ **0.5.2** Crear archivo `.env` local.
+- ✅ **0.5.3** Crear archivo `.env.example`.
+- ✅ **0.5.4** Actualizar `.gitignore`.
+- ✅ **0.5.5** Orquestar `docker-compose.yml`.
+- ✅ **0.5.6 - 0.5.9** Validaciones de infraestructura y seguridad. *(ÉXITO: Sistema orquestado y funcional).*
 
 ---
 
-### ⚠️ CICLO 2: Construcción del Motor Core y Builders (Fase de Elaboración/Construcción)
-- ⚠️ CU-04: Gestionar Políticas de Negocio (Modelado en MongoDB).
-- ⚠️ CU-05: Diseñar Flujo de Trabajo Interactivo (JSON/BPMN).
-- ⚠️ CU-06: Construir Formulario Dinámico (Form Builder JSON).
+### 🚧 CICLO 2: Construcción del Motor Core y Builders (Fase de Elaboración/Construcción)
+- ✅ **CU-04:** Gestionar Políticas de Negocio Básicas (Modelado en MongoDB) `[Backend: ✅ | Frontend: ✅]`.
+- ✅ **CU-05:** Diseñar Flujo de Trabajo Interactivo (JSON/BPMN - Lienzo Drag & Drop) `[Backend: ✅ | Frontend: ✅]`.
+- ✅ **CU-06:** Construir Formulario Dinámico y Requisitos Documentales (Form Builder) `[Backend: ✅ | Frontend: ✅]`.
+- ⚠️ **CU-18 [NUEVO]:** Gestionar Ciclo de Vida y Versionado de Políticas.
+- ⚠️ **CU-19 [NUEVO]:** Configurar SLAs y Tiempos de Alerta por Nodo.
+- ✅ TAREA FINALIZADA: Definir Contrato JSON (DTOs) para persistencia de flujos.
+
+---
 
 ### ⚠️ CICLO 3: Operación, Trámites y Tiempo Real (Fase de Construcción)
 - ⚠️ CU-07: Iniciar Nuevo Trámite.
-- ⚠️ CU-08: Visualizar Bandeja Departamental.
-- ⚠️ CU-09: Atender y Avanzar Trámite (Lógica de transición).
+- ⚠️ CU-08: Visualizar Bandeja Personal y Departamental.
+- ⚠️ CU-09: Atender y Avanzar Trámite.
 - ⚠️ CU-10: Consultar Historial y Trazabilidad.
 - ⚠️ CU-11: Subir y Descargar Archivos Adjuntos.
 - ⚠️ CU-12: Recibir Notificaciones Push y WebSockets.
+- ⚠️ **CU-20 [NUEVO]:** Supervisión de Bandeja por Jefatura (Vista de Auditoría de Carga).
+- ⚠️ **CU-21 [NUEVO]:** Intervención y Reasignación Administrativa.
+
+---
 
 ### ⚠️ CICLO 4: Inteligencia Artificial y Optimización (Fase de Transición)
 - ⚠️ CU-14: Generar Flujo mediante Lenguaje Natural (NLP - FastAPI).
-- ⚠️ CU-15: Visualizar Dashboard de Insights IA (Analítica).
-- ⚠️ CU-16: Interactuar con Asistente de Voz (ElevenLabs, Frontend & FastAPI).
+- ⚠️ CU-15: Visualizar Dashboard de Insights IA y Cuellos de Botella.
+- ⚠️ CU-16: Interactuar con Asistente de Voz.

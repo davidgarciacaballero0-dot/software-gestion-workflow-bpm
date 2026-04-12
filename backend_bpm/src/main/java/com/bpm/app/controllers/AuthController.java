@@ -5,6 +5,7 @@ import com.bpm.app.dto.AuthRequestDTO;
 import com.bpm.app.dto.AuthResponseDTO;
 import com.bpm.data.entities.Usuario;
 import com.bpm.data.repositories.UsuarioRepository;
+import com.bpm.data.repositories.DepartamentoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final UsuarioRepository usuarioRepository;
+    private final DepartamentoRepository departamentoRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
 
@@ -44,12 +46,16 @@ public class AuthController {
                 usuario.getIdOrganizacion()
         );
 
+        // 3.5 Verificar si es Jefe estructural
+        boolean esJefe = departamentoRepository.existsByIdJefe(usuario.getId());
+
         // 4. Devolver token + metadata segura (sin password)
         AuthResponseDTO response = new AuthResponseDTO(
                 token,
                 usuario.getNombre(),
                 usuario.getIdRol(),
-                usuario.getIdOrganizacion()
+                usuario.getIdOrganizacion(),
+                esJefe
         );
 
         return ResponseEntity.ok(response);

@@ -1,7 +1,8 @@
 package com.bpm.data.entities;
 
-import com.bpm.data.entities.embedded.ActividadNodo;
-import com.bpm.data.entities.embedded.Transicion;
+import com.bpm.data.entities.embedded.WorkflowNode;
+import com.bpm.data.entities.embedded.WorkflowEdge;
+import com.bpm.data.entities.enums.PolicyStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -24,13 +25,15 @@ public class PoliticaWorkflow {
     @Id
     private String id;
     
-    private String idOrganizacion; // Referencia <Ref>
+    private String idOrganizacion; // Referencia
     private String nombre;
-    private Float version;
+    private String description;
+    private String version;
+    private PolicyStatus status; // DRAFT, PUBLISHED, ARCHIVED
     
-    // Lista de documentos embebidos dentro de Mongo (No hay problemas con N+1 Joins)
-    private List<ActividadNodo> nodosActividad;
-    private List<Transicion> aristasTransicion;
+    // Nodos y Conexiones del Lienzo
+    private List<WorkflowNode> nodes;
+    private List<WorkflowEdge> edges;
 
     @CreatedDate
     private LocalDateTime createdAt;

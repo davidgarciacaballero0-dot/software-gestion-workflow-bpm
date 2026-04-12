@@ -10,6 +10,7 @@ public class DepartamentoResponseDTO {
     private String idDepartamentoPadre;
     private String nombre;
     private String codigoArea;
+    private String idJefe;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

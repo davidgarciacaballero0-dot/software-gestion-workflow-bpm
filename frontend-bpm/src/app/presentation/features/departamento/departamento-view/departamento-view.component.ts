@@ -31,7 +31,8 @@ export class DepartamentoViewComponent implements OnInit {
     
     this.depForm = this.fb.group({
       nombre: ['', [Validators.required, Validators.minLength(3)]],
-      codigoArea: ['', [Validators.required]]
+      codigoArea: ['', [Validators.required]],
+      idJefe: [''] // CU-17: Opcional inicialmente
     });
     
     this.cargarDatos();
@@ -60,7 +61,8 @@ export class DepartamentoViewComponent implements OnInit {
     const payload: Departamento = {
       idOrganizacion: this.idOrganizacion,
       nombre: formValue.nombre,
-      codigoArea: formValue.codigoArea
+      codigoArea: formValue.codigoArea,
+      idJefe: formValue.idJefe ? formValue.idJefe : undefined
     };
 
     this.depService.crear(payload).subscribe({

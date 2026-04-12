@@ -4,6 +4,7 @@ export interface Departamento {
   idDepartamentoPadre?: string;
   nombre: string;
   codigoArea?: string;
+  idJefe?: string; // CU-17
   createdAt?: string;
   updatedAt?: string;
 }

@@ -31,6 +31,7 @@ public class DepartamentoService {
                 .idDepartamentoPadre(dto.getIdDepartamentoPadre())
                 .nombre(dto.getNombre())
                 .codigoArea(dto.getCodigoArea())
+                .idJefe(dto.getIdJefe()) // CU-17
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -52,6 +53,7 @@ public class DepartamentoService {
         dto.setIdDepartamentoPadre(entidad.getIdDepartamentoPadre());
         dto.setNombre(entidad.getNombre());
         dto.setCodigoArea(entidad.getCodigoArea());
+        dto.setIdJefe(entidad.getIdJefe()); // CU-17
         dto.setCreatedAt(entidad.getCreatedAt());
         dto.setUpdatedAt(entidad.getUpdatedAt());
         return dto;

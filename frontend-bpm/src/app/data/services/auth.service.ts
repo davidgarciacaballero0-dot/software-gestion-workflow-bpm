@@ -7,6 +7,7 @@ export interface AuthResponse {
   nombre: string;
   idRol: string;
   idOrganizacion: string;
+  esJefe?: boolean;
 }
 
 @Injectable({
@@ -27,7 +28,8 @@ export class AuthService {
         localStorage.setItem(this.USER_KEY, JSON.stringify({
           nombre: response.nombre,
           idRol: response.idRol,
-          idOrganizacion: response.idOrganizacion
+          idOrganizacion: response.idOrganizacion,
+          esJefe: response.esJefe || false
         }));
       })
     );
@@ -47,7 +49,7 @@ export class AuthService {
     return token !== null && token.length > 0;
   }
 
-  getUserData(): { nombre: string; idRol: string; idOrganizacion: string } | null {
+  getUserData(): { nombre: string; idRol: string; idOrganizacion: string; esJefe?: boolean } | null {
     const data = localStorage.getItem(this.USER_KEY);
     return data ? JSON.parse(data) : null;
   }

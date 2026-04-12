@@ -1,0 +1,35 @@
+package com.bpm.app.controllers;
+
+import com.bpm.app.dto.WorkflowRequestDTO;
+import com.bpm.app.dto.WorkflowResponseDTO;
+import com.bpm.domain.services.PoliticaService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/v1/policies")
+@RequiredArgsConstructor
+public class PoliticaController {
+
+    private final PoliticaService politicaService;
+
+    @PostMapping
+    public ResponseEntity<WorkflowResponseDTO> guardarPolitica(@RequestBody WorkflowRequestDTO request) {
+        WorkflowResponseDTO response = politicaService.guardarPolitica(request);
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
+    }
+
+    @GetMapping("/organization/{idOrganizacion}")
+    public ResponseEntity<List<WorkflowResponseDTO>> listarPorOrganizacion(@PathVariable String idOrganizacion) {
+        return ResponseEntity.ok(politicaService.listarPorOrganizacion(idOrganizacion));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<WorkflowResponseDTO> obtenerPolitica(@PathVariable String id) {
+        return ResponseEntity.ok(politicaService.obtenerPolitica(id));
+    }
+}
