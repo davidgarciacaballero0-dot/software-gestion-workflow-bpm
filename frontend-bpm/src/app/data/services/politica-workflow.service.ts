@@ -22,4 +22,12 @@ export class PoliticaWorkflowService {
   obtenerPorId(id: string): Observable<PoliticaWorkflow> {
     return this.http.get<PoliticaWorkflow>(`${this.apiUrl}/${id}`);
   }
+
+  publicar(id: string): Observable<PoliticaWorkflow> {
+    return this.http.patch<PoliticaWorkflow>(`${this.apiUrl}/${id}/publish`, {});
+  }
+
+  nuevaVersion(id: string): Observable<PoliticaWorkflow> {
+    return this.http.post<PoliticaWorkflow>(`${this.apiUrl}/${id}/new-version`, {});
+  }
 }

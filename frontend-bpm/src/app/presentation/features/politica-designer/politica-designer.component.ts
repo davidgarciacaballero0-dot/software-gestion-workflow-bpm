@@ -22,6 +22,16 @@ export class PoliticaDesignerComponent implements OnInit {
   selectedNode: WorkflowNode | null = null;
   selectedEdge: string | null = null;
 
+  // CU-18 State
+  currentPolicy: PoliticaWorkflow = {
+    idOrganizacion: 'MOCK_ORG_ID',
+    nombre: 'Nueva Política de Crédito',
+    version: '1.0',
+    status: PolicyStatus.DRAFT,
+    nodes: [],
+    edges: []
+  };
+
   constructor(
     private workflowService: PoliticaWorkflowService,
     private depService: DepartamentoService
@@ -38,6 +48,8 @@ export class PoliticaDesignerComponent implements OnInit {
   }
 
   addNode(type: string): void {
+    if (!this.canEdit()) return;
+
     const newNode: WorkflowNode = {
       id: `node_${Date.now()}`,
       type: type as NodeType,
@@ -58,6 +70,10 @@ export class PoliticaDesignerComponent implements OnInit {
 
   selectNode(node: WorkflowNode): void {
     this.selectedNode = node;
+  }
+
+  canEdit(): boolean {
+    return this.currentPolicy.status === PolicyStatus.DRAFT;
   }
 
   removeNode(node: WorkflowNode): void {
@@ -115,21 +131,54 @@ export class PoliticaDesignerComponent implements OnInit {
     return `M ${startX} ${startY} C ${controlX} ${startY}, ${controlX} ${endY}, ${endX} ${endY}`;
   }
 
-  // Simulación de guardado
+  // Guardado y Persistencia
   saveWorkflow(): void {
-    const payload: PoliticaWorkflow = {
-      idOrganizacion: 'MOCK_ORG_ID',
-      nombre: 'Nueva Política de Crédito',
-      version: '1.0',
-      status: PolicyStatus.DRAFT,
-      nodes: this.nodes,
-      edges: this.edges
-    };
+    this.currentPolicy.nodes = this.nodes;
+    this.currentPolicy.edges = this.edges;
 
-    this.workflowService.guardar(payload).subscribe({
-      next: (res: PoliticaWorkflow) => alert('Política guardada exitosamente en el Motor Core.'),
-      error: (err: any) => console.error(err)
+    this.workflowService.guardar(this.currentPolicy).subscribe({
+      next: (res: PoliticaWorkflow) => {
+        this.currentPolicy = res;
+        alert('Política guardada exitosamente (v' + res.version + ')');
+      },
+      error: (err: any) => this.handleError(err)
     });
+  }
+
+  onPublish(): void {
+    if (!this.currentPolicy.id) {
+      alert('Debes guardar la política antes de publicarla.');
+      return;
+    }
+
+    this.workflowService.publicar(this.currentPolicy.id).subscribe({
+      next: (res: PoliticaWorkflow) => {
+        this.currentPolicy = res;
+        alert('🚀 ¡Política publicada con éxito! Ahora es de solo lectura.');
+      },
+      error: (err: any) => this.handleError(err)
+    });
+  }
+
+  onNewVersion(): void {
+    if (!this.currentPolicy.id) return;
+
+    this.workflowService.nuevaVersion(this.currentPolicy.id).subscribe({
+      next: (res: PoliticaWorkflow) => {
+        this.currentPolicy = res;
+        this.nodes = res.nodes || [];
+        this.edges = res.edges || [];
+        this.selectedNode = null;
+        alert('Se ha creado la versión ' + res.version + ' en modo borrador.');
+      },
+      error: (err: any) => this.handleError(err)
+    });
+  }
+
+  private handleError(err: any): void {
+    const message = err.error?.message || 'Ocurrió un error inesperado.';
+    alert('Error: ' + message);
+    console.error(err);
   }
 
   // Lógica simplificada para crear una conexión entre nodos

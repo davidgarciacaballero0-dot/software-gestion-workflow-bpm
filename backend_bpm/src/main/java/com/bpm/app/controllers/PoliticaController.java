@@ -32,4 +32,14 @@ public class PoliticaController {
     public ResponseEntity<WorkflowResponseDTO> obtenerPolitica(@PathVariable String id) {
         return ResponseEntity.ok(politicaService.obtenerPolitica(id));
     }
+
+    @PatchMapping("/{id}/publish")
+    public ResponseEntity<WorkflowResponseDTO> publicarPolitica(@PathVariable String id) {
+        return ResponseEntity.ok(politicaService.publicarPolitica(id));
+    }
+
+    @PostMapping("/{id}/new-version")
+    public ResponseEntity<WorkflowResponseDTO> crearNuevaVersion(@PathVariable String id) {
+        return new ResponseEntity<>(politicaService.crearNuevaVersion(id), HttpStatus.CREATED);
+    }
 }

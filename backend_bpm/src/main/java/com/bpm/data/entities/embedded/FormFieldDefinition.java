@@ -8,6 +8,9 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
+/**
+ * Define la estructura de un campo en un formulario de tarea de usuario.
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -17,5 +20,5 @@ public class FormFieldDefinition {
     private String label;
     private FormFieldType type;
     private Boolean required;
-    private List<String> options; // Solo para dropdowns
+    private List<String> options; // Solo relevante si el tipo es DROPDOWN
 }

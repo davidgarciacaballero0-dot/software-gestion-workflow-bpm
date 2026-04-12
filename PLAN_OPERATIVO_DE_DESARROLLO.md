@@ -59,8 +59,8 @@
 - ✅ **CU-04:** Gestionar Políticas de Negocio Básicas (Modelado en MongoDB) `[Backend: ✅ | Frontend: ✅]`.
 - ✅ **CU-05:** Diseñar Flujo de Trabajo Interactivo (JSON/BPMN - Lienzo Drag & Drop) `[Backend: ✅ | Frontend: ✅]`.
 - ✅ **CU-06:** Construir Formulario Dinámico y Requisitos Documentales (Form Builder) `[Backend: ✅ | Frontend: ✅]`.
-- ⚠️ **CU-18 [NUEVO]:** Gestionar Ciclo de Vida y Versionado de Políticas.
-- ⚠️ **CU-19 [NUEVO]:** Configurar SLAs y Tiempos de Alerta por Nodo.
+- ✅ **CU-18 [NUEVO]:** Gestionar Ciclo de Vida y Versionado de Políticas `[Backend: ✅ | Frontend: ✅]`.
+- ✅ **CU-19 [NUEVO]:** Configurar SLAs y Tiempos de Alerta por Nodo `[Backend: ✅ | Frontend: ✅]`.
 - ✅ TAREA FINALIZADA: Definir Contrato JSON (DTOs) para persistencia de flujos.
 
 ---
