@@ -23,8 +23,10 @@ public class EventoHistorial {
     private String id;
 
     private String idTramite; // Referencia <Ref> a TramiteInstancia
-    private String nodoDestinoId; 
+    private String nodoOrigenId;  // Nodo desde donde se generó el evento
+    private String nodoDestinoId; // Nodo al que llegó el trámite
     private String ejecutadoPorUsuarioId; // Referencia <Ref>
+    private String motivo; // Opcional: descripción de intervención o rechazo
     
     private Integer tiempoSLAConsumidoMinutos; 
     

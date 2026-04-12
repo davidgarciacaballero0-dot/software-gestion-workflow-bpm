@@ -1,0 +1,48 @@
+<div class="catalog-container">
+  <header class="catalog-header">
+    <div class="header-text">
+      <h1>Catálogo de Procesos</h1>
+      <p>Selecciona un flujo de trabajo para iniciar un nuevo trámite operativo.</p>
+    </div>
+    <button class="btn btn-primary" (click)="cargarPoliticas()">🔄 Refrescar</button>
+  </header>
+
+  <div class="grid-catalog" *ngIf="!loading; else spinner">
+    <div *ngFor="let p of politicas" class="process-card">
+      <div class="card-status">
+        <span class="badge" [ngClass]="p.status">{{ p.status }}</span>
+        <span class="version">v{{ p.version }}</span>
+      </div>
+      
+      <div class="card-content">
+        <h3>{{ p.nombre }}</h3>
+        <p>{{ p.description || 'Sin descripción disponible.' }}</p>
+      </div>
+
+      <div class="card-footer">
+        <div class="stats">
+          <span>📍 {{ p.nodes.length }} Pasos</span>
+        </div>
+        <button 
+          class="btn btn-action" 
+          [disabled]="p.status !== 'PUBLISHED'"
+          (click)="iniciarTramite(p)">
+          {{ p.status === 'PUBLISHED' ? '⚡ Iniciar Trámite' : 'No disponible' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <ng-template #spinner>
+    <div class="loader-container">
+      <div class="spinner"></div>
+      <p>Cargando catálogo...</p>
+    </div>
+  </ng-template>
+
+  <div *ngIf="!loading && politicas.length === 0" class="empty-state">
+    <div class="empty-icon">📂</div>
+    <h3>No hay procesos disponibles</h3>
+    <p>Crea y publica políticas en el Diseñador para verlas aquí.</p>
+  </div>
+</div>

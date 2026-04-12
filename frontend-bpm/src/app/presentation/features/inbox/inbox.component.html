@@ -1,0 +1,61 @@
+<div class="inbox-container">
+  <header class="inbox-header">
+    <h1>Bandeja de Gestión</h1>
+    <p>Seguimiento de trámites iniciados y tareas pendientes por departamento.</p>
+  </header>
+
+  <!-- Sistema de Tabs Glassmorphism -->
+  <div class="tabs-control">
+    <button 
+      class="tab-btn" 
+      [class.active]="activeTab === 'personal'"
+      (click)="switchTab('personal')">
+      👤 Mis Solicitudes
+    </button>
+    <button 
+      class="tab-btn" 
+      [class.active]="activeTab === 'department'"
+      (click)="switchTab('department')">
+      🏢 Bandeja Grupal
+    </button>
+  </div>
+
+  <section class="inbox-content">
+    <div *ngIf="loading" class="loader-box">
+      <div class="spinner"></div>
+    </div>
+
+    <div *ngIf="!loading && tramites.length > 0" class="tramite-list">
+      <div *ngFor="let t of tramites" class="tramite-card shadow-premium">
+        <div class="card-left">
+          <div class="code-tag">{{ t.codigoTramite }}</div>
+          <h3>{{ t.nombrePolitica || 'Tipo de Trámite' }}</h3>
+          <div class="meta-info">
+            <span>📅 {{ formatDate(t.createdAt) }}</span>
+            <span *ngIf="activeTab === 'department'">👤 Solicitante: {{ t.idUsuarioSolicitante }}</span>
+          </div>
+        </div>
+
+        <div class="card-right">
+          <div class="status-box">
+            <span class="status-pill" [class]="t.estadoActual">{{ t.estadoActual }}</span>
+            <small>Ubicación: {{ t.nodoActualId }}</small>
+          </div>
+          <div class="actions">
+            <button class="btn btn-glass" title="Ver Trazabilidad" (click)="verHistorial(t.id)">👁️</button>
+            <button 
+              *ngIf="activeTab === 'department' && t.estadoActual !== 'FINALIZADO'" 
+              class="btn btn-primary" 
+              (click)="atenderTramite(t.id)">Atender</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div *ngIf="!loading && tramites.length === 0" class="empty-state">
+      <div class="icon">📫</div>
+      <p>No hay trámites para mostrar en esta sección.</p>
+    </div>
+  </section>
+</div>

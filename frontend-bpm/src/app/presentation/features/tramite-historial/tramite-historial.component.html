@@ -1,0 +1,69 @@
+<div class="historial-container" *ngIf="!loading; else loadingState">
+  
+  <header class="historial-header">
+    <button class="btn btn-glass" (click)="volver()">← Volver</button>
+    <div class="header-info">
+      <div class="code-tag">{{ tramite?.codigoTramite }}</div>
+      <h1>Línea de Tiempo del Trámite</h1>
+      <p class="subtitle">Bitácora completa y trazabilidad de eventos del flujo de trabajo.</p>
+    </div>
+  </header>
+
+  <section class="timeline">
+    <div *ngIf="eventos.length === 0" class="no-events">
+      No se han registrado eventos para este trámite.
+    </div>
+
+    <div *ngFor="let evento of eventos" class="timeline-item">
+      <div class="timeline-marker" [style.background-color]="getEventColor(evento.tipoEvento)">
+        <span class="marker-icon">{{ getEventIcon(evento.tipoEvento) }}</span>
+      </div>
+      
+      <div class="timeline-content glass-card animate-slide-in">
+        <div class="event-header">
+          <span class="event-type" [style.color]="getEventColor(evento.tipoEvento)">
+            {{ evento.tipoEvento }}
+          </span>
+          <span class="event-date">{{ formatDate(evento.createdAt) }}</span>
+        </div>
+
+        <div class="event-body">
+          <div class="detail-row">
+            <span class="label">👤 Ejecutado por:</span>
+            <span class="value">{{ evento.ejecutadoPorUsuarioId || 'Sistema' }}</span>
+          </div>
+
+          <div class="detail-row" *ngIf="evento.nodoDestinoId">
+            <span class="label">📍 Ubicación:</span>
+            <span class="value">{{ evento.nodoDestinoId }}</span>
+          </div>
+
+          <div class="motivo-box" *ngIf="evento.motivo">
+            <span class="label">📝 Motivo/Observación:</span>
+            <p>{{ evento.motivo }}</p>
+          </div>
+        </div>
+
+        <div class="event-snapshot" *ngIf="evento.snapshotDatos && (evento.snapshotDatos | keyvalue).length > 0">
+          <button class="btn-toggle-snapshot" (click)="evento.showSnapshot = !evento.showSnapshot">
+            {{ evento.showSnapshot ? '🔼 Ocultar Datos' : '🔽 Ver Datos en este punto' }}
+          </button>
+          
+          <div class="snapshot-grid" *ngIf="evento.showSnapshot">
+            <div *ngFor="let item of evento.snapshotDatos | keyvalue" class="snapshot-item">
+              <span class="snap-key">{{ item.key }}</span>
+              <span class="snap-val">{{ item.value }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<ng-template #loadingState>
+  <div class="loader-container">
+    <div class="spinner"></div>
+    <p>Cargando bitácora de trazabilidad...</p>
+  </div>
+</ng-template>

@@ -24,7 +24,9 @@ public class ArchivoAdjunto {
     private String idUsuarioSubida; // Referencia <Ref>
     
     private String nombreOriginal;
-    private String urlAlmacenamientoS3; // Bucket Storage
+    private String gridFsId; // ID de referencia en MongoDB GridFS
+    private String contentType;
+    private Long tamano;
 
     @CreatedDate
     private LocalDateTime createdAt;

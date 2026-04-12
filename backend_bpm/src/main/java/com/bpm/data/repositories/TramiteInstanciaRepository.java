@@ -11,4 +11,7 @@ public interface TramiteInstanciaRepository extends MongoRepository<TramiteInsta
     
     // Método crítico para consultar con máxima velocidad las Entradas de un Departamento específico
     List<TramiteInstancia> findByDepartamentoActualId(String departamentoActualId);
+
+    // Consulta de la Bandeja Personal (Trámites iniciados por un usuario)
+    List<TramiteInstancia> findByIdUsuarioSolicitante(String idUsuarioSolicitante);
 }

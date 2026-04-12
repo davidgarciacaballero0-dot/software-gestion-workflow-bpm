@@ -43,8 +43,7 @@ public class AuthController {
                 usuario.getEmail(),
                 usuario.getIdRol(),
                 usuario.getId(),
-                usuario.getIdOrganizacion()
-        );
+                usuario.getIdOrganizacion());
 
         // 3.5 Verificar si es Jefe estructural
         boolean esJefe = departamentoRepository.existsByIdJefe(usuario.getId());
@@ -55,8 +54,7 @@ public class AuthController {
                 usuario.getNombre(),
                 usuario.getIdRol(),
                 usuario.getIdOrganizacion(),
-                esJefe
-        );
+                esJefe);
 
         return ResponseEntity.ok(response);
     }

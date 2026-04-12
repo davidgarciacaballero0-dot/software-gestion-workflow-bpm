@@ -104,6 +104,38 @@ El JSON principal se compone de metadatos básicos de la política, una lista de
 
 ---
 
+## 🚀 Inicio de Trámite (CU-07)
+
+Cuando un usuario desea iniciar un proceso basado en una política publicada, el Frontend debe enviar una petición simplificada. El motor se encarga de clonar la estructura y posicionar el trámite en el primer paso operativo.
+
+### Petición de Inicio (StartProcedureRequestDTO)
+```json
+{
+  "idPolitica": "60d5ecb8b311fc2b4c123456",
+  "idUsuarioSolicitante": "user_001",
+  "datosIniciales": {                    // Datos opcionales capturados en el trigger de inicio
+    "motivo": "Solicitud de crédito personal"
+  }
+}
+```
+
+### Respuesta de Instancia (TramiteResponseDTO)
+```json
+{
+  "id": "inst_789456123",
+  "codigoTramite": "TRM-2026-0001",
+  "nombrePolitica": "Aprobación de Crédito Hipotecario",
+  "estadoActual": "EN_PROGRESO",
+  "nodoActualId": "node_task_2",        // ID del primer nodo operativo (USER_TASK)
+  "departamentoActualId": "dept_riesgos_01",
+  "createdAt": "2026-04-12T17:35:00Z"
+}
+```
+
+---
+
+---
+
 ## Detalle de Entidades (Java Spring Boot DTOs Equivalentes)
 
 ### 1. NodeType (Enum)

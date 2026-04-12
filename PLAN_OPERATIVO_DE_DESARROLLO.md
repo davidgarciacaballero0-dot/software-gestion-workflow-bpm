@@ -25,7 +25,7 @@
 
 ---
 
-## 🚧 TAREAS PREVIAS: CONFIGURACIÓN Y SCAFFOLDING (Fase 0)
+## 📝 TAREAS PREVIAS: CONFIGURACIÓN Y SCAFFOLDING (Fase 0)
 - ✅ **0.1 Setup Docker:** Crear `docker-compose.yml` para instanciar MongoDB de forma local.
 - ✅ **0.2 Scaffolding Backend (Spring Boot):** Inicializar proyecto con Spring Web, Spring Data MongoDB, Spring Security, Lombok.
 - ✅ **0.3 Scaffolding Microservicio IA (FastAPI):** Inicializar entorno virtual Python y paquetes completado.
@@ -65,19 +65,36 @@
 
 ---
 
-### ⚠️ CICLO 3: Operación, Trámites y Tiempo Real (Fase de Construcción)
-- ⚠️ CU-07: Iniciar Nuevo Trámite.
-- ⚠️ CU-08: Visualizar Bandeja Personal y Departamental.
-- ⚠️ CU-09: Atender y Avanzar Trámite.
-- ⚠️ CU-10: Consultar Historial y Trazabilidad.
-- ⚠️ CU-11: Subir y Descargar Archivos Adjuntos.
-- ⚠️ CU-12: Recibir Notificaciones Push y WebSockets.
-- ⚠️ **CU-20 [NUEVO]:** Supervisión de Bandeja por Jefatura (Vista de Auditoría de Carga).
-- ⚠️ **CU-21 [NUEVO]:** Intervención y Reasignación Administrativa.
+### 🚧 CICLO 3: Operación, Trámites y Tiempo Real (Fase de Construcción)
+
+**Fase 3.1: Disparo e Infraestructura Base**
+- ✅ **CU-07:** Iniciar Nuevo Trámite `[Backend: ✅ | Frontend: ✅]`.
+- ✅ **CU-08:** Visualizar Bandeja Personal y Departamental `[Backend: ✅ | Frontend: ✅]`.
+- ✅ **CU-12:** Recibir Notificaciones Push y WebSockets `[Backend: ✅ | Frontend: ✅]`.
+
+**Fase 3.2: Ejecución y Evidencias**
+- ✅ **CU-09:** Atender y Avanzar Trámite `[Backend: ✅ | Frontend: ✅]`.
+- ✅ **CU-11:** Subir y Descargar Archivos Adjuntos `[Backend: ✅ | Frontend: ✅]`.
+
+**Fase 3.3: Auditoría y Excepciones**
+- ✅ **CU-10:** Consultar Historial y Trazabilidad `[Backend: ✅ | Frontend: ✅]`.
+- ✅ **CU-20:** Supervisión de Bandeja por Jefatura `[Backend: ✅ | Frontend: ✅]`.
+- ✅ **CU-21:** Intervención y Reasignación Administrativa `[Backend: ✅ | Frontend: ✅]`.
 
 ---
 
-### ⚠️ CICLO 4: Inteligencia Artificial y Optimización (Fase de Transición)
+### 🛡️ FASE DE ESTABILIZACIÓN Y QA (Pre-Ciclo 4)
+**Objetivo:** Garantizar la robustez total de la lógica de negocio y la consistencia de los datos antes de integrar IA.
+
+- [ ] **Pruebas Automatizadas (Ciclos 2 y 3):** Implementar JUnit tests para el Diseñador y el Motor de Ejecución.
+- [ ] **Manual de Pruebas de Usuario:** Crear guía detallada de "End-to-End" para validación manual.
+- [ ] **Validación de UI/UX:** Revisión final de consistencia en el diseño Glassmorphism en todas las vistas.
+- [ ] **Hito de Aceptación:** Pausa de validación para corrección de bugs reportados por el usuario.
+
+---
+
+### 🧠 CICLO 4: Inteligencia Artificial (IA) y Optimización (Fase de Valor)
 - ⚠️ CU-14: Generar Flujo mediante Lenguaje Natural (NLP - FastAPI).
 - ⚠️ CU-15: Visualizar Dashboard de Insights IA y Cuellos de Botella.
 - ⚠️ CU-16: Interactuar con Asistente de Voz.
+- ⚠️ **CU-22 [NUEVO]:** Exportación de Reportes y Sábanas de Datos (PDF/Excel) (Jefe de Departamento / Administrador).

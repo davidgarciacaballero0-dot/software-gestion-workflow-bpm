@@ -7,7 +7,7 @@
 - **CU-02:** Gestionar Usuarios, Roles y Transferencias de Área (Actor: Diseñador / Administrador)
 - **CU-03:** Autenticar Usuario (Actores: Administrador, Funcionario)
 - **CU-17 [NUEVO]:** Gestionar Jerarquía de Privilegios y Jefaturas (Actor: Diseñador / Administrador)
-
+**CU-22 [NUEVO]:** Exportación de Reportes y Sábanas de Datos. 
 ### Paquete 2: Diseño de Políticas (El Motor Core)
 - **CU-04:** Gestionar Políticas de Negocio Básicas (Actor: Diseñador / Administrador)
 - **CU-05:** Diseñar Flujo de Trabajo Interactivo (Lineal, Paralelo, Condicional) (Actor: Diseñador / Administrador)
