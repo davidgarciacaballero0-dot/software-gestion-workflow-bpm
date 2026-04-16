@@ -23,25 +23,31 @@ export class AuthService {
   login(email: string, password: string): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.apiUrl}/login`, { email, password }).pipe(
       tap(response => {
-        // Almacenar token y datos del usuario en localStorage
-        localStorage.setItem(this.TOKEN_KEY, response.token);
-        localStorage.setItem(this.USER_KEY, JSON.stringify({
-          nombre: response.nombre,
-          idRol: response.idRol,
-          idOrganizacion: response.idOrganizacion,
-          esJefe: response.esJefe || false
-        }));
+        if (typeof window !== 'undefined' && window.localStorage) {
+          localStorage.setItem(this.TOKEN_KEY, response.token);
+          localStorage.setItem(this.USER_KEY, JSON.stringify({
+            nombre: response.nombre,
+            idRol: response.idRol,
+            idOrganizacion: response.idOrganizacion,
+            esJefe: response.esJefe || false
+          }));
+        }
       })
     );
   }
 
   logout(): void {
-    localStorage.removeItem(this.TOKEN_KEY);
-    localStorage.removeItem(this.USER_KEY);
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.removeItem(this.TOKEN_KEY);
+      localStorage.removeItem(this.USER_KEY);
+    }
   }
 
   getToken(): string | null {
-    return localStorage.getItem(this.TOKEN_KEY);
+    if (typeof window !== 'undefined' && window.localStorage) {
+      return localStorage.getItem(this.TOKEN_KEY);
+    }
+    return null;
   }
 
   isAuthenticated(): boolean {
@@ -50,7 +56,10 @@ export class AuthService {
   }
 
   getUserData(): { nombre: string; idRol: string; idOrganizacion: string; esJefe?: boolean } | null {
-    const data = localStorage.getItem(this.USER_KEY);
-    return data ? JSON.parse(data) : null;
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const data = localStorage.getItem(this.USER_KEY);
+      return data ? JSON.parse(data) : null;
+    }
+    return null;
   }
 }
