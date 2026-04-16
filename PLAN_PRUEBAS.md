@@ -25,9 +25,9 @@
 
 | Ciclo | Casos de Uso | Tests Unitarios | Tests Integración | Tests Frontend | Estado |
 |---|---|---|---|---|---|
-| **Ciclo 1** | CU-00 a CU-03, CU-13 | 14/14 ✅ | 1 (contextLoads 🐳) | Pendientes ⚠️ | Operativo |
-| **Ciclo 2** | CU-04 a CU-06 | ⚠️ Por definir | ⚠️ | ⚠️ | No iniciado |
-| **Ciclo 3** | CU-07 a CU-12 | ⚠️ Por definir | ⚠️ | ⚠️ | No iniciado |
+| **Ciclo 1** | CU-00 a CU-03, CU-13 | 14/14 ✅ | 1 (contextLoads 🐳) | ✅ | Operativo |
+| **Ciclo 2** | CU-04 a CU-06, CU-18, 19 | 10/10 ✅ | 1 (PoliticaService ✅) | ✅ | Operativo |
+| **Ciclo 3** | CU-07 a CU-12, CU-20, 21 | 12/12 ✅ | 1 (TramiteService ✅) | ✅ | Operativo |
 | **Ciclo 4** | CU-14 a CU-16 | ⚠️ Por definir | ⚠️ | ⚠️ | No iniciado |
 
 ---
@@ -45,11 +45,11 @@
 | 3 | `Usuario` | `usuarios` | id, idOrganizacion, idDepartamento, idRol, nombre, email, passwordHash | ✅ |
 | 4 | `Rol` | `roles` | id, nombre, permisos[] | ✅ |
 | 5 | `AuditoriaSistema` | `auditoria_sistema` | id, idUsuarioActor, accion, entidadAfectada, ipOrigen | ✅ |
-| 6 | `PoliticaWorkflow` | (Ciclo 2) | Preparada para Ciclo 2 | ⚠️ |
-| 7 | `TramiteInstancia` | (Ciclo 3) | Preparada para Ciclo 3 | ⚠️ |
-| 8 | `EventoHistorial` | (Ciclo 3) | Preparada para Ciclo 3 | ⚠️ |
-| 9 | `ArchivoAdjunto` | (Ciclo 3) | Preparada para Ciclo 3 | ⚠️ |
-| 10 | `NotificacionPush` | (Ciclo 3) | Preparada para Ciclo 3 | ⚠️ |
+| 6 | `PoliticaWorkflow` | `politicas_workflow` | id, idOrganización, nodes[], edges[] | ✅ |
+| 7 | `TramiteInstancia` | `tramites_instancias` | id, codigoTramite, estadoActual, datosAcumulados | ✅ |
+| 8 | `EventoHistorial` | `eventos_historial` | id, idTramite, idUsuarioAccion, tipoEvento | ✅ |
+| 9 | `ArchivoAdjunto` | `archivos_adjuntos` | id, nombre, url, size, idTramite | ✅ |
+| 10 | `NotificacionPush` | `notificaciones_push` | id, idUsuarioDestino, titulo, mensaje | ✅ |
 | 11 | `AlertaInsightIA` | (Ciclo 4) | Preparada para Ciclo 4 | ⚠️ |
 
 ### Repositorios Definidos (11 interfaces MongoRepository)

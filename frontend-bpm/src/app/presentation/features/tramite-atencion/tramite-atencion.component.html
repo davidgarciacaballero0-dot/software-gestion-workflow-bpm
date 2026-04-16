@@ -79,7 +79,7 @@
   </ng-template>
 
   <!-- Datos Acumulados -->
-  <section class="accumulated-section" *ngIf="tramite?.datosAcumuladosFormulario && (tramite.datosAcumuladosFormulario | keyvalue).length > 0">
+  <section class="accumulated-section" *ngIf="tramite?.datosAcumuladosFormulario && (tramite.datosAcumuladosFormulario | keyvalue)?.length">
     <h3>📋 Datos Previos Acumulados</h3>
     <div class="data-grid">
       <div *ngFor="let item of tramite.datosAcumuladosFormulario | keyvalue" class="data-item">
@@ -88,7 +88,7 @@
           {{ item.value }}
           <!-- Botón de descarga si parece ser un ID de archivo (metadato) -->
           <button 
-            *ngIf="item.key.toLowerCase().includes('archivo') || item.key.toLowerCase().includes('doc')"
+            *ngIf="$any(item.key).toLowerCase().includes('archivo') || $any(item.key).toLowerCase().includes('doc')"
             class="btn-download" 
             (click)="descargarArchivo(item.value.toString())">
             📥 Descargar

@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
 import { AuthService } from '../../../../data/services/auth.service';
 
 @Component({
@@ -15,7 +16,11 @@ export class LoginComponent {
   isSubmitting = false;
   errorMessage = '';
 
-  constructor(private fb: FormBuilder, private authService: AuthService) {
+  constructor(
+    private fb: FormBuilder, 
+    private authService: AuthService,
+    private router: Router
+  ) {
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(6)]]
@@ -33,9 +38,7 @@ export class LoginComponent {
     this.authService.login(email, password).subscribe({
       next: (res) => {
         this.isSubmitting = false;
-        // Redirigir al Dashboard principal tras autenticación exitosa
-        // En producción usarías Router.navigate(['/dashboard'])
-        window.location.href = '/dashboard';
+        this.router.navigate(['/catalog']);
       },
       error: (err) => {
         this.isSubmitting = false;

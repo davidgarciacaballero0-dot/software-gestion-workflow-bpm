@@ -86,10 +86,10 @@
 ### 🛡️ FASE DE ESTABILIZACIÓN Y QA (Pre-Ciclo 4)
 **Objetivo:** Garantizar la robustez total de la lógica de negocio y la consistencia de los datos antes de integrar IA.
 
-- [ ] **Pruebas Automatizadas (Ciclos 2 y 3):** Implementar JUnit tests para el Diseñador y el Motor de Ejecución.
-- [ ] **Manual de Pruebas de Usuario:** Crear guía detallada de "End-to-End" para validación manual.
-- [ ] **Validación de UI/UX:** Revisión final de consistencia en el diseño Glassmorphism en todas las vistas.
-- [ ] **Hito de Aceptación:** Pausa de validación para corrección de bugs reportados por el usuario.
+- ✅ **Pruebas Automatizadas (Ciclos 2 y 3):** Implementar JUnit tests para el Diseñador y el Motor de Ejecución.
+- 🚧 **Manual de Pruebas de Usuario:** Crear guía detallada de "End-to-End" para validación manual.
+- 🚧 **Validación de UI/UX:** Revisión final de consistencia en el diseño Glassmorphism en todas las vistas.
+- 🚧 **Hito de Aceptación:** Pausa de validación para corrección de bugs reportados por el usuario.
 
 ---
 

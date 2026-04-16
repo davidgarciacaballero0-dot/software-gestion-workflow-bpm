@@ -44,7 +44,7 @@
           </div>
         </div>
 
-        <div class="event-snapshot" *ngIf="evento.snapshotDatos && (evento.snapshotDatos | keyvalue).length > 0">
+        <div class="event-snapshot" *ngIf="evento.snapshotDatos && (evento.snapshotDatos | keyvalue)?.length">
           <button class="btn-toggle-snapshot" (click)="evento.showSnapshot = !evento.showSnapshot">
             {{ evento.showSnapshot ? '🔼 Ocultar Datos' : '🔽 Ver Datos en este punto' }}
           </button>

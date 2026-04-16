@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
 import { Subject, Observable } from 'rxjs';
 import { Client, IMessage } from '@stomp/stompjs';
-import * as SockJS from 'sockjs-client';
+import * as SockJS_ from 'sockjs-client';
+const SockJS = (SockJS_ as any).default || SockJS_;
 
 export interface Notification {
   titulo: string;

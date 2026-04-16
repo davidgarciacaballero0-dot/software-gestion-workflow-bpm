@@ -1,13 +1,14 @@
-import { Component, signal } from '@angular/core';
-import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
-import { NotificationToastComponent } from './presentation/shared/notification-toast/notification-toast.component';
+import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, NotificationToastComponent],
-  templateUrl: './app.html',
-  styleUrl: './app.css'
+  standalone: true,
+  imports: [CommonModule],
+  template: `
+    <div style="background: red; color: white; padding: 50px; text-align: center; font-size: 30px;">
+      EL MOTOR DE ANGULAR HA ARRANCADO CORRECTAMENTE
+    </div>
+  `
 })
-export class App {
-  protected readonly title = signal('frontend-bpm');
-}
+export class App {}
