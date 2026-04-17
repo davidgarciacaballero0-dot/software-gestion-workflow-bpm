@@ -1,48 +1,61 @@
-<div class="catalog-container">
-  <header class="catalog-header">
-    <div class="header-text">
-      <h1>Catálogo de Procesos</h1>
-      <p>Selecciona un flujo de trabajo para iniciar un nuevo trámite operativo.</p>
+<div class="proc-catalog">
+  <header class="catalog-top-bar animate-fade-in">
+    <div class="title-group">
+      <h1>Catálogo de Operaciones</h1>
+      <p>Gestione y despliegue flujos de trabajo institucionales en tiempo real</p>
     </div>
-    <button class="btn btn-primary" (click)="cargarPoliticas()">🔄 Refrescar</button>
+    <div class="actions">
+      <button class="btn-premium glass" (click)="cargarPoliticas()" [disabled]="loading">
+        <span class="icon">🔄</span>
+        Sincronizar
+      </button>
+    </div>
   </header>
 
-  <div class="grid-catalog" *ngIf="!loading; else spinner">
-    <div *ngFor="let p of politicas" class="process-card">
-      <div class="card-status">
-        <span class="badge" [ngClass]="p.status">{{ p.status }}</span>
-        <span class="version">v{{ p.version }}</span>
+  <!-- Grid Layout -->
+  <div class="catalog-grid" *ngIf="!loading; else skeleton">
+    <div *ngFor="let p of politicas" class="proc-card glass shadow-premium-xl animate-fade-in">
+      <div class="card-badges">
+        <span class="status-chip" [ngClass]="p.status.toLowerCase()">{{ p.status }}</span>
+        <span class="version-tag">REL v{{ p.version }}</span>
       </div>
       
-      <div class="card-content">
+      <div class="card-main">
         <h3>{{ p.nombre }}</h3>
-        <p>{{ p.description || 'Sin descripción disponible.' }}</p>
+        <p>{{ p.description || 'Proceso operativo sin descripción técnica definida.' }}</p>
       </div>
 
-      <div class="card-footer">
-        <div class="stats">
-          <span>📍 {{ p.nodes.length }} Pasos</span>
+      <div class="card-stats">
+        <div class="stat-item">
+          <span class="label">NODOS</span>
+          <span class="value">{{ p.nodes.length }}</span>
         </div>
-        <button 
-          class="btn btn-action" 
-          [disabled]="p.status !== 'PUBLISHED'"
-          (click)="iniciarTramite(p)">
-          {{ p.status === 'PUBLISHED' ? '⚡ Iniciar Trámite' : 'No disponible' }}
-        </button>
+        <div class="stat-item">
+          <span class="label">CONEX.</span>
+          <span class="value">{{ p.edges.length }}</span>
+        </div>
       </div>
+
+      <button 
+        class="btn-premium btn-premium-primary start-btn" 
+        [disabled]="p.status !== 'PUBLISHED'"
+        (click)="iniciarTramite(p)">
+        {{ p.status === 'PUBLISHED' ? '⚡ Ejecutar Flujo' : 'No Disponible' }}
+      </button>
     </div>
   </div>
 
-  <ng-template #spinner>
-    <div class="loader-container">
-      <div class="spinner"></div>
-      <p>Cargando catálogo...</p>
+  <!-- Loading State -->
+  <ng-template #skeleton>
+    <div class="skeleton-grid">
+      <div *ngFor="let i of [1,2,3]" class="skeleton-card glass animate-pulse"></div>
     </div>
   </ng-template>
 
-  <div *ngIf="!loading && politicas.length === 0" class="empty-state">
-    <div class="empty-icon">📂</div>
-    <h3>No hay procesos disponibles</h3>
-    <p>Crea y publica políticas en el Diseñador para verlas aquí.</p>
+  <!-- Empty State -->
+  <div *ngIf="!loading && politicas.length === 0" class="not-found glass animate-fade-in">
+    <div class="huge-icon">📁</div>
+    <h3>Repositorio Vacío</h3>
+    <p>No se encontraron definiciones de procesos publicadas para su organización.</p>
   </div>
 </div>

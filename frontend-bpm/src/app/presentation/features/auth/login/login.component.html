@@ -1,40 +1,47 @@
-<div class="login-wrapper">
-  <div class="login-card">
-    
-    <!-- Cabecera Institucional -->
-    <div class="brand-header">
-      <div class="brand-icon">BPM</div>
-      <h2>Sistema de Gestión de Procesos</h2>
-      <p>Acceso restringido a personal autorizado</p>
+<div class="auth-page">
+  <div class="auth-box glass animate-fade-in shadow-premium-xl">
+    <div class="auth-header">
+      <div class="auth-logo">BPM</div>
+      <h1>Gestión de Procesos</h1>
+      <p>Acceso administrativo y operativo institucional</p>
     </div>
 
-    <!-- Alerta de Error -->
-    <div *ngIf="errorMessage" class="alert alert-error">
-      <strong>⚠ Alerta de Seguridad:</strong> {{ errorMessage }}
+    <!-- Feedback Message -->
+    <div *ngIf="errorMessage" class="error-toast glass">
+      <span class="icon">🚨</span>
+      <p>{{ errorMessage }}</p>
     </div>
 
-    <!-- Formulario de Acceso -->
-    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
-      
-      <div class="form-group">
-        <label for="email">Correo Electrónico Corporativo</label>
-        <input type="email" id="email" formControlName="email" class="form-control" autocomplete="username" placeholder="nomina@institucion.gob">
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="auth-form">
+      <div class="input-field">
+        <label>Correo Electrónico Corporativo</label>
+        <div class="input-wrapper">
+          <span class="icon">📧</span>
+          <input type="email" formControlName="email" placeholder="nombre@institucion.gob" autocomplete="email">
+        </div>
       </div>
 
-      <div class="form-group">
-        <label for="password">Contraseña de Sistema</label>
-        <input type="password" id="password" formControlName="password" class="form-control font-mono" autocomplete="current-password">
+      <div class="input-field">
+        <label>Contraseña Maestro</label>
+        <div class="input-wrapper">
+          <span class="icon">🔑</span>
+          <input type="password" formControlName="password" placeholder="••••••••" autocomplete="current-password">
+        </div>
       </div>
 
-      <button type="submit" class="btn btn-login" [disabled]="loginForm.invalid || isSubmitting">
+      <button type="submit" class="btn-premium btn-premium-primary w-full" [disabled]="loginForm.invalid || isSubmitting">
         <span *ngIf="isSubmitting" class="spinner"></span>
-        {{ isSubmitting ? 'Autenticando Sesión...' : 'Iniciar Sesión Segura' }}
+        {{ isSubmitting ? 'Validando Credenciales...' : 'Iniciar Sesión Segura' }}
       </button>
-
     </form>
 
-    <div class="footer-text">
-      Protegido por cifrado JWT + BCrypt &bull; Sesión Stateless
-    </div>
+    <footer class="auth-footer">
+      <p>Entorno Protegido &bull; © 2026 Sistema BPM</p>
+    </footer>
+  </div>
+  
+  <div class="background-decor">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
   </div>
 </div>

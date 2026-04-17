@@ -38,11 +38,11 @@ export class LoginComponent {
     this.authService.login(email, password).subscribe({
       next: (res) => {
         this.isSubmitting = false;
-        this.router.navigate(['/catalog']);
+        this.router.navigate(['/app/catalog']);
       },
       error: (err) => {
         this.isSubmitting = false;
-        this.errorMessage = 'Acceso denegado. Verifique sus credenciales institucionales.';
+        this.errorMessage = err.error?.message || 'Acceso denegado. Verifique sus credenciales.';
       }
     });
   }

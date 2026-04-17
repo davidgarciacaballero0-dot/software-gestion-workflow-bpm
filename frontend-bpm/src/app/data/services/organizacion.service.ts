@@ -9,7 +9,7 @@ import { Organizacion } from '../models/organizacion.model';
 export class OrganizacionService {
   private apiUrl = '/api/v1/organizaciones';
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   listarTodas(): Observable<Organizacion[]> {
     return this.http.get<Organizacion[]>(this.apiUrl);

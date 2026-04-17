@@ -7,13 +7,15 @@ import { InboxComponent } from './presentation/features/inbox/inbox.component';
 import { TramiteAtencionComponent } from './presentation/features/tramite-atencion/tramite-atencion.component';
 import { TramiteHistorialComponent } from './presentation/features/tramite-historial/tramite-historial.component';
 import { SupervisionComponent } from './presentation/features/supervision/supervision.component';
+import { authGuard, loginGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
-  { path: '', redirectTo: 'login', pathMatch: 'full' },
-  { path: 'login', component: LoginComponent },
+  { path: '', redirectTo: 'app', pathMatch: 'full' },
+  { path: 'login', component: LoginComponent, canActivate: [loginGuard] },
   {
     path: 'app',
     component: MainLayoutComponent,
+    canActivate: [authGuard],
     children: [
       { path: '', redirectTo: 'catalog', pathMatch: 'full' },
       { path: 'catalog', component: PoliticaListComponent },
@@ -24,5 +26,5 @@ export const routes: Routes = [
       { path: 'supervision', component: SupervisionComponent }
     ]
   },
-  { path: '**', redirectTo: 'login' }
+  { path: '**', redirectTo: 'app' }
 ];
