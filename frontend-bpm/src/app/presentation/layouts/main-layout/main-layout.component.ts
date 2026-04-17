@@ -241,7 +241,7 @@ export class MainLayoutComponent {
   authService = inject(AuthService);
 
   isAdmin() {
-    return this.authService.currentUser()?.idRol === 'ADMIN_SISTEMA';
+    return this.authService.currentUser()?.nombreRol === 'ADMIN';
   }
 
   isJefe() {

@@ -8,6 +8,7 @@ export interface AuthResponse {
   idRol: string;
   idOrganizacion: string;
   esJefe?: boolean;
+  nombreRol?: string;
 }
 
 export interface UserData {
@@ -15,6 +16,7 @@ export interface UserData {
   idRol: string;
   idOrganizacion: string;
   esJefe: boolean;
+  nombreRol: string;
 }
 
 @Injectable({
@@ -28,7 +30,7 @@ export class AuthService {
   // Signals for reactive state
   private _currentUser = signal<UserData | null>(null);
   public currentUser = computed(() => this._currentUser());
-  public isAuthenticated = computed(() => !!this.getToken());
+  public isAuthenticated = computed(() => !!this._currentUser());
 
   constructor(private http: HttpClient) {
     this.hydrate();
@@ -58,7 +60,8 @@ export class AuthService {
           nombre: response.nombre,
           idRol: response.idRol,
           idOrganizacion: response.idOrganizacion,
-          esJefe: response.esJefe || false
+          esJefe: response.esJefe || false,
+          nombreRol: response.nombreRol || ''
         };
 
         if (this.isBrowser()) {
