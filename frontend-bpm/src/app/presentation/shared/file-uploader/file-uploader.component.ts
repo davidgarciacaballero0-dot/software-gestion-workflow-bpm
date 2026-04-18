@@ -1,6 +1,7 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
+import { AuthService } from '../../../data/services/auth.service';
 
 @Component({
   selector: 'app-file-uploader',
@@ -71,7 +72,7 @@ import { HttpClient } from '@angular/common/http';
     @keyframes spin { to { transform: rotate(360deg); } }
   `]
 })
-export class FileUploaderComponent {
+export class FileUploaderComponent implements OnInit {
   @Input() fieldId!: string;
   @Input() tramiteId!: string;
   @Input() usuarioId: string = 'USER_MOCK_01';
@@ -81,7 +82,19 @@ export class FileUploaderComponent {
   fileName = '';
   uploadedFileId: string | null = null;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private authService: AuthService) {}
+
+  ngOnInit(): void {
+    if (this.usuarioId === 'USER_MOCK_01') {
+      const token = this.authService.getToken();
+      if (token) {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          this.usuarioId = payload.userId || '';
+        } catch (e) {}
+      }
+    }
+  }
 
   onFileSelected(event: any): void {
     const file: File = event.target.files[0];

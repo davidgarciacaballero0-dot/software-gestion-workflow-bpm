@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { DepartamentoService } from '../../../../data/services/departamento.service';
 import { Departamento } from '../../../../data/models/departamento.model';
+import { AuthService } from '../../../../data/services/auth.service';
 
 @Component({
   selector: 'app-departamento-view',
@@ -20,13 +21,13 @@ export class DepartamentoViewComponent implements OnInit {
   isSubmitting = false;
   loading = true;
 
-  constructor(private fb: FormBuilder, private depService: DepartamentoService) {}
+  constructor(private fb: FormBuilder, private depService: DepartamentoService, private authService: AuthService) {}
 
   ngOnInit(): void {
     if(!this.idOrganizacion) {
-      console.warn('UI Warning: Este sub-componente requiere recibir un idOrganizacion Padre.');
-      // Simulando un ID para renderizar la UI sin fallar si se carga aislado
-      this.idOrganizacion = 'MOCK_ID_FALLBACK'; 
+      console.warn('UI Warning: Este sub-componente requiere recibir un idOrganizacion Padre. Auto-resolviendo desde session...');
+      const user = this.authService.currentUser();
+      this.idOrganizacion = user?.idOrganizacion || '';
     }
     
     this.depForm = this.fb.group({

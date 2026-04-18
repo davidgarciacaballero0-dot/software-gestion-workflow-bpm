@@ -1,5 +1,7 @@
-import { Injectable } from '@angular/core';
+import { Injectable, Inject, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { Subject, Observable } from 'rxjs';
+import { AuthService } from './auth.service';
 import { Client, IMessage } from '@stomp/stompjs';
 import * as SockJS_ from 'sockjs-client';
 const SockJS = (SockJS_ as any).default || SockJS_;
@@ -17,8 +19,13 @@ export class NotificationService {
   private stompClient: Client | null = null;
   private notificationSubject = new Subject<Notification>();
 
-  constructor() {
-    this.initializeWebSocketConnection();
+  constructor(
+    private authService: AuthService,
+    @Inject(PLATFORM_ID) private platformId: Object
+  ) {
+    if (isPlatformBrowser(this.platformId)) {
+      this.initializeWebSocketConnection();
+    }
   }
 
   private initializeWebSocketConnection(): void {
@@ -33,8 +40,10 @@ export class NotificationService {
 
     this.stompClient.onConnect = (frame) => {
       console.log('Connected: ' + frame);
-      // Suscribirse a un departamento mock por ahora
-      this.subscribeToDepartment('dept_riesgos_01');
+      const user = this.authService.currentUser();
+      if (user && user.idDepartamento) {
+        this.subscribeToDepartment(user.idDepartamento);
+      }
     };
 
     this.stompClient.onStompError = (frame) => {

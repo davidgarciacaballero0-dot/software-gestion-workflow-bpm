@@ -2,6 +2,7 @@ import { Component, Input, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { UsuarioService } from '../../../../data/services/usuario.service';
 import { Usuario } from '../../../../data/models/usuario.model';
+import { AuthService } from '../../../../data/services/auth.service';
 
 @Component({
   selector: 'app-usuario-list',
@@ -17,14 +18,15 @@ export class UsuarioListComponent implements OnInit {
   usuarios: Usuario[] = [];
   loading = false;
 
-  constructor(private usuarioService: UsuarioService) {}
+  constructor(private usuarioService: UsuarioService, private authService: AuthService) {}
 
   ngOnInit(): void {
     if (this.idDepartamento) {
       this.cargarUsuarios();
     } else {
-      console.warn('UI Alert: Esperando asignación de Segmento Departamental para cargar personal.');
-      this.idDepartamento = 'MOCK_ID_FALLBACK';
+      console.warn('UI Alert: Esperando asignación de Segmento Departamental para cargar personal. Auto-resolving...');
+      const user = this.authService.currentUser();
+      this.idDepartamento = user?.idDepartamento || '';
       this.cargarUsuarios();
     }
   }

@@ -25,7 +25,7 @@ export class InboxComponent implements OnInit {
     private notificationService: NotificationService,
     private authService: AuthService,
     private router: Router
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     // Extract real IDs from JWT token
@@ -34,7 +34,7 @@ export class InboxComponent implements OnInit {
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));
         this.userId = payload.userId || '';
-      } catch (e) {}
+      } catch (e) { }
     }
 
     // Get departmentId from stored user data (if the user has one)
@@ -42,7 +42,7 @@ export class InboxComponent implements OnInit {
     this.deptId = user?.idDepartamento || '';
 
     this.switchTab('personal');
-    
+
     // Escuchar notificaciones para refrescar la bandeja en tiempo real
     this.notificationService.getNotifications().subscribe(() => {
       this.loadInbox();
@@ -57,8 +57,8 @@ export class InboxComponent implements OnInit {
   loadInbox(): void {
     this.loading = true;
     this.tramites = [];
-    
-    const obs = this.activeTab === 'personal' 
+
+    const obs = this.activeTab === 'personal'
       ? this.tramiteService.listarPorUsuario(this.userId)
       : this.tramiteService.listarPorDepartamento(this.deptId);
 

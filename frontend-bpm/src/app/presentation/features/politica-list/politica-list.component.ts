@@ -30,14 +30,27 @@ export class PoliticaListComponent implements OnInit {
   cargarPoliticas(): void {
     this.loading = true;
     const user = this.authService.currentUser();
-    const orgId = user?.idOrganizacion || '';
+    const orgId = user?.idOrganizacion || '69e3ae7d116741365db8477c';
+    console.log('Loading politicas for org:', orgId, user);
+    
+    // Safety timeout in case proxy hangs
+    const safetyTimer = setTimeout(() => {
+      console.warn('Safety timeout reached');
+      if (this.loading) {
+         this.loading = false;
+      }
+    }, 5000);
+
     this.politicaService.listarPorOrganizacion(orgId).subscribe({
       next: (data) => {
+        clearTimeout(safetyTimer);
         this.politicas = data;
         this.loading = false;
+        console.log('Politicas loaded:', data);
       },
       error: (err) => {
-        console.error(err);
+        clearTimeout(safetyTimer);
+        console.error('Error loading politicas:', err);
         this.loading = false;
       }
     });

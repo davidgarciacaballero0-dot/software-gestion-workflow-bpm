@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TramiteService } from '../../../data/services/tramite.service';
 import { PoliticaWorkflowService } from '../../../data/services/politica-workflow.service';
+import { AuthService } from '../../../data/services/auth.service';
 import { FileUploaderComponent } from '../../shared/file-uploader/file-uploader.component';
 
 @Component({
@@ -22,14 +23,25 @@ export class TramiteAtencionComponent implements OnInit {
   loading = true;
   submitting = false;
 
+  private userId = '';
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private tramiteService: TramiteService,
-    private politicaService: PoliticaWorkflowService
+    private politicaService: PoliticaWorkflowService,
+    private authService: AuthService
   ) {}
 
   ngOnInit(): void {
+    const token = this.authService.getToken();
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        this.userId = payload.userId || '';
+      } catch (e) {}
+    }
+
     const tramiteId = this.route.snapshot.paramMap.get('id');
     if (tramiteId) {
       this.cargarTramite(tramiteId);
@@ -97,7 +109,7 @@ export class TramiteAtencionComponent implements OnInit {
     
     const request = {
       idTramite: this.tramite.id,
-      idUsuarioAccion: 'USER_MOCK_01',
+      idUsuarioAccion: this.userId,
       datosFormulario: this.formData
     };
 

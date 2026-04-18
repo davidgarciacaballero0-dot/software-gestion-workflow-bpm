@@ -6,6 +6,7 @@ import { PoliticaWorkflow, WorkflowNode, WorkflowEdge, NodeType, PolicyStatus } 
 import { PoliticaWorkflowService } from '../../../data/services/politica-workflow.service';
 import { DepartamentoService } from '../../../data/services/departamento.service';
 import { Departamento } from '../../../data/models/departamento.model';
+import { AuthService } from '../../../data/services/auth.service';
 
 @Component({
   selector: 'app-politica-designer',
@@ -24,7 +25,7 @@ export class PoliticaDesignerComponent implements OnInit {
 
   // CU-18 State
   currentPolicy: PoliticaWorkflow = {
-    idOrganizacion: 'MOCK_ORG_ID',
+    idOrganizacion: '',
     nombre: 'Nueva Política de Crédito',
     version: '1.0',
     status: PolicyStatus.DRAFT,
@@ -34,12 +35,17 @@ export class PoliticaDesignerComponent implements OnInit {
 
   constructor(
     private workflowService: PoliticaWorkflowService,
-    private depService: DepartamentoService
+    private depService: DepartamentoService,
+    private authService: AuthService
   ) {}
 
   ngOnInit(): void {
+    const user = this.authService.currentUser();
+    const orgId = user?.idOrganizacion || '';
+    this.currentPolicy.idOrganizacion = orgId;
+
     // Cargar departamentos para las USER_TASKS
-    this.depService.listarPorOrganizacion('MOCK_ORG_ID').subscribe({
+    this.depService.listarPorOrganizacion(orgId).subscribe({
       next: (data: Departamento[]) => {
         this.departamentos = data;
       },
