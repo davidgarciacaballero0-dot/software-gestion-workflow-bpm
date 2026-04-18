@@ -10,7 +10,7 @@ import { AuthService } from '../../../data/services/auth.service';
   template: `
     <div class="app-layout">
       <!-- Sidebar de Navegación -->
-      <aside class="sidebar-container glass">
+      <aside class="sidebar-container glass-premium">
         <div class="sidebar-header">
           <div class="logo-box">BPM</div>
           <div class="brand-text">
@@ -39,7 +39,7 @@ import { AuthService } from '../../../data/services/auth.service';
         </nav>
 
         <div class="sidebar-footer">
-          <div class="user-profile-pill glass" *ngIf="authService.currentUser() as user">
+          <div class="user-profile-pill monolith-surface" *ngIf="authService.currentUser() as user">
             <div class="avatar-gradient">
               {{ user.nombre.charAt(0).toUpperCase() }}
             </div>
@@ -58,7 +58,7 @@ import { AuthService } from '../../../data/services/auth.service';
 
       <!-- Main Workspace -->
       <main class="workspace-viewport">
-        <header class="workspace-header glass">
+        <header class="workspace-header glass-premium shadow-ambient">
           <div class="header-left">
             <span class="breadcrumb">Sistema</span>
             <span class="separator">/</span>
@@ -79,20 +79,23 @@ import { AuthService } from '../../../data/services/auth.service';
     .app-layout {
       display: flex;
       height: 100vh;
-      background: var(--bg-dark);
+      background: var(--surface);
       overflow: hidden;
+      font-family: 'Inter', sans-serif;
     }
 
-    /* Sidebar Refined Styles */
+    /* Sidebar Refined Styles - Orchestrated Monolith */
     .sidebar-container {
       width: 280px;
       height: 100%;
-      border-right: 1px solid var(--border);
+      background: var(--surface-container-low);
+      /* "No-Line" rule: Removed border-right */
       display: flex;
       flex-direction: column;
       padding: 1.5rem;
       z-index: 50;
       transition: width 0.3s ease;
+      box-shadow: 1px 0 10px rgba(7, 2, 53, 0.03); /* Subtle lift */
     }
 
     .sidebar-header {
@@ -106,18 +109,18 @@ import { AuthService } from '../../../data/services/auth.service';
     .logo-box {
       width: 44px;
       height: 44px;
-      background: linear-gradient(135deg, var(--primary), #a855f7);
-      border-radius: 12px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-container));
+      border-radius: 0.5rem; /* rounded-lg */
       display: flex;
       align-items: center;
       justify-content: center;
-      font-weight: 800;
+      font-weight: 700;
       color: white;
-      box-shadow: 0 8px 16px rgba(99, 102, 241, 0.3);
+      box-shadow: var(--shadow-ambient);
       font-size: 0.9rem;
     }
 
-    .brand-text h2 { font-size: 1.1rem; font-weight: 700; margin: 0; color: #fff; }
+    .brand-text h2 { font-size: 1.1rem; font-weight: 600; margin: 0; color: var(--primary); }
     .brand-text span { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
 
     .sidebar-nav {
@@ -132,24 +135,24 @@ import { AuthService } from '../../../data/services/auth.service';
       align-items: center;
       gap: 0.85rem;
       padding: 0.8rem 1rem;
-      border-radius: 10px;
+      border-radius: 0.5rem; /* rounded-lg */
       color: var(--text-muted);
       text-decoration: none;
-      font-size: 0.9rem;
+      font-size: 0.875rem; /* body-md */
       font-weight: 500;
       transition: all 0.2s;
     }
 
     .nav-item:hover {
-      background: hsla(0, 0%, 100%, 0.05);
-      color: #fff;
+      background: var(--surface-bright);
+      color: var(--primary-container);
       transform: translateX(4px);
     }
 
     .nav-item.active {
-      background: hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.15);
+      background: var(--surface-container-lowest);
       color: var(--primary);
-      box-shadow: inset 0 0 0 1px hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.2);
+      box-shadow: var(--shadow-ambient);
     }
 
     /* Main Content Styles */
@@ -159,6 +162,7 @@ import { AuthService } from '../../../data/services/auth.service';
       flex-direction: column;
       position: relative;
       overflow: hidden;
+      background: var(--surface);
     }
 
     .workspace-header {
@@ -167,26 +171,28 @@ import { AuthService } from '../../../data/services/auth.service';
       display: flex;
       align-items: center;
       justify-content: space-between;
-      border-bottom: 1px solid var(--border);
+      /* "No-Line" rule: Removed border-bottom, relying on glass and shadow-ambient */
+      z-index: 40;
     }
 
     .header-left { display: flex; align-items: center; gap: 0.75rem; font-size: 0.85rem; }
-    .breadcrumb { color: var(--text-muted); }
-    .separator { color: var(--border); }
-    .current-page { color: #fff; font-weight: 600; }
+    .breadcrumb { color: var(--text-muted); font-weight: 500; }
+    .separator { color: var(--outline-variant); }
+    .current-page { color: var(--primary); font-weight: 600; }
 
     .content-container {
       flex: 1;
       padding: 2rem;
       overflow-y: auto;
-      background: radial-gradient(circle at top right, hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.03), transparent 40%);
+      background: radial-gradient(circle at top right, hsla(239, 84%, 95%, 0.5), transparent 40%);
     }
 
     /* User Profile Footer */
     .sidebar-footer {
       margin-top: auto;
       padding-top: 1.5rem;
-      border-top: 1px solid var(--border);
+      /* "No-Line" rule: Ghost border instead of solid */
+      border-top: 1px solid rgba(200, 197, 208, 0.3); /* outline-variant */
       display: flex;
       flex-direction: column;
       gap: 1rem;
@@ -197,24 +203,25 @@ import { AuthService } from '../../../data/services/auth.service';
       align-items: center;
       gap: 0.75rem;
       padding: 0.75rem;
-      border-radius: 12px;
+      /* Using global monolith-surface class logic */
+      box-shadow: 0 2px 8px rgba(7, 2, 53, 0.04);
     }
 
     .avatar-gradient {
       width: 38px;
       height: 38px;
-      background: linear-gradient(45deg, var(--primary), var(--accent));
-      border-radius: 10px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-container));
+      border-radius: 0.5rem;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-weight: 700;
+      font-weight: 600;
       color: #fff;
     }
 
     .user-details { display: flex; flex-direction: column; line-height: 1.2; }
-    .user-details .name { font-size: 0.85rem; font-weight: 600; color: #fff; }
-    .user-details .role { font-size: 0.7rem; color: var(--text-muted); }
+    .user-details .name { font-size: 0.85rem; font-weight: 600; color: var(--primary); }
+    .user-details .role { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;}
 
     .logout-action {
       display: flex;
@@ -222,9 +229,9 @@ import { AuthService } from '../../../data/services/auth.service';
       gap: 0.75rem;
       padding: 0.75rem;
       background: transparent;
-      border: 1px solid hsla(0, 72%, 51%, 0.2);
-      border-radius: 10px;
-      color: #f87171;
+      border: 1px solid rgba(186, 26, 26, 0.2); /* error color tinted */
+      border-radius: 0.5rem;
+      color: #ba1a1a;
       font-size: 0.85rem;
       font-weight: 600;
       cursor: pointer;
@@ -232,8 +239,7 @@ import { AuthService } from '../../../data/services/auth.service';
     }
 
     .logout-action:hover {
-      background: hsla(0, 72%, 51%, 0.1);
-      border-color: #f87171;
+      background: hsla(0, 100%, 96%, 1); /* error_container approx */
     }
   `]
 })

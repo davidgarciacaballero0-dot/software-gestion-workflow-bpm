@@ -26,7 +26,7 @@
     </div>
 
     <div *ngIf="!loading && tramites.length > 0" class="tramite-list">
-      <div *ngFor="let t of tramites" class="tramite-card shadow-premium">
+      <div *ngFor="let t of tramites" class="tramite-card monolith-surface shadow-ambient animate-fade-in">
         <div class="card-left">
           <div class="code-tag">{{ t.codigoTramite }}</div>
           <h3>{{ t.nombrePolitica || 'Tipo de Trámite' }}</h3>

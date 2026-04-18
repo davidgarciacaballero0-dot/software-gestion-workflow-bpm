@@ -28,4 +28,5 @@ COPY --from=builder /app/target/*.jar app.jar
 EXPOSE 8080
 
 # Punto de entrada
+# Punto de entrada optimizado para usar variables de entorno
 ENTRYPOINT ["java", "-jar", "app.jar"]

@@ -8,24 +8,24 @@ import { Rol } from '../../../../data/models/rol.model';
   standalone: true,
   imports: [CommonModule],
   template: `
-  <div class="list-card" style="font-family: 'Inter', sans-serif; padding: 2.5rem; background: #fff; border: 1px solid #cbd5e1; border-radius: 6px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03); max-width: 800px; margin: 2rem auto;">
-    <h3 style="color: #0f172a; border-bottom: 2px solid #f1f5f9; padding-bottom: 1.25rem; font-weight: 700;">Políticas de Acceso Globales (Roles)</h3>
+  <div class="list-card monolith-surface shadow-ambient animate-fade-in" style="font-family: 'Inter', sans-serif; padding: 2.5rem; max-width: 800px; margin: 2rem auto;">
+    <h3 style="color: var(--primary); padding-bottom: 1.25rem; font-weight: 600; font-size: 1.125rem; border-bottom: 1px solid rgba(200,197,208,0.3);">Políticas de Acceso Globales (Roles)</h3>
     <table style="width: 100%; border-collapse: collapse; margin-top: 1.5rem;">
       <thead>
-        <tr style="background: #f8fafc; color: #475569; text-align: left; text-transform: uppercase; font-size: 0.75rem;">
-          <th style="padding: 1rem; border-bottom: 2px solid #e2e8f0; font-weight: 700;">Identificador de Seguridad</th>
-          <th style="padding: 1rem; border-bottom: 2px solid #e2e8f0; font-weight: 700;">Matriz de Permisos Habilitados</th>
+        <tr style="background: var(--surface-container-highest); color: var(--primary-container); text-align: left; text-transform: uppercase; font-size: 0.6875rem;">
+          <th style="padding: 1rem; font-weight: 600;">Identificador de Seguridad</th>
+          <th style="padding: 1rem; font-weight: 600;">Matriz de Permisos Habilitados</th>
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let r of roles" style="border-bottom: 1px solid #f1f5f9;">
-          <td style="padding: 1.25rem 1rem; font-weight: 600; color: #1e293b;">{{ r.nombre }}</td>
-          <td style="padding: 1.25rem 1rem; font-family: monospace; color: #64748b; font-size: 0.9rem;">
-            <span *ngFor="let p of r.permisos" style="display:inline-block; padding: 0.2rem 0.5rem; background:#f1f5f9; border:1px solid #cbd5e1; border-radius:4px; margin-right: 0.5rem; margin-bottom: 0.2rem;">{{p}}</span>
+        <tr *ngFor="let r of roles" style="border-bottom: 1px solid rgba(200,197,208,0.15);">
+          <td style="padding: 1.25rem 1rem; font-weight: 600; color: var(--text-main); font-size: 0.875rem;">{{ r.nombre }}</td>
+          <td style="padding: 1.25rem 1rem; font-family: 'SFMono-Regular', Consolas, monospace; color: var(--text-muted); font-size: 0.75rem;">
+            <span *ngFor="let p of r.permisos" style="display:inline-block; padding: 0.25rem 0.6rem; background: rgba(196,193,251,0.2); color: var(--primary-container); border:1px solid rgba(196,193,251,0.4); border-radius:0.3rem; margin-right: 0.5rem; margin-bottom: 0.25rem; font-weight: 600;">{{p}}</span>
           </td>
         </tr>
         <tr *ngIf="roles.length === 0">
-           <td colspan="2" style="padding: 3rem; text-align: center; color: #64748b;">No existen directivas activas en el cluster.</td>
+           <td colspan="2" style="padding: 3rem; text-align: center; color: var(--text-muted); font-size: 0.875rem;">No existen directivas activas en el cluster.</td>
         </tr>
       </tbody>
     </table>

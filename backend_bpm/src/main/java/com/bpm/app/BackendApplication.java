@@ -10,6 +10,10 @@ import org.springframework.data.mongodb.repository.config.EnableMongoRepositorie
 public class BackendApplication {
 
 	public static void main(String[] args) {
+		// Forzado de configuración para entorno Docker si no se detecta la propiedad
+		if (System.getProperty("spring.data.mongodb.uri") == null && System.getenv("SPRING_DATA_MONGODB_URI") == null) {
+			System.setProperty("spring.data.mongodb.uri", "mongodb://mongodb_bpm:27017/bpm_workflow");
+		}
 		SpringApplication.run(BackendApplication.class, args);
 	}
 

@@ -20,7 +20,7 @@
     </div>
   </header>
 
-  <section class="supervision-content glass-card">
+  <section class="supervision-content monolith-surface shadow-ambient animate-fade-in">
     <div *ngIf="loading" class="loader-box">
       <div class="spinner"></div>
     </div>
@@ -63,7 +63,7 @@
 
   <!-- MODAL DE INTERVENCIÓN -->
   <div class="modal-overlay" *ngIf="showModal" (click)="cerrarModal()">
-    <div class="modal-content glass-card animate-zoom" (click)="$event.stopPropagation()">
+    <div class="modal-content monolith-surface shadow-ambient animate-zoom" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h2>🛠️ Intervención Administrativa</h2>
         <button class="close-btn" (click)="cerrarModal()">✕</button>

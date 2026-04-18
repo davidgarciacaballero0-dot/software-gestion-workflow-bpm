@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TramiteService } from '../../../data/services/tramite.service';
+import { AuthService } from '../../../data/services/auth.service';
 
 @Component({
   selector: 'app-supervision',
@@ -14,8 +15,8 @@ export class SupervisionComponent implements OnInit {
   tramites: any[] = [];
   loading = false;
   
-  // Mock Dept ID for the Boss
-  mockDeptId = 'dept_riesgos_01';
+  private deptId = '';
+  private userId = '';
 
   // Stats
   stats = {
@@ -31,18 +32,33 @@ export class SupervisionComponent implements OnInit {
     nuevoNodoId: '',
     nuevoDepartamentoId: '',
     motivo: '',
-    usuarioInterventorId: 'JEFE_MOCK_01'
+    usuarioInterventorId: ''
   };
 
-  constructor(private tramiteService: TramiteService) {}
+  constructor(
+    private tramiteService: TramiteService,
+    private authService: AuthService
+  ) {}
 
   ngOnInit(): void {
+    // Extract real IDs from JWT and session
+    const token = this.authService.getToken();
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        this.userId = payload.userId || '';
+      } catch (e) {}
+    }
+    const user = this.authService.currentUser();
+    this.deptId = user?.idDepartamento || '';
+    this.intervencion.usuarioInterventorId = this.userId;
+
     this.cargarDatos();
   }
 
   cargarDatos(): void {
     this.loading = true;
-    this.tramiteService.listarSupervision(this.mockDeptId).subscribe({
+    this.tramiteService.listarSupervision(this.deptId).subscribe({
       next: (data) => {
         this.tramites = data;
         this.calcularStats();

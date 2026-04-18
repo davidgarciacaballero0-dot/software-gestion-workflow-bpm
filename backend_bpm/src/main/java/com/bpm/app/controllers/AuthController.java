@@ -65,7 +65,8 @@ public class AuthController {
                 usuario.getIdRol(),
                 usuario.getIdOrganizacion(),
                 esJefe,
-                nombreRol);
+                nombreRol,
+                usuario.getIdDepartamento());
 
         return ResponseEntity.ok(response);
     }

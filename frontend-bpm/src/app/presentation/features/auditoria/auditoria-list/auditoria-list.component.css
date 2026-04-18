@@ -1,86 +1,90 @@
-/* BITÁCORA DE AUDITORÍA - ESTILO FORENSE / SYSLOG CORPORATIVO */
+/* BITÁCORA DE AUDITORÍA - THE ORCHESTRATED MONOLITH */
 .audit-container {
-  padding: 2.5rem 3.5rem;
-  font-family: 'Inter', 'Segoe UI', sans-serif;
-  background-color: #f8fafc;
-  min-height: 100vh;
+  font-family: 'Inter', -apple-system, sans-serif;
+  height: 100%;
 }
 
 .header { margin-bottom: 2rem; }
 
 .page-title {
-  color: #0f172a;
-  font-size: 1.75rem;
-  font-weight: 700;
+  color: var(--primary);
+  font-size: 1.75rem; /* headline-md */
+  font-weight: 600;
   margin: 0;
+  letter-spacing: -0.02em;
 }
 
 .page-subtitle {
-  color: #64748b;
-  font-size: 0.95rem;
-  margin-top: 0.4rem;
+  color: var(--text-muted);
+  font-size: 0.875rem; /* body-md */
+  margin-top: 0.25rem;
 }
 
+/* Base surface for monolith look overriden by `.monolith-surface` global if needed, preserving specific card paddings */
 .grid-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.04);
   overflow: hidden;
+  padding: 1rem 0;
 }
 
 .audit-table { width: 100%; border-collapse: collapse; }
 
 .audit-table th {
-  background: #0f172a; /* Cabecera oscura estilo terminal de logs */
-  color: #e2e8f0;
+  background: var(--surface-container-highest); /* No dark terminal, use surface shifts */
+  color: var(--primary-container);
   padding: 0.85rem 1.5rem;
   text-align: left;
-  font-size: 0.72rem;
+  font-size: 0.6875rem; /* label-sm */
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.05em;
   font-weight: 600;
+  /* Rule: No-Line, so no borders */
 }
 
 .audit-table td {
   padding: 1rem 1.5rem;
-  color: #334155;
-  border-bottom: 1px solid #f1f5f9;
-  font-size: 0.9rem;
+  color: var(--text-main);
+  /* Rule: No-Line, replaced by zebra striping or spacing */
+  border-bottom: none;
+  font-size: 0.875rem;
+}
+
+/* Tonal shift instead of lines for rows */
+.audit-table tbody tr:nth-child(even) {
+  background-color: var(--surface-container-low);
 }
 
 .audit-table tbody tr:hover {
-  background-color: #fffbeb; /* Highlight amarillo forense */
+  background-color: var(--surface-bright); /* Interaction layer */
 }
 
-.font-mono { font-family: 'SFMono-Regular', Consolas, monospace; font-size: 0.85rem; }
-.font-strong { font-weight: 600; color: #1e293b; }
-.text-muted { color: #64748b; }
+.font-mono { font-family: 'SFMono-Regular', Consolas, monospace; font-size: 0.8rem; }
+.font-strong { font-weight: 600; color: var(--primary); }
+.text-muted { color: var(--text-muted); }
 
 .badge-action {
   display: inline-block;
-  padding: 0.3rem 0.65rem;
-  background: #f1f5f9;
-  color: #334155;
-  border: 1px solid #cbd5e1;
-  border-radius: 4px;
-  font-size: 0.78rem;
-  font-family: monospace;
+  padding: 0.25rem 0.6rem;
+  background: rgba(196, 193, 251, 0.2); /* primary_fixed_dim very faded */
+  color: var(--primary-container);
+  border-radius: 0.3rem;
+  font-size: 0.75rem;
+  font-family: 'SFMono-Regular', Consolas, monospace;
   font-weight: 600;
+  border: 1px solid rgba(196, 193, 251, 0.4); /* Ghost border */
 }
 
 .empty-state, .loading-state {
   text-align: center;
   padding: 4rem;
-  color: #64748b;
+  color: var(--text-muted);
 }
 
 .spinner {
   display: inline-block;
   width: 1.2rem;
   height: 1.2rem;
-  border: 2px solid #cbd5e1;
-  border-top-color: #3b82f6;
+  border: 2px solid var(--outline-variant);
+  border-top-color: var(--primary);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
   margin-right: 0.5rem;

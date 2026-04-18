@@ -12,4 +12,5 @@ public class AuthResponseDTO {
     private String idOrganizacion;
     private boolean esJefe; // CU-17
     private String nombreRol;
+    private String idDepartamento;
 }

@@ -1,5 +1,5 @@
 <div class="auth-page">
-  <div class="auth-box glass animate-fade-in shadow-premium-xl">
+  <div class="auth-box monolith-surface animate-fade-in shadow-ambient">
     <div class="auth-header">
       <div class="auth-logo">BPM</div>
       <h1>Gestión de Procesos</h1>
@@ -7,7 +7,7 @@
     </div>
 
     <!-- Feedback Message -->
-    <div *ngIf="errorMessage" class="error-toast glass">
+    <div *ngIf="errorMessage" class="error-toast ghost-border">
       <span class="icon">🚨</span>
       <p>{{ errorMessage }}</p>
     </div>
@@ -38,10 +38,5 @@
     <footer class="auth-footer">
       <p>Entorno Protegido &bull; © 2026 Sistema BPM</p>
     </footer>
-  </div>
-  
-  <div class="background-decor">
-    <div class="orb orb-1"></div>
-    <div class="orb orb-2"></div>
   </div>
 </div>

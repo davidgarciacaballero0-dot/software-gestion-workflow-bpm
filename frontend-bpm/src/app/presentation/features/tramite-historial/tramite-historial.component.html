@@ -1,4 +1,4 @@
-<div class="historial-container" *ngIf="!loading; else loadingState">
+<div class="historial-container animate-fade-in" *ngIf="!loading; else loadingState">
   
   <header class="historial-header">
     <button class="btn btn-glass" (click)="volver()">← Volver</button>
@@ -19,7 +19,7 @@
         <span class="marker-icon">{{ getEventIcon(evento.tipoEvento) }}</span>
       </div>
       
-      <div class="timeline-content glass-card animate-slide-in">
+      <div class="timeline-content monolith-surface shadow-ambient animate-slide-in">
         <div class="event-header">
           <span class="event-type" [style.color]="getEventColor(evento.tipoEvento)">
             {{ evento.tipoEvento }}

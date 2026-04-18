@@ -5,7 +5,7 @@
       <p>Gestione y despliegue flujos de trabajo institucionales en tiempo real</p>
     </div>
     <div class="actions">
-      <button class="btn-premium glass" (click)="cargarPoliticas()" [disabled]="loading">
+      <button class="btn-premium btn-premium-primary" (click)="cargarPoliticas()" [disabled]="loading">
         <span class="icon">🔄</span>
         Sincronizar
       </button>
@@ -14,7 +14,7 @@
 
   <!-- Grid Layout -->
   <div class="catalog-grid" *ngIf="!loading; else skeleton">
-    <div *ngFor="let p of politicas" class="proc-card glass shadow-premium-xl animate-fade-in">
+    <div *ngFor="let p of politicas" class="proc-card monolith-surface shadow-ambient animate-fade-in">
       <div class="card-badges">
         <span class="status-chip" [ngClass]="p.status.toLowerCase()">{{ p.status }}</span>
         <span class="version-tag">REL v{{ p.version }}</span>
@@ -48,12 +48,12 @@
   <!-- Loading State -->
   <ng-template #skeleton>
     <div class="skeleton-grid">
-      <div *ngFor="let i of [1,2,3]" class="skeleton-card glass animate-pulse"></div>
+      <div *ngFor="let i of [1,2,3]" class="skeleton-card monolith-surface shadow-ambient animate-pulse"></div>
     </div>
   </ng-template>
 
   <!-- Empty State -->
-  <div *ngIf="!loading && politicas.length === 0" class="not-found glass animate-fade-in">
+  <div *ngIf="!loading && politicas.length === 0" class="not-found monolith-surface animate-fade-in">
     <div class="huge-icon">📁</div>
     <h3>Repositorio Vacío</h3>
     <p>No se encontraron definiciones de procesos publicadas para su organización.</p>

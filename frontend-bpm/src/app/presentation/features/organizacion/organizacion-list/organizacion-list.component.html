@@ -1,14 +1,14 @@
-<div class="dashboard-container">
+<div class="dashboard-container animate-fade-in">
   <div class="header">
-    <h1 class="page-title">Gestión de Organizaciones (Tenants)</h1>
-    <p class="page-subtitle">Listado corporativo de instituciones interconectadas al Core BPM.</p>
+    <h1 class="page-title">Gestión de Organizaciones</h1>
+    <p class="page-subtitle">Tenants y clientes interconectados al Core BPM.</p>
   </div>
 
   <div class="actions-bar">
-    <button class="btn btn-primary">+ Nueva Organización</button>
+    <button class="btn-premium btn-premium-primary">+ Nueva Organización</button>
   </div>
 
-  <div class="grid-card">
+  <div class="grid-card monolith-surface shadow-ambient">
     <div *ngIf="loading" class="loading-state">
       <span class="spinner"></span> Sincronizando datos estructurados...
     </div>

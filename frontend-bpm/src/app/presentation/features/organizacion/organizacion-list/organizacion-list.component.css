@@ -1,9 +1,6 @@
-/* STYLES: SAP CORPORATE AESTHETIC - LIGHT MODE */
+/* STYLES: THE ORCHESTRATED MONOLITH */
 .dashboard-container {
-  padding: 2.5rem 3.5rem;
-  font-family: 'Inter', 'Segoe UI', Roboto, sans-serif;
-  background-color: #f8fafc; /* Gris extra claro para oficina iluminada */
-  min-height: 100vh;
+  height: 100%;
 }
 
 .header {
@@ -11,17 +8,17 @@
 }
 
 .page-title {
-  color: #0f172a;
-  font-size: 1.85rem;
-  font-weight: 700;
+  color: var(--primary);
+  font-size: 1.75rem; /* headline-md */
+  font-weight: 600;
   letter-spacing: -0.02em;
   margin: 0;
 }
 
 .page-subtitle {
-  color: #64748b;
-  margin-top: 0.4rem;
-  font-size: 0.95rem;
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
   font-weight: 400;
 }
 
@@ -31,33 +28,10 @@
   margin-bottom: 1.5rem;
 }
 
-.btn {
-  padding: 0.65rem 1.4rem;
-  border-radius: 4px;
-  font-weight: 600;
-  cursor: pointer;
-  border: none;
-  font-size: 0.9rem;
-  transition: all 0.2s ease;
-}
-
-.btn-primary {
-  background-color: #1e293b; /* Azul Marino / Pizarra muy oscuro */
-  color: #ffffff;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-}
-
-.btn-primary:hover {
-  background-color: #0f172a;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.15);
-}
-
+/* global btn used */
 .grid-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); /* Sombra difusa y elegante */
   overflow: hidden;
+  padding: 1rem 0;
 }
 
 .corporate-table {
@@ -65,30 +39,34 @@
   border-collapse: collapse;
 }
 
-/* Cabecera estructurada típica de software financiero */
+/* Cabecera sin líneas duras */
 .corporate-table th {
-  background-color: #f1f5f9;
-  color: #475569;
+  background-color: var(--surface-container-highest);
+  color: var(--primary-container);
   text-align: left;
   padding: 1rem 1.75rem;
-  font-size: 0.75rem;
+  font-size: 0.6875rem; /* label-sm */
   text-transform: uppercase;
   letter-spacing: 0.05rem;
-  border-bottom: 2px solid #e2e8f0;
-  font-weight: 700;
+  font-weight: 600;
+  /* Rule: No-Line */
 }
 
 .corporate-table td {
   padding: 1.25rem 1.75rem;
-  color: #334155;
-  border-bottom: 1px solid #f1f5f9;
-  font-size: 0.92rem;
+  color: var(--text-main);
+  border-bottom: none;
+  font-size: 0.875rem;
   vertical-align: middle;
 }
 
-/* Efecto hover muy rígido sin deformar Layout */
+/* Zebra / tonal highlight */
+.table-row-interactive:nth-child(even) {
+  background-color: var(--surface-container-low);
+}
+
 .table-row-interactive:hover {
-  background-color: #f8fafc;
+  background-color: var(--surface-bright);
 }
 
 .font-mono {
@@ -96,55 +74,55 @@
 }
 
 .text-muted {
-  color: #94a3b8;
+  color: var(--text-muted);
 }
 
 .font-strong {
   font-weight: 600;
-  color: #1e293b;
+  color: var(--primary);
 }
 
 .badge {
-  padding: 0.35rem 0.75rem;
-  border-radius: 16px;
+  padding: 0.25rem 0.6rem;
+  border-radius: 0.3rem;
   font-size: 0.75rem;
-  font-weight: 700;
+  font-weight: 600;
   display: inline-block;
 }
 
 .badge-success {
-  background-color: #ecfdf5;
-  color: #059669;
-  border: 1px solid #a7f3d0;
+  background-color: rgba(196, 193, 251, 0.2); /* primary_fixed_dim background approx */
+  color: var(--primary-container);
+  border: 1px solid rgba(196, 193, 251, 0.4);
 }
 
 .btn-icon {
   background: transparent;
-  color: #3b82f6; /* Accent link */
+  color: var(--primary); 
   border: none;
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   font-weight: 600;
 }
 
 .btn-icon:hover {
-  color: #2563eb;
+  color: var(--primary-container);
   text-decoration: underline;
 }
 
 .loading-state, .empty-state {
   padding: 4rem;
   text-align: center;
-  color: #64748b;
-  font-size: 1rem;
+  color: var(--text-muted);
+  font-size: 0.875rem;
 }
 
 .spinner {
   display: inline-block;
   width: 1.2rem;
   height: 1.2rem;
-  border: 2px solid #e2e8f0;
-  border-top-color: #3b82f6;
+  border: 2px solid var(--outline-variant);
+  border-top-color: var(--primary);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
   margin-right: 0.75rem;

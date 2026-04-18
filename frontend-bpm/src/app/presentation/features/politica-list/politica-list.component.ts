@@ -29,7 +29,9 @@ export class PoliticaListComponent implements OnInit {
 
   cargarPoliticas(): void {
     this.loading = true;
-    this.politicaService.listarPorOrganizacion('MOCK_ORG_ID').subscribe({
+    const user = this.authService.currentUser();
+    const orgId = user?.idOrganizacion || '';
+    this.politicaService.listarPorOrganizacion(orgId).subscribe({
       next: (data) => {
         this.politicas = data;
         this.loading = false;
@@ -47,9 +49,19 @@ export class PoliticaListComponent implements OnInit {
     const user = this.authService.currentUser();
     if (!user) return;
 
+    // Extract userId from JWT token
+    const token = this.authService.getToken();
+    let userId = user.nombre;
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        userId = payload.userId || user.nombre;
+      } catch (e) {}
+    }
+
     const request: StartProcedureRequestDTO = {
       idPolitica: politica.id,
-      idUsuarioSolicitante: user.nombre, // En un sistema real usaríamos el ID único
+      idUsuarioSolicitante: userId,
       datosIniciales: {
         timestamp_inicio: new Date().toISOString(),
         procedencia: 'Front-End BPM'

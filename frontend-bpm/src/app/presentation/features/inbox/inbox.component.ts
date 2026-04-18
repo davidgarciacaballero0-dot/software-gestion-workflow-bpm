@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { TramiteService } from '../../../data/services/tramite.service';
 import { NotificationService } from '../../../data/services/notification.service';
+import { AuthService } from '../../../data/services/auth.service';
 
 @Component({
   selector: 'app-inbox',
@@ -16,17 +17,30 @@ export class InboxComponent implements OnInit {
   tramites: any[] = [];
   loading = false;
 
-  // Mock IDs (In production these come from a Session/Auth service)
-  mockUserId = 'USER_MOCK_01';
-  mockDeptId = 'dept_riesgos_01';
+  private userId = '';
+  private deptId = '';
 
   constructor(
     private tramiteService: TramiteService,
     private notificationService: NotificationService,
+    private authService: AuthService,
     private router: Router
   ) {}
 
   ngOnInit(): void {
+    // Extract real IDs from JWT token
+    const token = this.authService.getToken();
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        this.userId = payload.userId || '';
+      } catch (e) {}
+    }
+
+    // Get departmentId from stored user data (if the user has one)
+    const user = this.authService.currentUser();
+    this.deptId = user?.idDepartamento || '';
+
     this.switchTab('personal');
     
     // Escuchar notificaciones para refrescar la bandeja en tiempo real
@@ -45,8 +59,8 @@ export class InboxComponent implements OnInit {
     this.tramites = [];
     
     const obs = this.activeTab === 'personal' 
-      ? this.tramiteService.listarPorUsuario(this.mockUserId)
-      : this.tramiteService.listarPorDepartamento(this.mockDeptId);
+      ? this.tramiteService.listarPorUsuario(this.userId)
+      : this.tramiteService.listarPorDepartamento(this.deptId);
 
     obs.subscribe({
       next: (data) => {
@@ -61,11 +75,11 @@ export class InboxComponent implements OnInit {
   }
 
   atenderTramite(tramiteId: string): void {
-    this.router.navigate(['/tramite/atencion', tramiteId]);
+    this.router.navigate(['/app/tramite/atencion', tramiteId]);
   }
 
   verHistorial(tramiteId: string): void {
-    this.router.navigate(['/tramite/historial', tramiteId]);
+    this.router.navigate(['/app/tramite/historial', tramiteId]);
   }
 
   formatDate(dateStr: string): string {

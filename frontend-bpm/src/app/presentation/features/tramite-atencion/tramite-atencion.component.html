@@ -1,4 +1,4 @@
-<div class="atencion-container" *ngIf="!loading; else loadingState">
+<div class="atencion-container animate-fade-in" *ngIf="!loading; else loadingState">
 
   <!-- Header del Trámite -->
   <header class="atencion-header">
@@ -19,7 +19,7 @@
   </div>
 
   <!-- Formulario Dinámico -->
-  <section class="form-section" *ngIf="formFields.length > 0; else noForm">
+  <section class="form-section monolith-surface shadow-ambient" *ngIf="formFields.length > 0; else noForm">
     <h2>📝 Formulario de Captura</h2>
     <div class="form-grid">
       <div *ngFor="let field of formFields" class="form-group">
@@ -79,7 +79,7 @@
   </ng-template>
 
   <!-- Datos Acumulados -->
-  <section class="accumulated-section" *ngIf="tramite?.datosAcumuladosFormulario && (tramite.datosAcumuladosFormulario | keyvalue)?.length">
+  <section class="accumulated-section monolith-surface" *ngIf="tramite?.datosAcumuladosFormulario && (tramite.datosAcumuladosFormulario | keyvalue)?.length">
     <h3>📋 Datos Previos Acumulados</h3>
     <div class="data-grid">
       <div *ngFor="let item of tramite.datosAcumuladosFormulario | keyvalue" class="data-item">

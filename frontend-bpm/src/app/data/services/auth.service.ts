@@ -9,6 +9,7 @@ export interface AuthResponse {
   idOrganizacion: string;
   esJefe?: boolean;
   nombreRol?: string;
+  idDepartamento?: string;
 }
 
 export interface UserData {
@@ -17,6 +18,7 @@ export interface UserData {
   idOrganizacion: string;
   esJefe: boolean;
   nombreRol: string;
+  idDepartamento: string;
 }
 
 @Injectable({
@@ -61,7 +63,8 @@ export class AuthService {
           idRol: response.idRol,
           idOrganizacion: response.idOrganizacion,
           esJefe: response.esJefe || false,
-          nombreRol: response.nombreRol || ''
+          nombreRol: response.nombreRol || '',
+          idDepartamento: response.idDepartamento || ''
         };
 
         if (this.isBrowser()) {

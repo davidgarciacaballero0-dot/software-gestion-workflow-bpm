@@ -1,30 +1,29 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  /* HSL Color Tokens - Indigo/Slate Dark Theme */
-  --primary-h: 239;
-  --primary-s: 84%;
-  --primary-l: 67%;
-  --primary: hsl(var(--primary-h), var(--primary-s), var(--primary-l));
-  --primary-hover: hsl(var(--primary-h), var(--primary-s), 60%);
+  /* HSL Color Tokens - The Orchestrated Monolith */
+  --primary: #070235;
+  --primary-container: #1E1B4B;
+  --primary-fixed-dim: #c4c1fb;
   
-  --bg-h: 222;
-  --bg-s: 47%;
-  --bg-dark: hsl(var(--bg-h), var(--bg-s), 11%);
-  --bg-card: hsl(var(--bg-h), var(--bg-s), 15%);
+  --surface: #F7F9FB;
+  --surface-container-low: #F2F4F6;
+  --surface-container-high: #E8EAED;
+  --surface-container-highest: #e0e3e5;
+  --surface-container-lowest: #FFFFFF;
+  --surface-bright: #F7F9FB; /* Used for hover */
+
+  --text-main: #191c1e; /* on-surface */
+  --text-muted: #47464f; /* on-surface-variant */
   
-  --text-main: hsl(210, 40%, 98%);
-  --text-muted: hsl(215, 16%, 63%);
-  --border: hsla(217, 33%, 20%, 0.8);
+  --outline: #787680;
+  --outline-variant: #c8c5d0;
   
-  --accent-h: 162;
-  --accent: hsl(var(--accent-h), 72%, 48%);
-  
-  --shadow-premium: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+  --shadow-ambient: 0 12px 32px -4px rgba(7, 2, 53, 0.06);
 }
 
 * {
@@ -34,8 +33,8 @@
 }
 
 body {
-  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
-  background-color: var(--bg-dark);
+  font-family: 'Inter', -apple-system, sans-serif;
+  background-color: var(--surface);
   color: var(--text-main);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
@@ -43,39 +42,47 @@ body {
 }
 
 /* Glassmorphism utility */
-.glass {
-  background: hsla(var(--bg-h), var(--bg-s), 20%, 0.4);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid hsla(0, 0%, 100%, 0.08);
+.glass-premium {
+  background: hsla(210, 20%, 98%, 0.8); /* surface approximation at 80% */
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  /* No line rule: no hard borders, maybe just a subtle ghost border if absolutely necessary */
 }
 
-.shadow-premium-xl {
-  box-shadow: var(--shadow-premium);
+/* Base surface for monolith look */
+.monolith-surface {
+  background-color: var(--surface-container-lowest);
+  border-radius: 0.5rem; /* rounded-lg */
+  /* No drop shadow on standard cards */
+}
+
+/* Ambient shadow for floating active elements */
+.shadow-ambient {
+  box-shadow: var(--shadow-ambient);
 }
 
 /* Buttons System */
 .btn-premium {
   padding: 0.75rem 1.5rem;
-  border-radius: 12px;
-  font-weight: 600;
+  border-radius: 0.5rem; /* rounded-lg */
+  font-weight: 500;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
   border: none;
 }
 
+/* Gradient Primary Button */
 .btn-premium-primary {
-  background: var(--primary);
-  color: white;
-  box-shadow: 0 4px 12px hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.3);
+  background: linear-gradient(135deg, var(--primary), var(--primary-container));
+  color: #ffffff;
 }
 
 .btn-premium-primary:hover {
   transform: translateY(-2px);
-  background: var(--primary-hover);
-  box-shadow: 0 8px 20px hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.4);
+  box-shadow: var(--shadow-ambient);
 }
 
 .btn-premium-primary:disabled {
@@ -84,19 +91,24 @@ body {
   cursor: not-allowed;
 }
 
+/* Ghost border utility */
+.ghost-border {
+  border: 1px solid rgba(200, 197, 208, 0.15); /* outline-variant at 15% */
+}
+
 /* Scrollbar customization */
 ::-webkit-scrollbar {
   width: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--bg-dark);
+  background: var(--surface);
 }
 ::-webkit-scrollbar-thumb {
-  background: hsla(0, 0%, 100%, 0.1);
+  background: rgba(7, 2, 53, 0.1);
   border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: hsla(0, 0%, 100%, 0.2);
+  background: rgba(7, 2, 53, 0.3);
 }
 
 /* Global Animations */

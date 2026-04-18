@@ -1,19 +1,19 @@
 <div class="designer-container">
   <!-- Barra Superior: Control de Versiones y Estado -->
-  <header class="designer-header">
+  <header class="designer-header glass-premium shadow-ambient">
     <div class="policy-info">
       <h2>{{ currentPolicy.nombre }}</h2>
       <span class="badge" [class]="currentPolicy.status">{{ currentPolicy.status }}</span>
       <span class="version-tag">v{{ currentPolicy.version }}</span>
     </div>
     <div class="header-actions">
-      <button *ngIf="currentPolicy.status === 'PUBLISHED'" class="btn btn-outline-primary" (click)="onNewVersion()">
+      <button *ngIf="currentPolicy.status === 'PUBLISHED'" class="btn-premium btn-premium-primary ghost-border" (click)="onNewVersion()">
         + Nueva Versión
       </button>
-      <button *ngIf="currentPolicy.status === 'DRAFT'" class="btn btn-success" (click)="onPublish()">
+      <button *ngIf="currentPolicy.status === 'DRAFT'" class="btn-premium btn-premium-primary" (click)="onPublish()">
         🚀 Publicar
       </button>
-      <button class="btn btn-primary" (click)="saveWorkflow()" [disabled]="!canEdit()">
+      <button class="btn-premium btn-premium-primary" (click)="saveWorkflow()" [disabled]="!canEdit()">
         {{ currentPolicy.id ? 'Actualizar' : 'Guardar' }}
       </button>
     </div>
@@ -99,31 +99,31 @@
         <fieldset [disabled]="!canEdit()" class="border-0 p-0 m-0">
           <div class="form-group">
             <label>Nombre del Paso</label>
-            <input type="text" [(ngModel)]="selectedNode.name" class="form-control-dark">
+            <input type="text" [(ngModel)]="selectedNode.name" class="form-control">
           </div>
           
           <div *ngIf="selectedNode.type === 'USER_TASK'">
             <div class="form-group">
               <label>Departamento Responsable</label>
-              <select [(ngModel)]="selectedNode.departmentId" class="form-control-dark">
+              <select [(ngModel)]="selectedNode.departmentId" class="form-control">
                 <option *ngFor="let d of departamentos" [value]="d.id">{{ d.nombre }}</option>
               </select>
             </div>
             <div class="form-group">
               <label>Tiempo Límite (SLA Horas)</label>
-              <input type="number" [(ngModel)]="selectedNode.slaHours" class="form-control-dark" placeholder="Ej: 48">
-              <small class="text-info" *ngIf="!selectedNode.slaHours">⚠️ Requerido para publicar</small>
+              <input type="number" [(ngModel)]="selectedNode.slaHours" class="form-control" placeholder="Ej: 48">
+              <small class="text-error" *ngIf="!selectedNode.slaHours">⚠️ Requerido para publicar</small>
             </div>
 
             <!-- Constructor de Formularios CU-06 -->
             <div class="form-builder-section mt-4">
-              <div class="d-flex justify-content-between align-items-center mb-2">
+              <div class="header-action-row mb-2">
                 <h4 class="m-0 text-sm uppercase">Formulario Dinámico</h4>
                 <button *ngIf="canEdit()" class="btn-icon-add" (click)="addField()">+</button>
               </div>
 
               <div class="field-list">
-                <div *ngFor="let field of selectedNode.formDefinition; let i = index" class="field-card">
+                <div *ngFor="let field of selectedNode.formDefinition; let i = index" class="field-card monolith-surface">
                   <div class="field-row">
                     <input type="text" [(ngModel)]="field.label" class="field-input" placeholder="Etiqueta">
                     <button *ngIf="canEdit()" class="btn-remove-tiny" (click)="removeField(i)">×</button>
