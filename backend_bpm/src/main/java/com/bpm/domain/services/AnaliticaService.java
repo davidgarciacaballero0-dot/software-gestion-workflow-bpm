@@ -28,7 +28,8 @@ public class AnaliticaService {
 
             double tiempoPromedio = tramites.stream()
                     .mapToLong(t -> {
-                        Duration duration = Duration.between(t.getCreatedAt(), LocalDateTime.now());
+                        LocalDateTime start = t.getCreatedAt() != null ? t.getCreatedAt() : LocalDateTime.now();
+                        Duration duration = Duration.between(start, LocalDateTime.now());
                         return duration.toHours();
                     })
                     .average()
