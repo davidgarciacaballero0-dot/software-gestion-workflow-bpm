@@ -10,5 +10,5 @@ import { NotificationToastComponent } from './presentation/shared/notification-t
   styleUrl: './app.component.css'
 })
 export class AppComponent {
-  protected readonly title = signal('frontend-bpm');
+  readonly title = signal('frontend-bpm');
 }

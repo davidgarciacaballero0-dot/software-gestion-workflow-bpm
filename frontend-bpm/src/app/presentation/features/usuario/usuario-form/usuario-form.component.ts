@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { UsuarioService } from '../../../../data/services/usuario.service';
@@ -18,6 +18,9 @@ import { Rol } from '../../../../data/models/rol.model';
   styleUrls: ['./usuario-form.component.css']
 })
 export class UsuarioFormComponent implements OnInit {
+  @Output() onCreated = new EventEmitter<any>();
+  @Output() onCancel = new EventEmitter<void>();
+
   userForm!: FormGroup;
   
   // Repositorios en Memoria para Dropdowns
@@ -83,11 +86,16 @@ export class UsuarioFormComponent implements OnInit {
         this.isSubmitting = false;
         this.successMessage = `Credenciales del funcionario '${res.nombre}' vinculadas al sistema con éxito.`;
         this.userForm.reset();
+        this.onCreated.emit(res);
       },
       error: (err) => {
         console.error('Brecha u Operacion abortada por Backend', err);
         this.isSubmitting = false;
       }
     });
+  }
+
+  cancelar() {
+    this.onCancel.emit();
   }
 }

@@ -30,7 +30,7 @@
     </div>
 
     <div class="form-actions">
-      <button type="button" class="btn btn-secondary">Descartar</button>
+      <button type="button" class="btn btn-secondary" (click)="cancelar()">Descartar</button>
       <button type="submit" class="btn btn-primary" [disabled]="orgForm.invalid || isSubmitting">
         <span *ngIf="isSubmitting" class="spinner"></span>
         {{ isSubmitting ? 'Autorizando...' : 'Registrar Tenant' }}

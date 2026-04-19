@@ -5,7 +5,17 @@
   </div>
 
   <div class="actions-bar">
-    <button class="btn-premium btn-premium-primary">+ Nueva Organización</button>
+    <button class="btn-premium btn-premium-primary" (click)="toggleForm()">
+      {{ showForm ? '✕ Cerrar Formulario' : '+ Nueva Organización' }}
+    </button>
+  </div>
+
+  <!-- Formulario de Creación Embebido -->
+  <div *ngIf="showForm" class="form-section animate-fade-in">
+    <app-organizacion-form 
+      (onCreated)="onOrganizacionCreated($event)" 
+      (onCancel)="onFormCancel()">
+    </app-organizacion-form>
   </div>
 
   <div class="grid-card monolith-surface shadow-ambient">

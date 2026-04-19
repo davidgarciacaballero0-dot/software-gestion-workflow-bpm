@@ -15,6 +15,10 @@ export class RolService {
     return this.http.get<Rol[]>(this.apiUrl);
   }
 
+  obtenerPorId(id: string): Observable<Rol> {
+    return this.http.get<Rol>(`${this.apiUrl}/${id}`);
+  }
+
   crear(rol: Rol): Observable<Rol> {
     return this.http.post<Rol>(this.apiUrl, rol);
   }

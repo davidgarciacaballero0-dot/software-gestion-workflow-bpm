@@ -120,7 +120,7 @@ export class TramiteAtencionComponent implements OnInit {
           ? `🎉 Trámite ${res.codigoTramite} FINALIZADO exitosamente.`
           : `✅ Trámite ${res.codigoTramite} avanzó al siguiente paso.`;
         alert(msg);
-        this.router.navigate(['/inbox']);
+        this.router.navigate(['/app/inbox']);
       },
       error: (err) => {
         this.submitting = false;
@@ -130,6 +130,6 @@ export class TramiteAtencionComponent implements OnInit {
   }
 
   volver(): void {
-    this.router.navigate(['/inbox']);
+    this.router.navigate(['/app/inbox']);
   }
 }

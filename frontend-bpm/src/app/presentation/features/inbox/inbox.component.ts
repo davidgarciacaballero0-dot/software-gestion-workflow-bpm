@@ -16,6 +16,8 @@ export class InboxComponent implements OnInit {
   activeTab: 'personal' | 'department' = 'personal';
   tramites: any[] = [];
   loading = false;
+  isClient = false;
+  hasDept = false;
 
   private userId = '';
   private deptId = '';
@@ -30,7 +32,12 @@ export class InboxComponent implements OnInit {
   ) { }
 
   ngOnInit(): void {
-    // Extract real IDs from JWT token
+    const user = this.authService.currentUser();
+    this.isClient = !user?.idOrganizacion;
+    this.hasDept = !!user?.idDepartamento;
+    this.deptId = user?.idDepartamento || '';
+    
+    // Extract real ID from JWT token
     const token = this.authService.getToken();
     if (token) {
       try {
@@ -38,10 +45,6 @@ export class InboxComponent implements OnInit {
         this.userId = payload.userId || '';
       } catch (e) { }
     }
-
-    // Get departmentId from stored user data (if the user has one)
-    const user = this.authService.currentUser();
-    this.deptId = user?.idDepartamento || '';
 
     this.switchTab('personal');
 

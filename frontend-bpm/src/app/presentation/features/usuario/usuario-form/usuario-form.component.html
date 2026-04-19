@@ -57,6 +57,7 @@
     </div>
 
     <div class="form-actions mt-4">
+      <button type="button" class="btn btn-secondary" (click)="cancelar()">Descartar</button>
       <button type="submit" class="btn btn-primary" [disabled]="userForm.invalid || isSubmitting">
         <span *ngIf="isSubmitting" class="spinner"></span>
         {{ isSubmitting ? 'Inyectando Políticas...' : 'Emitir Credenciales' }}

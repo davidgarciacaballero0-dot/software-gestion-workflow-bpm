@@ -1,117 +1,111 @@
-<div class="atencion-container animate-fade-in" *ngIf="!loading; else loadingState">
-
-  <!-- Header del Trámite -->
-  <header class="atencion-header">
-    <button class="btn btn-glass" (click)="volver()">← Volver</button>
-    <div class="header-info">
-      <div class="code-tag">{{ tramite?.codigoTramite }}</div>
-      <h1>{{ nodoActual?.name || 'Cargando paso...' }}</h1>
-      <p class="subtitle">Completa el formulario para avanzar este trámite al siguiente paso.</p>
+<div class="atencion-container animate-fade-in" *ngIf="!loading">
+  <!-- Header de Trámite -->
+  <div class="atencion-header">
+    <div class="header-left">
+      <button class="btn-back" (click)="volver()">← Volver</button>
+      <h1 class="page-title">Trámite: {{ tramite?.codigoTramite }}</h1>
+      <span class="step-indicator">Paso Actual: <strong>{{ nodoActual?.name }}</strong></span>
     </div>
-    <div class="status-pill EN_PROGRESO">{{ tramite?.estadoActual }}</div>
-  </header>
-
-  <!-- Información del Nodo -->
-  <div class="node-info-bar" *ngIf="nodoActual">
-    <span>📍 Paso Actual: <strong>{{ nodoActual.name }}</strong></span>
-    <span *ngIf="nodoActual.slaHours">⏱️ SLA: {{ nodoActual.slaHours }}h</span>
-    <span *ngIf="nodoActual.departmentId">🏢 Depto: {{ nodoActual.departmentId }}</span>
+    <div class="header-right">
+      <span class="badge" [ngClass]="'badge-' + tramite?.estadoActual.toLowerCase()">{{ tramite?.estadoActual }}</span>
+    </div>
   </div>
 
-  <!-- Formulario Dinámico -->
-  <section class="form-section monolith-surface shadow-ambient" *ngIf="formFields.length > 0; else noForm">
-    <h2>📝 Formulario de Captura</h2>
-    <div class="form-grid">
-      <div *ngFor="let field of formFields" class="form-group">
-        <label [for]="field.fieldId">
-          {{ field.label }}
-          <span class="required" *ngIf="field.required">*</span>
-        </label>
+  <div class="atencion-layout">
+    <!-- Formulario Dinámico -->
+    <div class="form-section grid-card monolith-surface shadow-ambient">
+      <div class="section-title">
+        <h3>📄 Formulario de Acción</h3>
+        <p>Complete la información requerida para avanzar al siguiente estado del proceso.</p>
+      </div>
 
-        <!-- TEXT / NUMBER / DATE -->
-        <input
-          *ngIf="field.type !== 'DROPDOWN' && field.type !== 'BOOLEAN' && field.type !== 'FILE'"
-          [type]="getInputType(field.type)"
-          [id]="field.fieldId"
-          [(ngModel)]="formData[field.fieldId]"
-          [required]="field.required"
-          class="form-input"
-          [placeholder]="'Ingrese ' + field.label"
-        />
+      <div class="dynamic-form mt-1">
+        <div *ngFor="let field of formFields" class="form-group slide-in">
+          <label [for]="field.fieldId">
+            {{ field.label }} 
+            <span *ngIf="field.required" class="required-mark">*</span>
+          </label>
 
-        <!-- FILE -->
-        <app-file-uploader
-          *ngIf="field.type === 'FILE'"
-          [fieldId]="field.fieldId"
-          [tramiteId]="tramite.id"
-          (onUploadSuccess)="onFileUpload(field.fieldId, $event)"
-        ></app-file-uploader>
+          <!-- Inputs según tipo -->
+          <ng-container [ngSwitch]="field.type">
+            <!-- Texto y Números -->
+            <input 
+              *ngSwitchCase="'TEXT'" 
+              [id]="field.fieldId"
+              type="text" 
+              [(ngModel)]="formData[field.fieldId]" 
+              class="form-control"
+              [placeholder]="'Ingrese ' + field.label">
+            
+            <input 
+              *ngSwitchCase="'NUMBER'" 
+              [id]="field.fieldId"
+              type="number" 
+              [(ngModel)]="formData[field.fieldId]" 
+              class="form-control">
 
-        <!-- DROPDOWN -->
-        <select
-          *ngIf="field.type === 'DROPDOWN'"
-          [id]="field.fieldId"
-          [(ngModel)]="formData[field.fieldId]"
-          [required]="field.required"
-          class="form-input"
-        >
-          <option value="">Seleccione una opción</option>
-          <option *ngFor="let opt of field.options" [value]="opt">{{ opt }}</option>
-        </select>
+            <input 
+              *ngSwitchCase="'DATE'" 
+              [id]="field.fieldId"
+              type="date" 
+              [(ngModel)]="formData[field.fieldId]" 
+              class="form-control">
 
-        <!-- BOOLEAN -->
-        <div *ngIf="field.type === 'BOOLEAN'" class="checkbox-wrapper">
-          <input
-            type="checkbox"
-            [id]="field.fieldId"
-            [(ngModel)]="formData[field.fieldId]"
-          />
-          <span>Sí</span>
+            <!-- Archivos (Integración con FileUploader) -->
+            <div *ngSwitchCase="'FILE'" class="uploader-wrapper">
+              <app-file-uploader 
+                (onUploadFinished)="onFileUpload(field.fieldId, $event)">
+              </app-file-uploader>
+              <div *ngIf="formData[field.fieldId]" class="file-success">
+                ✅ Archivo cargado (ID: {{ formData[field.fieldId] | slice:0:8 }}...)
+              </div>
+            </div>
+
+            <!-- Otros default -->
+            <input 
+              *ngSwitchDefault 
+              [id]="field.fieldId"
+              type="text" 
+              [(ngModel)]="formData[field.fieldId]" 
+              class="form-control">
+          </ng-container>
+        </div>
+
+        <div class="form-actions mt-2">
+          <button 
+            class="btn-premium btn-premium-primary w-full" 
+            (click)="completarYEnviar()" 
+            [disabled]="submitting">
+            {{ submitting ? 'Enviando...' : '🚀 Procesar y Avanzar' }}
+          </button>
         </div>
       </div>
     </div>
-  </section>
 
-  <ng-template #noForm>
-    <div class="no-form-message">
-      <p>ℹ️ Este paso no requiere formulario. Haz clic en "Completar" para avanzar.</p>
-    </div>
-  </ng-template>
-
-  <!-- Datos Acumulados -->
-  <section class="accumulated-section monolith-surface" *ngIf="tramite?.datosAcumuladosFormulario && (tramite.datosAcumuladosFormulario | keyvalue)?.length">
-    <h3>📋 Datos Previos Acumulados</h3>
-    <div class="data-grid">
-      <div *ngFor="let item of tramite.datosAcumuladosFormulario | keyvalue" class="data-item">
-        <span class="data-label">{{ item.key }}</span>
-        <span class="data-value">
-          {{ item.value }}
-          <!-- Botón de descarga si parece ser un ID de archivo (metadato) -->
-          <button 
-            *ngIf="$any(item.key).toLowerCase().includes('archivo') || $any(item.key).toLowerCase().includes('doc')"
-            class="btn-download" 
-            (click)="descargarArchivo(item.value.toString())">
-            📥 Descargar
-          </button>
-        </span>
+    <!-- Panel de Información Lateral -->
+    <div class="info-sidebar">
+      <div class="grid-card glass-premium shadow-ambient">
+        <h3>ℹ️ Información del Workflow</h3>
+        <p class="text-sm">Este trámite pertenece a la política <strong>{{ politica?.nombre }}</strong>.</p>
+        <div class="workflow-stats mt-1">
+          <div class="stat-row">
+            <span>Versión</span>
+            <span class="font-mono">v{{ politica?.version }}</span>
+          </div>
+          <div class="stat-row">
+            <span>Iniciado</span>
+            <span>{{ tramite?.createdAt | date:'short' }}</span>
+          </div>
+        </div>
       </div>
     </div>
-  </section>
-
-  <!-- Botón de Acción -->
-  <footer class="form-footer">
-    <button
-      class="btn btn-primary btn-lg"
-      (click)="completarYEnviar()"
-      [disabled]="submitting">
-      {{ submitting ? '⏳ Procesando...' : '✅ Completar y Enviar' }}
-    </button>
-  </footer>
+  </div>
 </div>
 
-<ng-template #loadingState>
-  <div class="loader-container">
+<!-- Loading State -->
+<div *ngIf="loading" class="loading-overlay">
+  <div class="spinner-container">
     <div class="spinner"></div>
-    <p>Cargando formulario del trámite...</p>
+    <p>Preparando entorno de atención...</p>
   </div>
-</ng-template>
+</div>

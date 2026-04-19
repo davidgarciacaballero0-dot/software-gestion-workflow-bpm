@@ -316,10 +316,64 @@
   background: var(--surface-bright);
 }
 
-.tool-section h4 {
-  font-size: 0.6875rem;
-  text-transform: uppercase;
   color: var(--text-muted);
   font-weight: 600;
   margin-bottom: 1rem;
+}
+
+/* --- CU-14: IA Generativa Styles --- */
+.ai-section {
+  padding-top: 1rem;
+  border-top: 1px solid rgba(200, 197, 208, 0.3);
+}
+
+.ai-prompt-box {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ai-textarea {
+  min-height: 100px;
+  background: rgba(255, 255, 255, 0.03);
+  resize: none;
+  font-size: 0.8rem;
+  border: 1px dashed var(--primary-fixed-dim);
+}
+
+.ai-textarea:focus {
+  border-style: solid;
+  border-color: var(--primary);
+  background: rgba(196, 193, 251, 0.05);
+}
+
+.btn-premium {
+  border: none;
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.btn-premium-primary {
+  background: linear-gradient(135deg, var(--primary), var(--primary-container));
+  color: white;
+  box-shadow: 0 4px 15px rgba(108, 93, 211, 0.2);
+}
+
+.btn-premium-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(108, 93, 211, 0.3);
+}
+
+.btn-premium-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  filter: grayscale(1);
 }

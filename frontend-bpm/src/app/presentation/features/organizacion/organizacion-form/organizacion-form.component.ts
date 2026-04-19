@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { OrganizacionService } from '../../../../data/services/organizacion.service';
@@ -12,6 +12,9 @@ import { Organizacion } from '../../../../data/models/organizacion.model';
   styleUrls: ['./organizacion-form.component.css']
 })
 export class OrganizacionFormComponent implements OnInit {
+  @Output() onCreated = new EventEmitter<Organizacion>();
+  @Output() onCancel = new EventEmitter<void>();
+
   orgForm!: FormGroup;
   isSubmitting = false;
   successMessage = '';
@@ -45,11 +48,16 @@ export class OrganizacionFormComponent implements OnInit {
         this.isSubmitting = false;
         this.successMessage = `Tenant '${res.nombre}' agregado de forma segura a la Base de Datos.`;
         this.orgForm.reset({ colorPrimario: '#1e293b', colorSecundario: '#f8fafc' });
+        this.onCreated.emit(res);
       },
       error: (err) => {
         console.error('Error al disparar API en Backend', err);
         this.isSubmitting = false;
       }
     });
+  }
+
+  cancelar() {
+    this.onCancel.emit();
   }
 }

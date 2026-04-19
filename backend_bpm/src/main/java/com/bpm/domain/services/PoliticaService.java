@@ -53,6 +53,13 @@ public class PoliticaService {
                 .collect(Collectors.toList());
     }
 
+    public List<WorkflowResponseDTO> listarCatalogoPublico() {
+        return politicaRepository.findAll().stream()
+                .filter(p -> PolicyStatus.PUBLISHED.equals(p.getStatus()))
+                .map(this::mapearDTO)
+                .collect(Collectors.toList());
+    }
+
     public WorkflowResponseDTO obtenerPolitica(String id) {
         return politicaRepository.findById(id)
                 .map(this::mapearDTO)

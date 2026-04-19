@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { Usuario } from '../models/usuario.model';
 
 @Injectable({
@@ -12,6 +12,10 @@ export class UsuarioService {
   constructor(private http: HttpClient) {}
 
   listarPorDepartamento(idDepartamento: string): Observable<Usuario[]> {
+    // Guard: Evitar llamadas al backend con ID vacío/undefined que causa 500
+    if (!idDepartamento || idDepartamento.trim() === '' || idDepartamento === 'undefined' || idDepartamento === 'null') {
+      return of([]);
+    }
     return this.http.get<Usuario[]>(`${this.apiUrl}/departamento/${idDepartamento}`);
   }
 

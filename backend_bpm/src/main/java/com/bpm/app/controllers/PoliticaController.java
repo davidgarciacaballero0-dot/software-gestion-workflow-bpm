@@ -28,6 +28,11 @@ public class PoliticaController {
         return ResponseEntity.ok(politicaService.listarPorOrganizacion(idOrganizacion));
     }
 
+    @GetMapping("/catalog")
+    public ResponseEntity<List<WorkflowResponseDTO>> listarCatalogoPublico() {
+        return ResponseEntity.ok(politicaService.listarCatalogoPublico());
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<WorkflowResponseDTO> obtenerPolitica(@PathVariable String id) {
         return ResponseEntity.ok(politicaService.obtenerPolitica(id));

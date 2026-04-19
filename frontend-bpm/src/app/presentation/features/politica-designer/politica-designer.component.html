@@ -42,6 +42,24 @@
         </div>
       </div>
 
+      <!-- CU-14: Diseño Asistido por IA -->
+      <div class="tool-section ai-section mt-1" *ngIf="canEdit()">
+        <h4>✨ Generar con IA (Gemini)</h4>
+        <div class="ai-prompt-box">
+          <textarea 
+            [(ngModel)]="aiPrompt" 
+            placeholder="Ej: Proceso de préstamo con pasos en Crédito, Riesgos y Contabilidad..."
+            class="form-control ai-textarea"
+            rows="4"></textarea>
+          <button 
+            class="btn-premium btn-premium-primary w-full mt-1" 
+            (click)="solicitarGeneracionIA()"
+            [disabled]="generatingIA || !aiPrompt">
+            {{ generatingIA ? '🚀 Generando...' : 'Dibujar Flujo' }}
+          </button>
+        </div>
+      </div>
+
       <div class="tool-info mt-auto">
         <p class="text-muted small">
           {{ canEdit() ? 'Arrastra o haz clic para añadir elementos.' : 'Política en modo lectura.' }}

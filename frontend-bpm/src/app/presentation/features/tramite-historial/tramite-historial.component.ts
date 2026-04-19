@@ -88,6 +88,6 @@ export class TramiteHistorialComponent implements OnInit {
   }
 
   volver(): void {
-    this.router.navigate(['/inbox']);
+    this.router.navigate(['/app/inbox']);
   }
 }

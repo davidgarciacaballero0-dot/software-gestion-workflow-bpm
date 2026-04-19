@@ -2,9 +2,11 @@ import { Component, OnInit, ChangeDetectorRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PoliticaWorkflowService } from '../../../data/services/politica-workflow.service';
 import { TramiteService } from '../../../data/services/tramite.service';
+import { OrganizacionService } from '../../../data/services/organizacion.service';
 import { PoliticaWorkflow, PolicyStatus } from '../../../data/models/politica-workflow.model';
 import { StartProcedureRequestDTO } from '../../../data/models/tramite.model';
 import { AuthService } from '../../../data/services/auth.service';
+import { forkJoin, of } from 'rxjs';
 
 @Component({
   selector: 'app-politica-list',
@@ -15,59 +17,53 @@ import { AuthService } from '../../../data/services/auth.service';
 })
 export class PoliticaListComponent implements OnInit {
   politicas: PoliticaWorkflow[] = [];
+  organizacionesMap: Map<string, string> = new Map();
   loading = false;
+  isClient = false;
 
   constructor(
     private politicaService: PoliticaWorkflowService,
     private tramiteService: TramiteService,
+    private orgService: OrganizacionService,
     private authService: AuthService,
     private cd: ChangeDetectorRef,
     private zone: NgZone
   ) {}
 
   ngOnInit(): void {
-    this.cargarPoliticas();
+    const user = this.authService.currentUser();
+    this.isClient = !user?.idOrganizacion;
+    this.cargarDatos();
   }
 
-  cargarPoliticas(): void {
+  cargarDatos(): void {
+    this.loading = true;
     const user = this.authService.currentUser();
     const orgId = user?.idOrganizacion;
 
-    if (!orgId) {
-      console.warn('No Organization context found in session.');
-      this.loading = false;
-      this.politicas = [];
-      return;
-    }
+    // Fetch organizations to show names in global catalog
+    const orgsObs = this.isClient ? this.orgService.listarTodas() : of([]);
+    const policiesObs = this.isClient 
+      ? this.politicaService.listarCatalogoPublico()
+      : this.politicaService.listarPorOrganizacion(orgId!);
 
-    this.loading = true;
-    console.log('Loading policies for org:', orgId);
-    
-    // Safety timeout to prevent infinite skeletons if the proxy hangs
-    const safetyTimer = setTimeout(() => {
-      this.zone.run(() => {
-        if (this.loading) {
-          console.warn('Backend request timed out (Safety Triggered)');
-          this.loading = false;
-          this.cd.detectChanges();
-        }
-      });
-    }, 4000);
-
-    this.politicaService.listarPorOrganizacion(orgId).subscribe({
-      next: (data) => {
-        clearTimeout(safetyTimer);
+    forkJoin({
+      orgs: orgsObs,
+      policies: policiesObs
+    }).subscribe({
+      next: ({ orgs, policies }) => {
         this.zone.run(() => {
-          this.politicas = data || [];
+          orgs.forEach(o => {
+            if (o.id) this.organizacionesMap.set(o.id, o.nombre);
+          });
+          this.politicas = policies || [];
           this.loading = false;
           this.cd.detectChanges();
-          console.log('Policies synchronized:', this.politicas.length);
         });
       },
       error: (err) => {
-        clearTimeout(safetyTimer);
         this.zone.run(() => {
-          console.error('API Error:', err);
+          console.error('Error sincronizando catálogo:', err);
           this.loading = false;
           this.cd.detectChanges();
         });
@@ -81,7 +77,6 @@ export class PoliticaListComponent implements OnInit {
     const user = this.authService.currentUser();
     if (!user) return;
 
-    // Extract userId from JWT token
     const token = this.authService.getToken();
     let userId = user.nombre;
     if (token) {
@@ -96,20 +91,24 @@ export class PoliticaListComponent implements OnInit {
       idUsuarioSolicitante: userId,
       datosIniciales: {
         timestamp_inicio: new Date().toISOString(),
-        procedencia: 'Front-End BPM'
+        procedencia: 'Front-End BPM - ' + (this.isClient ? 'External Client' : 'Internal User')
       }
     };
 
     if (confirm(`¿Confirma la ejecución inmediata del flujo "${politica.nombre}"?`)) {
       this.tramiteService.iniciarTramite(request).subscribe({
         next: (res) => {
-          alert(`🚀 Instancia Creada: ${res.codigoTramite}`);
+          alert(`🚀 Instancia Creada exitosamente.\nCódigo: ${res.codigoTramite}\nPuede seguir el estado en su Bandeja de Entrada.`);
         },
         error: (err) => {
           alert('Error de Ejecución: ' + (err.error?.message || 'Falla en el motor de procesos'));
         }
       });
     }
+  }
+
+  getNombreOrganizacion(idOrg: string): string {
+    return this.organizacionesMap.get(idOrg) || 'Organización Autónoma';
   }
 
   getStatusBadgeClass(status: string): string {

@@ -1,0 +1,94 @@
+<div class="insights-container animate-fade-in">
+  <div class="header">
+    <h1 class="page-title">🤖 Reportes y Analítica IA</h1>
+    <p class="page-subtitle">Análisis predictivo de cuellos de botella y reporte ejecutivo de consultoría asistido por Gemini.</p>
+  </div>
+
+  <div class="dashboard-grid">
+    <!-- Panel de Métricas Reales -->
+    <div class="grid-card monolith-surface shadow-ambient stats-panel">
+      <h3>📊 Carga Departamental Real-Time</h3>
+      <div *ngIf="loading" class="loading-state">Calculando métricas...</div>
+      
+      <div class="metrics-list" *ngIf="!loading">
+        <div *ngFor="let m of metrics" class="metric-row">
+          <div class="metric-info">
+            <span class="dept-name">{{ m.nombreDepartamento }}</span>
+            <div class="progress-container">
+              <div class="progress-bar" [style.width.%]="(m.cantidadTramites / 20) * 100" [class.overloaded]="m.cantidadTramites > 10"></div>
+            </div>
+          </div>
+          <div class="metric-values">
+            <span class="val">🕒 {{ m.tiempoPromedioHoras | number:'1.1-1' }}h</span>
+            <span class="val">📦 {{ m.cantidadTramites }} tram.</span>
+            <span class="val">👤 {{ m.capacidadPersonal }} pers.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="actions-group mt-2">
+        <button class="btn-premium btn-premium-primary" (click)="solicitarAnalisisIA()" [disabled]="analyzing">
+          {{ analyzing ? '🧠 Analizando...' : '✨ Informe IA' }}
+        </button>
+        <button class="btn-premium btn-premium-secondary" (click)="descargarReporte()">
+          📥 Excel
+        </button>
+      </div>
+    </div>
+
+    <!-- Informe de IA -->
+    <div class="grid-card glass-premium ai-report-panel shadow-ambient">
+      <div class="panel-header">
+        <h3>📄 Reporte de Consultoría IA</h3>
+        <div class="header-tools">
+          <span class="ai-badge" *ngIf="aiReport">Gemini 1.5 Pro</span>
+          <button *ngIf="aiReport" class="btn-icon-tiny ml-1" (click)="descargarPDF()" title="Descargar PDF">
+            📥 PDF
+          </button>
+        </div>
+      </div>
+      
+      <div class="report-content" *ngIf="aiReport">
+        <pre class="formatted-report">{{ aiReport }}</pre>
+      </div>
+
+      <div class="empty-report" *ngIf="!aiReport && !analyzing">
+        <p>Haga clic en el botón para que la IA escanee el sistema en busca de ineficiencias.</p>
+      </div>
+
+      <div class="skeleton-loader" *ngIf="analyzing">
+        <div class="skeleton-line"></div>
+        <div class="skeleton-line"></div>
+        <div class="skeleton-line"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Consola de Acción (Reasignación sugerida) -->
+  <div class="action-console grid-card monolith-surface shadow-ambient mt-2" *ngIf="aiReport">
+    <h3>🛠️ Consola de Reestructuración Operativa</h3>
+    <p class="text-sm mb-1">Tras la recomendación de la IA, puede ejecutar la reasignación de personal aquí:</p>
+    
+    <div class="action-form">
+      <div class="form-group">
+        <label>De Departamento:</label>
+        <select [(ngModel)]="reassignForm.idOrigen" class="form-control">
+          <option *ngFor="let m of metrics" [value]="m.departamentoId">{{ m.nombreDepartamento }}</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>A Departamento:</label>
+        <select [(ngModel)]="reassignForm.idDestino" class="form-control">
+          <option *ngFor="let m of metrics" [value]="m.departamentoId">{{ m.nombreDepartamento }}</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Cantidad:</label>
+        <input type="number" [(ngModel)]="reassignForm.cantidad" class="form-control" min="1" max="10">
+      </div>
+      <button class="btn btn-warning" (click)="ejecutarOptimizacion()" [disabled]="applying">
+        {{ applying ? 'Ejecutando...' : 'Aplicar Reasignación' }}
+      </button>
+    </div>
+  </div>
+</div>

@@ -1,61 +1,49 @@
-<div class="proc-catalog">
-  <header class="catalog-top-bar animate-fade-in">
-    <div class="title-group">
-      <h1>Catálogo de Operaciones</h1>
-      <p>Gestione y despliegue flujos de trabajo institucionales en tiempo real</p>
-    </div>
-    <div class="actions">
-      <button class="btn-premium btn-premium-primary" (click)="cargarPoliticas()" [disabled]="loading">
-        <span class="icon">🔄</span>
-        Sincronizar
-      </button>
-    </div>
-  </header>
-
-  <!-- Grid Layout -->
-  <div class="catalog-grid" *ngIf="!loading; else skeleton">
-    <div *ngFor="let p of politicas" class="proc-card monolith-surface shadow-ambient animate-fade-in">
-      <div class="card-badges">
-        <span class="status-chip" [ngClass]="p.status.toLowerCase()">{{ p.status }}</span>
-        <span class="version-tag">REL v{{ p.version }}</span>
-      </div>
-      
-      <div class="card-main">
-        <h3>{{ p.nombre }}</h3>
-        <p>{{ p.description || 'Proceso operativo sin descripción técnica definida.' }}</p>
-      </div>
-
-      <div class="card-stats">
-        <div class="stat-item">
-          <span class="label">NODOS</span>
-          <span class="value">{{ p.nodes.length }}</span>
-        </div>
-        <div class="stat-item">
-          <span class="label">CONEX.</span>
-          <span class="value">{{ p.edges.length }}</span>
-        </div>
-      </div>
-
-      <button 
-        class="btn-premium btn-premium-primary start-btn" 
-        [disabled]="p.status !== 'PUBLISHED'"
-        (click)="iniciarTramite(p)">
-        {{ p.status === 'PUBLISHED' ? '⚡ Ejecutar Flujo' : 'No Disponible' }}
-      </button>
-    </div>
+<div class="catalog-container animate-fade-in">
+  <div class="header">
+    <h1 class="page-title">{{ isClient ? 'Catálogo Global de Servicios' : 'Trámites de mi Organización' }}</h1>
+    <p class="page-subtitle">
+      {{ isClient 
+        ? 'Acceda a todos los flujos de trabajo publicados por las entidades afiliadas al ecosistema BPM.' 
+        : 'Listado de procesos internos autorizados para su rol y departamento.' }}
+    </p>
   </div>
 
-  <!-- Loading State -->
-  <ng-template #skeleton>
-    <div class="skeleton-grid">
-      <div *ngFor="let i of [1,2,3]" class="skeleton-card monolith-surface shadow-ambient animate-pulse"></div>
+  <div class="grid-card monolith-surface shadow-ambient">
+    <div *ngIf="loading" class="loading-state">
+      <span class="spinner"></span> Sincronizando catálogo de políticas...
     </div>
-  </ng-template>
 
-  <!-- Empty State -->
-  <div *ngIf="!loading && politicas.length === 0" class="not-found monolith-surface animate-fade-in">
-    <div class="huge-icon">📁</div>
-    <h3>Repositorio Vacío</h3>
-    <p>No se encontraron definiciones de procesos publicadas para su organización.</p>
+    <!-- UI de Tarjetas (Catálogo Premium) -->
+    <div class="policy-grid" *ngIf="!loading">
+      <div *ngFor="let p of politicas" class="policy-card glass-premium animate-slide-up">
+        <div class="card-status-bar" [ngClass]="getStatusBadgeClass(p.status)"></div>
+        <div class="card-content">
+          <div class="org-info" *ngIf="isClient">
+             <span class="org-tag">🏢 {{ getNombreOrganizacion(p.idOrganizacion) }}</span>
+          </div>
+          <h3 class="policy-name">{{ p.nombre }}</h3>
+          <p class="policy-description">{{ p.description || 'Sin descripción detallada disponible.' }}</p>
+          
+          <div class="policy-meta">
+            <span class="version-pill">v{{ p.version }}</span>
+            <span class="node-count">🧩 {{ p.nodes?.length }} pasos</span>
+          </div>
+
+          <button 
+            class="btn-premium btn-premium-primary start-btn" 
+            (click)="iniciarTramite(p)"
+            [disabled]="p.status !== 'PUBLISHED'">
+            {{ p.status === 'PUBLISHED' ? '🚀 Iniciar Trámite' : 'Borrador' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Estado Vacío -->
+      <div *ngIf="politicas.length === 0" class="empty-catalog">
+        <div class="icon">📦</div>
+        <h3>Sin Servicios Disponibles</h3>
+        <p>Actualmente no existen políticas publicadas que coincidan con su perfil de acceso.</p>
+      </div>
+    </div>
   </div>
 </div>

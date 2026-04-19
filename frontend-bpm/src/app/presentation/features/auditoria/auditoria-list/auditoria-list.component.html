@@ -4,6 +4,24 @@
     <p class="page-subtitle">Registro forense de todas las operaciones ejecutadas por el personal sobre el flujo operativo BPM.</p>
   </div>
 
+  <!-- Barra de Acciones y Filtros -->
+  <div class="actions-bar" style="display:flex; gap:1rem; align-items:flex-end; margin-bottom:1.5rem; flex-wrap:wrap;">
+    <div class="filter-group" style="flex:1; min-width:300px;">
+      <label style="display:block; font-size:0.75rem; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:0.4rem;">Filtrar por User ID</label>
+      <div style="display:flex; gap:0.5rem;">
+        <input 
+          type="text" 
+          [(ngModel)]="filtroUsuarioId" 
+          class="form-control" 
+          placeholder="Pegue el ID del usuario (ej: 64b1f...)"
+          (keyup.enter)="buscarPorUsuario()"
+        >
+        <button class="btn btn-primary" (click)="buscarPorUsuario()">🔍 Buscar</button>
+        <button class="btn btn-secondary" (click)="limpiarFiltro()" *ngIf="filtroUsuarioId">✕ Limpiar</button>
+      </div>
+    </div>
+  </div>
+
   <div class="grid-card monolith-surface shadow-ambient">
     <div *ngIf="loading" class="loading-state">
       <span class="spinner"></span> Recuperando eventos registrados...
@@ -13,7 +31,7 @@
       <thead>
         <tr>
           <th>Marca Temporal</th>
-          <th>Agente Ejecutor</th>
+          <th>Agente Ejecutor (ID)</th>
           <th>Operación Registrada</th>
           <th>Módulo Afectado</th>
           <th>Dirección IP Origen</th>
@@ -22,13 +40,13 @@
       <tbody>
         <tr *ngFor="let e of eventos">
           <td class="text-muted font-mono">{{ e.createdAt | date:'dd/MM/yy HH:mm:ss' }}</td>
-          <td class="font-strong">{{ e.idUsuarioActor }}</td>
+          <td class="font-strong" [title]="e.idUsuarioActor">{{ e.idUsuarioActor | slice:0:12 }}...</td>
           <td><span class="badge badge-action">{{ e.accion }}</span></td>
           <td>{{ e.entidadAfectada }}</td>
           <td class="font-mono text-muted">{{ e.ipOrigen }}</td>
         </tr>
         <tr *ngIf="eventos.length === 0">
-          <td colspan="5" class="empty-state">Sin registros de actividad. El sistema se encuentra en estado limpio.</td>
+          <td colspan="5" class="empty-state">Sin registros de actividad para los criterios seleccionados.</td>
         </tr>
       </tbody>
     </table>

@@ -23,6 +23,10 @@ export class PoliticaDesignerComponent implements OnInit {
   selectedNode: WorkflowNode | null = null;
   selectedEdge: string | null = null;
 
+  // CU-14: IA Generativa
+  aiPrompt: string = '';
+  generatingIA: boolean = false;
+
   // CU-18 State
   currentPolicy: PoliticaWorkflow = {
     idOrganizacion: '',
@@ -135,6 +139,43 @@ export class PoliticaDesignerComponent implements OnInit {
 
     const controlX = startX + (endX - startX) / 2;
     return `M ${startX} ${startY} C ${controlX} ${startY}, ${controlX} ${endY}, ${endX} ${endY}`;
+  }
+
+  // --- CU-14: IA Generativa ---
+
+  solicitarGeneracionIA(): void {
+    if (!this.aiPrompt.trim()) return;
+    this.generatingIA = true;
+    
+    this.workflowService.generarConIA(this.aiPrompt).subscribe({
+      next: (res: any) => {
+        if (res && res.nodes) {
+          this.nodes = res.nodes;
+          this.edges = res.edges || [];
+          // Intentar auto-asignar departamentos si los nombres coinciden
+          this.autoAsignarDepartamentos();
+          alert('✨ Flujo generado exitosamente por Gemini.');
+        }
+        this.generatingIA = false;
+      },
+      error: (err) => {
+        console.error(err);
+        alert('❌ Error al generar flujo con IA. Verifique su descripción.');
+        this.generatingIA = false;
+      }
+    });
+  }
+
+  private autoAsignarDepartamentos(): void {
+    this.nodes.forEach(node => {
+      if (node.type === NodeType.USER_TASK && !node.departmentId) {
+        // Lógica simple: si el nombre del nodo contiene el nombre de un depto
+        const match = this.departamentos.find(d => 
+          node.name.toLowerCase().includes(d.nombre.toLowerCase())
+        );
+        if (match) node.departmentId = match.id;
+      }
+    });
   }
 
   // Guardado y Persistencia

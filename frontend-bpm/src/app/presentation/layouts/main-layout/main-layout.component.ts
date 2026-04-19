@@ -2,13 +2,16 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../../data/services/auth.service';
+import { VoiceAssistantComponent } from '../../shared/voice-assistant/voice-assistant.component';
 
 @Component({
   selector: 'app-main-layout',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, VoiceAssistantComponent],
   template: `
     <div class="app-layout">
+      <!-- Asistente de Voz Global -->
+      <app-voice-assistant></app-voice-assistant>
       <!-- Sidebar de Navegación -->
       <aside class="sidebar-container glass-premium">
         <div class="sidebar-header">
@@ -52,6 +55,18 @@ import { AuthService } from '../../../data/services/auth.service';
           <a routerLink="/app/users" routerLinkActive="active" class="nav-item" *ngIf="isAdmin()">
             <span class="icon">👥</span>
             <span>Usuarios</span>
+          </a>
+          <a routerLink="/app/roles" routerLinkActive="active" class="nav-item" *ngIf="isAdmin()">
+            <span class="icon">🔐</span>
+            <span>Roles</span>
+          </a>
+          <a routerLink="/app/audit" routerLinkActive="active" class="nav-item" *ngIf="isAdmin()">
+            <span class="icon">📋</span>
+            <span>Auditoría</span>
+          </a>
+          <a routerLink="/app/insights" routerLinkActive="active" class="nav-item" *ngIf="isAdmin()">
+            <span class="icon">🤖</span>
+            <span>Reportes y Analítica IA</span>
           </a>
         </nav>
 
@@ -144,18 +159,19 @@ import { AuthService } from '../../../data/services/auth.service';
       flex: 1;
       display: flex;
       flex-direction: column;
-      gap: 0.5rem;
+      gap: 0.35rem;
+      overflow-y: auto;
     }
 
     .nav-item {
       display: flex;
       align-items: center;
       gap: 0.85rem;
-      padding: 0.8rem 1rem;
+      padding: 0.7rem 1rem;
       border-radius: 0.5rem; /* rounded-lg */
       color: var(--text-muted);
       text-decoration: none;
-      font-size: 0.875rem; /* body-md */
+      font-size: 0.85rem; /* body-md */
       font-weight: 500;
       transition: all 0.2s;
     }

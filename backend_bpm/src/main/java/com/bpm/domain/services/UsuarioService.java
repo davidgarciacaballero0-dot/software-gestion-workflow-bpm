@@ -31,22 +31,24 @@ public class UsuarioService {
 
     public UsuarioResponseDTO registrarFuncionario(UsuarioRequestDTO request) {
         
-        // --- 1. THE TRIPLE VALIDATION RING --- //
-        if (!organizacionRepository.existsById(request.getIdOrganizacion())) {
-            throw new ResourceNotFoundException("[BLOQUEADO] Organización no válida: " + request.getIdOrganizacion());
-        }
+        // --- 1. THE TRIPLE VALIDATION RING (RELAXED FOR CLIENTS) --- //
         
-        Departamento depto = departamentoRepository.findById(request.getIdDepartamento())
-            .orElseThrow(() -> new ResourceNotFoundException("[BLOQUEADO] Departamento Inexistente en los registros."));
-            
-        // Regla de Seguridad: Cross-Tenant Injection.
-        // Impedir que se una a un departamento robando referencias de otra Organización.
-        if (!depto.getIdOrganizacion().equals(request.getIdOrganizacion())) {
-            throw new ResourceNotFoundException("[BRECHA FRENADA] El departamento proporcionado no pertenece a la Organización del Usuario.");
-        }
+        com.bpm.data.entities.Rol rol = rolRepository.findById(request.getIdRol())
+                .orElseThrow(() -> new ResourceNotFoundException("[BLOQUEADO] Esquema de jerarquía (Rol) ficticio o no registrado."));
 
-        if (!rolRepository.existsById(request.getIdRol())) {
-            throw new ResourceNotFoundException("[BLOQUEADO] Esquema de jerarquía (Rol) ficticio o no registrado.");
+        boolean esCliente = "CLIENTE".equals(rol.getNombre());
+
+        if (!esCliente) {
+            if (request.getIdOrganizacion() == null || !organizacionRepository.existsById(request.getIdOrganizacion())) {
+                throw new ResourceNotFoundException("[BLOQUEADO] Organización no válida o ausente para personal interno.");
+            }
+            
+            Departamento depto = departamentoRepository.findById(request.getIdDepartamento())
+                .orElseThrow(() -> new ResourceNotFoundException("[BLOQUEADO] Departamento Inexistente en los registros."));
+                
+            if (!depto.getIdOrganizacion().equals(request.getIdOrganizacion())) {
+                throw new ResourceNotFoundException("[BRECHA FRENADA] El departamento proporcionado no pertenece a la Organización del Usuario.");
+            }
         }
 
         // --- 2. TRANSMUTACIÓN SEGURA (PASSWORD BINDING) --- //

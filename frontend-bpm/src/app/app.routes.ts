@@ -10,6 +10,8 @@ import { SupervisionComponent } from './presentation/features/supervision/superv
 import { OrganizacionListComponent } from './presentation/features/organizacion/organizacion-list/organizacion-list.component';
 import { DepartamentoViewComponent } from './presentation/features/departamento/departamento-view/departamento-view.component';
 import { UsuarioListComponent } from './presentation/features/usuario/usuario-list/usuario-list.component';
+import { RolViewComponent } from './presentation/features/rol/rol-view/rol-view.component';
+import { AuditoriaListComponent } from './presentation/features/auditoria/auditoria-list/auditoria-list.component';
 import { authGuard, loginGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
@@ -29,7 +31,10 @@ export const routes: Routes = [
       { path: 'supervision', component: SupervisionComponent },
       { path: 'organizations', component: OrganizacionListComponent },
       { path: 'departments', component: DepartamentoViewComponent },
-      { path: 'users', component: UsuarioListComponent }
+      { path: 'users', component: UsuarioListComponent },
+      { path: 'roles', component: RolViewComponent },
+      { path: 'audit', component: AuditoriaListComponent },
+      { path: 'insights', loadComponent: () => import('./presentation/features/insights-ia/insights-ia.component').then(m => m.InsightsIAComponent) }
     ]
   },
   { path: '**', redirectTo: 'app' }

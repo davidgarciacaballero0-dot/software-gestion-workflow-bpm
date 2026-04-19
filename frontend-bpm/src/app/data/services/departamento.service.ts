@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { Departamento } from '../models/departamento.model';
 
 @Injectable({
@@ -12,6 +12,10 @@ export class DepartamentoService {
   constructor(private http: HttpClient) {}
 
   listarPorOrganizacion(idOrganizacion: string): Observable<Departamento[]> {
+    // Guard: Evitar llamadas al backend con ID vacío que causa 500
+    if (!idOrganizacion || idOrganizacion.trim() === '') {
+      return of([]);
+    }
     return this.http.get<Departamento[]>(`${this.apiUrl}/organizacion/${idOrganizacion}`);
   }
 

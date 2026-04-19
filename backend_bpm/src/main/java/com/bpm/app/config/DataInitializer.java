@@ -83,7 +83,7 @@ public class DataInitializer implements CommandLineRunner {
         for (int i = 1; i <= 2; i++) createUsuario("Contador " + i, "user.fn" + i + "@bpm.com", commonPass, funcRol.getId(), org.getId(), depFin.getId());
         for (int i = 1; i <= 2; i++) createUsuario("Operador " + i, "user.op" + i + "@bpm.com", commonPass, funcRol.getId(), org.getId(), depOp.getId());
 
-        // Clientes (8 externos)
+        // Clientes (8 externos - SIN ORGANIZACION ASIGNADA)
         List<Usuario> clientes = new ArrayList<>();
         for (int i = 1; i <= 8; i++) {
             clientes.add(usuarioRepository.save(Usuario.builder()
@@ -91,7 +91,8 @@ public class DataInitializer implements CommandLineRunner {
                 .email("cliente" + i + "@bpm.com")
                 .passwordHash(commonPass)
                 .idRol(clienteRol.getId())
-                .idOrganizacion(org.getId())
+                .idOrganizacion(null) // Usuario libre de Tenants
+                .idDepartamento(null)
                 .build()));
         }
 

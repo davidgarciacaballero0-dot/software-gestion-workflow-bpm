@@ -1,38 +1,82 @@
-<div class="list-card monolith-surface shadow-ambient animate-fade-in">
-  <div class="header-tools">
-    <h4>Directorio de Nomina Activa</h4>
-    <span class="badge badge-primary">Fuerza Laboral: {{ usuarios.length }}</span>
+<div class="dashboard-container animate-fade-in">
+  <div class="header">
+    <h1 class="page-title">Gestión de Usuarios</h1>
+    <p class="page-subtitle">Directorio corporativo y administración de credenciales del sistema.</p>
   </div>
 
-  <div *ngIf="loading" class="loading-state">
-    <span class="spinner"></span> Indexando credenciales del segmento...
+  <!-- Controles de Filtrado y Acciones -->
+  <div class="actions-bar" style="display:flex; gap:1rem; align-items:flex-end; flex-wrap:wrap; margin-bottom:1.5rem;">
+    <div class="filter-group" style="flex:1; min-width:200px;">
+      <label style="display:block; font-size:0.75rem; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:0.4rem;">Organización</label>
+      <select class="form-control" [(ngModel)]="selectedOrgId" (change)="onOrganizacionChange()">
+        <option value="">-- Seleccionar Tenant --</option>
+        <option *ngFor="let o of organizaciones" [value]="o.id">{{ o.nombre }}</option>
+      </select>
+    </div>
+
+    <div class="filter-group" style="flex:1; min-width:200px;">
+      <label style="display:block; font-size:0.75rem; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:0.4rem;">Departamento</label>
+      <select class="form-control" [(ngModel)]="selectedDepId" (change)="onDepartamentoChange()" [disabled]="!selectedOrgId">
+        <option value="">-- Seleccionar Área --</option>
+        <option *ngFor="let d of departamentos" [value]="d.id">{{ d.nombre }}</option>
+      </select>
+    </div>
+
+    <button class="btn-premium btn-premium-primary" (click)="toggleForm()" style="height:fit-content;">
+      {{ showForm ? '✕ Cerrar Formulario' : '+ Nuevo Usuario' }}
+    </button>
   </div>
 
-  <table class="corporate-table" *ngIf="!loading">
-    <thead>
-      <tr>
-        <th>UID Funcionario</th>
-        <th>Nombre Institucional</th>
-        <th>Acceso Restringido (Email)</th>
-        <th>Nivel de Jerarquía</th>
-        <th>Fecha de Inserción</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr *ngFor="let u of usuarios" class="table-row">
-        <td class="font-mono">{{ u.id | slice:0:6 }}</td>
-        <td class="font-strong">{{ u.nombre }}</td>
-        <td class="text-muted">{{ u.email }}</td>
-        <td><span class="badge badge-secondary">{{ u.idRol }}</span></td>
-        <!-- NOTA DE SEGURIDAD: Password nunca es enviado por Backend -->
-        <td>{{ u.createdAt | date:'shortDate' }}</td>
-      </tr>
-      
-      <tr *ngIf="usuarios.length === 0">
-        <td colspan="5" class="empty-state">
-          Estructura intacta. No existe talento asignado a este segmento departamental.
-        </td>
-      </tr>
-    </tbody>
-  </table>
+  <!-- Formulario de Creación Embebido -->
+  <div *ngIf="showForm" class="form-section animate-fade-in" style="margin-bottom:1.5rem;">
+    <app-usuario-form 
+      (onCreated)="onUsuarioCreated($event)" 
+      (onCancel)="onFormCancel()">
+    </app-usuario-form>
+  </div>
+
+  <!-- Tabla de Usuarios -->
+  <div class="list-card monolith-surface shadow-ambient">
+    <div class="header-tools" style="display:flex; justify-content:space-between; align-items:center; padding:1rem 1.5rem; border-bottom:1px solid rgba(200,197,208,0.15);">
+      <h4 style="margin:0; color:var(--primary); font-size:1rem;">Directorio de Nómina Activa</h4>
+      <span class="badge badge-primary">Fuerza Laboral: {{ usuarios.length }}</span>
+    </div>
+
+    <div *ngIf="!selectedOrgId || !selectedDepId" style="padding:3rem; text-align:center; color:var(--text-muted); font-size:0.875rem;">
+      <div style="font-size:2.5rem; margin-bottom:1rem;">🔍</div>
+      <p>Seleccione una <strong>Organización</strong> y un <strong>Departamento</strong> para visualizar el personal asignado.</p>
+    </div>
+
+    <div *ngIf="loading" class="loading-state" style="padding:2rem; text-align:center;">
+      <span class="spinner"></span> Indexando credenciales del segmento...
+    </div>
+
+    <table class="corporate-table" *ngIf="!loading && selectedOrgId && selectedDepId">
+      <thead>
+        <tr>
+          <th>UID Funcionario</th>
+          <th>Nombre Institucional</th>
+          <th>Acceso Restringido (Email)</th>
+          <th>Nivel de Jerarquía</th>
+          <th>Fecha de Inserción</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let u of usuarios" class="table-row">
+          <td class="font-mono">{{ u.id | slice:0:6 }}</td>
+          <td class="font-strong">{{ u.nombre }}</td>
+          <td class="text-muted">{{ u.email }}</td>
+          <td><span class="badge badge-secondary">{{ getNombreRol(u.idRol) }}</span></td>
+          <!-- NOTA DE SEGURIDAD: Password nunca es enviado por Backend -->
+          <td>{{ u.createdAt | date:'shortDate' }}</td>
+        </tr>
+        
+        <tr *ngIf="usuarios.length === 0">
+          <td colspan="5" class="empty-state">
+            Estructura intacta. No existe talento asignado a este segmento departamental.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
 </div>

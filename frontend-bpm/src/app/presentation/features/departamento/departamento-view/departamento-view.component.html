@@ -1,12 +1,29 @@
 <div class="row-layout animate-fade-in">
   <!-- Módulo Izquierdo: Data Grid Recursiva -->
   <div class="list-module">
-    <h3>Organigrama de Áreas</h3>
+    <div class="header-tools" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+      <h3>Organigrama de Áreas</h3>
+      <button *ngIf="!needsOrgSelection && idOrganizacion" class="btn-icon" (click)="cambiarOrganizacion()" style="font-size:0.8rem; cursor:pointer;">
+        🔄 Cambiar Organización
+      </button>
+    </div>
+
+    <!-- Selector de Organización cuando no hay una asignada -->
+    <div *ngIf="needsOrgSelection" class="org-selector" style="margin-bottom:1.5rem;">
+      <label style="display:block; margin-bottom:0.5rem; font-weight:600; color: var(--primary); font-size:0.85rem;">
+        Seleccione una Organización para administrar
+      </label>
+      <select class="form-control" (change)="onOrganizacionSelected($any($event.target).value)" style="width:100%;">
+        <option value="" disabled selected>-- Seleccionar Tenant --</option>
+        <option *ngFor="let o of organizaciones" [value]="o.id">{{ o.nombre }}</option>
+      </select>
+    </div>
+
     <div *ngIf="loading" class="loading-state">
       <span class="spinner"></span> Consultando topología de Tenant...
     </div>
 
-    <table class="corporate-table" *ngIf="!loading">
+    <table class="corporate-table" *ngIf="!loading && !needsOrgSelection">
       <thead>
         <tr>
           <th>UID</th>
@@ -24,7 +41,7 @@
         </tr>
         <!-- Estado Vacío -->
         <tr *ngIf="departamentos.length === 0">
-          <td colspan="3" class="empty-state">
+          <td colspan="4" class="empty-state">
             Este Tenant actualmente no cuenta con organigrama jerárquico.
           </td>
         </tr>
@@ -33,7 +50,7 @@
   </div>
 
   <!-- Módulo Derecho: Formulario Embebido Angular Reactive -->
-  <div class="form-module form-card">
+  <div class="form-module form-card" *ngIf="!needsOrgSelection">
     <h3>Designar Nuevo Departamento</h3>
     <form [formGroup]="depForm" (ngSubmit)="onSubmit()">
       
@@ -53,7 +70,7 @@
       </div>
 
       <div class="form-actions mt-cmd">
-        <button type="submit" class="btn btn-primary" [disabled]="depForm.invalid || isSubmitting">
+        <button type="submit" class="btn btn-primary" [disabled]="depForm.invalid || isSubmitting || !idOrganizacion">
           <span *ngIf="isSubmitting" class="spinner"></span>
           {{ isSubmitting ? 'Bifurcando Datos...' : 'Crear Jerarquía' }}
         </button>

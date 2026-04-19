@@ -1,100 +1,100 @@
-<div class="supervision-container">
-  <header class="supervision-header">
-    <div class="header-left">
-      <h1>Dashboard de Supervisión</h1>
-      <p class="subtitle">Monitoreo de carga y control administrativo del departamento.</p>
-    </div>
-    <div class="stats-panel">
-      <div class="stat-card">
-        <span class="stat-val">{{ stats.total }}</span>
-        <span class="stat-lab">Total</span>
-      </div>
-      <div class="stat-card accent">
-        <span class="stat-val">{{ stats.enProgreso }}</span>
-        <span class="stat-lab">Activos</span>
-      </div>
-      <div class="stat-card success">
-        <span class="stat-val">{{ stats.finalizados }}</span>
-        <span class="stat-lab">Cerrados</span>
-      </div>
-    </div>
-  </header>
+<div class="supervision-container animate-fade-in">
+  <div class="header">
+    <h1 class="page-title">Panel de Supervisión Operativa</h1>
+    <p class="page-subtitle">Monitoreo en tiempo real de trámites y ejecución de facultades de intervención administrativa.</p>
+  </div>
 
-  <section class="supervision-content monolith-surface shadow-ambient animate-fade-in">
-    <div *ngIf="loading" class="loader-box">
-      <div class="spinner"></div>
+  <!-- Dashboard Stats (Premium Widgets) -->
+  <div class="stats-grid">
+    <div class="stat-card glass-premium shadow-ambient">
+      <div class="stat-icon">📊</div>
+      <div class="stat-data">
+        <span class="stat-value">{{ stats.total }}</span>
+        <span class="stat-label">Carga Total</span>
+      </div>
+    </div>
+    <div class="stat-card glass-premium shadow-ambient highlight-blue">
+      <div class="stat-icon">⚙️</div>
+      <div class="stat-data">
+        <span class="stat-value text-blue">{{ stats.enProgreso }}</span>
+        <span class="stat-label">En Ejecución</span>
+      </div>
+    </div>
+    <div class="stat-card glass-premium shadow-ambient highlight-green">
+      <div class="stat-icon">✅</div>
+      <div class="stat-data">
+        <span class="stat-value text-green">{{ stats.finalizados }}</span>
+        <span class="stat-label">Finalizados</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lista de Supervisión -->
+  <div class="grid-card monolith-surface shadow-ambient mt-2">
+    <div *ngIf="loading" class="loading-state">
+      <span class="spinner"></span> Consolidando métricas del departamento...
     </div>
 
-    <table *ngIf="!loading && tramites.length > 0" class="super-table">
+    <table class="supervision-table" *ngIf="!loading">
       <thead>
         <tr>
-          <th>Código</th>
-          <th>Trámite</th>
+          <th>ID Trámite</th>
           <th>Estado</th>
-          <th>Paso Actual</th>
-          <th>Iniciado</th>
+          <th>Ingreso</th>
+          <th>SLA Acumulado</th>
           <th>Acciones</th>
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let t of tramites">
-          <td><span class="code-badge">{{ t.codigoTramite }}</span></td>
-          <td>{{ t.nombrePolitica }}</td>
-          <td><span class="status-pill" [class]="t.estadoActual">{{ t.estadoActual }}</span></td>
-          <td>{{ t.nodoActualId }}</td>
-          <td>{{ formatDate(t.createdAt) }}</td>
-          <td class="actions-td">
-            <button 
-              *ngIf="t.estadoActual !== 'FINALIZADO'" 
-              class="btn-action warning" 
-              (click)="abrirIntervencion(t)"
-              title="Intervenír Trámite">
-              🛠️
-            </button>
+        <tr *ngFor="let t of tramites" class="animate-slide-up">
+          <td class="font-strong">{{ t.codigoTramite }}</td>
+          <td><span class="badge" [ngClass]="'badge-' + t.estadoActual.toLowerCase()">{{ t.estadoActual }}</span></td>
+          <td class="text-muted">{{ formatDate(t.createdAt) }}</td>
+          <td>
+            <div class="sla-indicator">
+              <div class="sla-bar" style="width: 45%; background: var(--success);"></div>
+              <span class="sla-text">A tiempo</span>
+            </div>
           </td>
+          <td>
+            <button class="btn btn-warning btn-sm" (click)="abrirIntervencion(t)">🛠️ Intervenir</button>
+          </td>
+        </tr>
+        <tr *ngIf="tramites.length === 0">
+          <td colspan="5" class="empty-state">No se registran trámites bajo supervisión en su contexto actual.</td>
         </tr>
       </tbody>
     </table>
+  </div>
 
-    <div *ngIf="!loading && tramites.length === 0" class="empty-msg">
-      No hay trámites registrados en este departamento.
-    </div>
-  </section>
-
-  <!-- MODAL DE INTERVENCIÓN -->
-  <div class="modal-overlay" *ngIf="showModal" (click)="cerrarModal()">
-    <div class="modal-content monolith-surface shadow-ambient animate-zoom" (click)="$event.stopPropagation()">
+  <!-- Modal de Intervención (Premium Design) -->
+  <div class="modal-overlay" *ngIf="showModal">
+    <div class="modal-content glass-premium animate-pop">
       <div class="modal-header">
         <h2>🛠️ Intervención Administrativa</h2>
         <button class="close-btn" (click)="cerrarModal()">✕</button>
       </div>
-      
-      <div class="modal-body" *ngIf="selectedTramite">
-        <div class="warning-alert">
-          <strong>⚠️ Nota:</strong> Esta acción forzará el cambio de ubicación del trámite {{ selectedTramite.codigoTramite }}, ignorando las reglas del flujo de diseño.
+      <div class="modal-body">
+        <p class="modal-hint">Ajuste forzado de flujo para el trámite <strong>{{ selectedTramite.codigoTramite }}</strong>.</p>
+        
+        <div class="form-group">
+          <label>Destino (ID del Nodo)</label>
+          <input type="text" [(ngModel)]="intervencion.nuevoNodoId" class="form-control" placeholder="ID del nuevo paso...">
         </div>
 
         <div class="form-group">
-          <label>Nuevo Nodo Destino (ID):</label>
-          <input type="text" [(ngModel)]="intervencion.nuevoNodoId" placeholder="Ej: task_contabilidad_02" class="form-control">
+          <label>Departamento Destino</label>
+          <input type="text" [(ngModel)]="intervencion.nuevoDepartamentoId" class="form-control" placeholder="ID del departamento...">
         </div>
 
         <div class="form-group">
-          <label>Nuevo Departamento:</label>
-          <input type="text" [(ngModel)]="intervencion.nuevoDepartamentoId" placeholder="Ej: depto_finanzas" class="form-control">
-        </div>
-
-        <div class="form-group">
-          <label>Motivo de la Intervención:</label>
-          <textarea [(ngModel)]="intervencion.motivo" placeholder="Justifique por qué se está moviendo el trámite manualmente..." rows="3" class="form-control"></textarea>
+          <label>Exposición de Motivos</label>
+          <textarea [(ngModel)]="intervencion.motivo" class="form-control" rows="3" placeholder="Justifique la intervención..."></textarea>
         </div>
       </div>
-
       <div class="modal-footer">
-        <button class="btn btn-glass" (click)="cerrarModal()">Cancelar</button>
-        <button class="btn btn-primary" (click)="ejecutarIntervencion()" [disabled]="!intervencion.motivo">
-          Confirmar Reasignación
-        </button>
+        <button class="btn btn-secondary" (click)="cerrarModal()">Cancelar</button>
+        <button class="btn btn-primary" (click)="ejecutarIntervencion()" [disabled]="!intervencion.motivo">Confirmar Intervención</button>
       </div>
     </div>
   </div>

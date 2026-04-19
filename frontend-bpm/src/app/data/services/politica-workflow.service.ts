@@ -19,12 +19,20 @@ export class PoliticaWorkflowService {
     return this.http.get<PoliticaWorkflow[]>(`${this.apiUrl}/organization/${idOrganizacion}`);
   }
 
+  listarCatalogoPublico(): Observable<PoliticaWorkflow[]> {
+    return this.http.get<PoliticaWorkflow[]>(`${this.apiUrl}/catalog`);
+  }
+
   obtenerPorId(id: string): Observable<PoliticaWorkflow> {
     return this.http.get<PoliticaWorkflow>(`${this.apiUrl}/${id}`);
   }
 
   publicar(id: string): Observable<PoliticaWorkflow> {
     return this.http.patch<PoliticaWorkflow>(`${this.apiUrl}/${id}/publish`, {});
+  }
+
+  generarConIA(descripcion: string): Observable<any> {
+    return this.http.post<any>(`/api/v1/optimization/analyze-flow`, { descripcion });
   }
 
   nuevaVersion(id: string): Observable<PoliticaWorkflow> {
