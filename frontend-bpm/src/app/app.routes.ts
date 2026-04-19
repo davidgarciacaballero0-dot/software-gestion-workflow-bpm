@@ -7,6 +7,9 @@ import { InboxComponent } from './presentation/features/inbox/inbox.component';
 import { TramiteAtencionComponent } from './presentation/features/tramite-atencion/tramite-atencion.component';
 import { TramiteHistorialComponent } from './presentation/features/tramite-historial/tramite-historial.component';
 import { SupervisionComponent } from './presentation/features/supervision/supervision.component';
+import { OrganizacionListComponent } from './presentation/features/organizacion/organizacion-list/organizacion-list.component';
+import { DepartamentoViewComponent } from './presentation/features/departamento/departamento-view/departamento-view.component';
+import { UsuarioListComponent } from './presentation/features/usuario/usuario-list/usuario-list.component';
 import { authGuard, loginGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
@@ -23,7 +26,10 @@ export const routes: Routes = [
       { path: 'inbox', component: InboxComponent },
       { path: 'tramite/atencion/:id', component: TramiteAtencionComponent },
       { path: 'tramite/historial/:id', component: TramiteHistorialComponent },
-      { path: 'supervision', component: SupervisionComponent }
+      { path: 'supervision', component: SupervisionComponent },
+      { path: 'organizations', component: OrganizacionListComponent },
+      { path: 'departments', component: DepartamentoViewComponent },
+      { path: 'users', component: UsuarioListComponent }
     ]
   },
   { path: '**', redirectTo: 'app' }

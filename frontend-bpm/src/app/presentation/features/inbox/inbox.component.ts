@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { TramiteService } from '../../../data/services/tramite.service';
@@ -24,7 +24,9 @@ export class InboxComponent implements OnInit {
     private tramiteService: TramiteService,
     private notificationService: NotificationService,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private cd: ChangeDetectorRef,
+    private zone: NgZone
   ) { }
 
   ngOnInit(): void {
@@ -55,8 +57,24 @@ export class InboxComponent implements OnInit {
   }
 
   loadInbox(): void {
+    if (this.activeTab === 'department' && !this.deptId) {
+       console.warn('Inbox: El usuario no tiene departamento asignado. No se pueden cargar trámites departamentales.');
+       this.loading = false;
+       this.tramites = [];
+       return;
+    }
+
     this.loading = true;
     this.tramites = [];
+
+    const safetyTimer = setTimeout(() => {
+      this.zone.run(() => {
+        if (this.loading) {
+          this.loading = false;
+          this.cd.detectChanges();
+        }
+      });
+    }, 4000);
 
     const obs = this.activeTab === 'personal'
       ? this.tramiteService.listarPorUsuario(this.userId)
@@ -64,12 +82,20 @@ export class InboxComponent implements OnInit {
 
     obs.subscribe({
       next: (data) => {
-        this.tramites = data;
-        this.loading = false;
+        clearTimeout(safetyTimer);
+        this.zone.run(() => {
+          this.tramites = data || [];
+          this.loading = false;
+          this.cd.detectChanges();
+        });
       },
       error: (err) => {
-        console.error(err);
-        this.loading = false;
+        clearTimeout(safetyTimer);
+        this.zone.run(() => {
+          console.error(err);
+          this.loading = false;
+          this.cd.detectChanges();
+        });
       }
     });
   }

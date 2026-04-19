@@ -157,10 +157,18 @@ export class PoliticaDesignerComponent implements OnInit {
       return;
     }
 
+    const { valido, error } = this.validarEstructuraLocal();
+    if (!valido) {
+      alert('⚠️ Validación local fallida:\n' + error);
+      return;
+    }
+
+    if (!confirm('¿Estás seguro de que deseas publicar esta política? Se volverá de solo lectura.')) return;
+
     this.workflowService.publicar(this.currentPolicy.id).subscribe({
       next: (res: PoliticaWorkflow) => {
         this.currentPolicy = res;
-        alert('🚀 ¡Política publicada con éxito! Ahora es de solo lectura.');
+        alert('🚀 ¡Política publicada con éxito!');
       },
       error: (err: any) => this.handleError(err)
     });
@@ -181,10 +189,41 @@ export class PoliticaDesignerComponent implements OnInit {
     });
   }
 
+  private validarEstructuraLocal(): { valido: boolean, error?: string } {
+    const nodes = this.nodes;
+    if (nodes.length === 0) return { valido: false, error: 'No hay nodos en el diagrama.' };
+
+    const hasStart = nodes.some(n => n.type === NodeType.START);
+    const hasEnd = nodes.some(n => n.type === NodeType.END);
+
+    if (!hasStart) return { valido: false, error: 'Falta el nodo de Inicio (START).' };
+    if (!hasEnd) return { valido: false, error: 'Falta el nodo de Fin (END).' };
+
+    // Validar que las USER_TASK tengan departamento asignado
+    for (const node of nodes) {
+      if (node.type === NodeType.USER_TASK && !node.departmentId) {
+        return { valido: false, error: `El paso "${node.name}" no tiene un departamento asignado.` };
+      }
+    }
+
+    return { valido: true };
+  }
+
   private handleError(err: any): void {
-    const message = err.error?.message || 'Ocurrió un error inesperado.';
-    alert('Error: ' + message);
-    console.error(err);
+    console.error('Designer Error Log:', err);
+    let message = 'Ocurrió un error inesperado al procesar la solicitud.';
+    
+    if (err.error) {
+      if (typeof err.error === 'string') {
+        message = err.error;
+      } else if (err.error.message) {
+        message = err.error.message;
+      }
+    } else if (err.message) {
+      message = err.message;
+    }
+
+    alert('❌ Error:\n' + message);
   }
 
   // Lógica simplificada para crear una conexión entre nodos

@@ -27,7 +27,14 @@ export class UsuarioListComponent implements OnInit {
       console.warn('UI Alert: Esperando asignación de Segmento Departamental para cargar personal. Auto-resolving...');
       const user = this.authService.currentUser();
       this.idDepartamento = user?.idDepartamento || '';
-      this.cargarUsuarios();
+      
+      if (this.idDepartamento) {
+        this.cargarUsuarios();
+      } else {
+        console.warn('UI Alert: No se encontró un departamento para el usuario actual. El listado permanecerá vacío.');
+        this.usuarios = [];
+        this.loading = false;
+      }
     }
   }
 

@@ -27,6 +27,9 @@ public class UsuarioController {
 
     @GetMapping("/departamento/{idDepartamento}")
     public ResponseEntity<List<UsuarioResponseDTO>> listarUsuariosPorDepartamento(@PathVariable String idDepartamento) {
+        if (idDepartamento == null || idDepartamento.trim().isEmpty() || idDepartamento.equals("undefined") || idDepartamento.equals("null")) {
+            return ResponseEntity.ok(List.of());
+        }
         return ResponseEntity.ok(usuarioService.listarPorDepartamento(idDepartamento));
     }
 }

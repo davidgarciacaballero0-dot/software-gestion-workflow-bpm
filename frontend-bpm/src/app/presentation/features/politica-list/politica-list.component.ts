@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PoliticaWorkflowService } from '../../../data/services/politica-workflow.service';
 import { TramiteService } from '../../../data/services/tramite.service';
@@ -20,7 +20,9 @@ export class PoliticaListComponent implements OnInit {
   constructor(
     private politicaService: PoliticaWorkflowService,
     private tramiteService: TramiteService,
-    private authService: AuthService
+    private authService: AuthService,
+    private cd: ChangeDetectorRef,
+    private zone: NgZone
   ) {}
 
   ngOnInit(): void {
@@ -28,30 +30,47 @@ export class PoliticaListComponent implements OnInit {
   }
 
   cargarPoliticas(): void {
-    this.loading = true;
     const user = this.authService.currentUser();
-    const orgId = user?.idOrganizacion || '69e3ae7d116741365db8477c';
-    console.log('Loading politicas for org:', orgId, user);
+    const orgId = user?.idOrganizacion;
+
+    if (!orgId) {
+      console.warn('No Organization context found in session.');
+      this.loading = false;
+      this.politicas = [];
+      return;
+    }
+
+    this.loading = true;
+    console.log('Loading policies for org:', orgId);
     
-    // Safety timeout in case proxy hangs
+    // Safety timeout to prevent infinite skeletons if the proxy hangs
     const safetyTimer = setTimeout(() => {
-      console.warn('Safety timeout reached');
-      if (this.loading) {
-         this.loading = false;
-      }
-    }, 5000);
+      this.zone.run(() => {
+        if (this.loading) {
+          console.warn('Backend request timed out (Safety Triggered)');
+          this.loading = false;
+          this.cd.detectChanges();
+        }
+      });
+    }, 4000);
 
     this.politicaService.listarPorOrganizacion(orgId).subscribe({
       next: (data) => {
         clearTimeout(safetyTimer);
-        this.politicas = data;
-        this.loading = false;
-        console.log('Politicas loaded:', data);
+        this.zone.run(() => {
+          this.politicas = data || [];
+          this.loading = false;
+          this.cd.detectChanges();
+          console.log('Policies synchronized:', this.politicas.length);
+        });
       },
       error: (err) => {
         clearTimeout(safetyTimer);
-        console.error('Error loading politicas:', err);
-        this.loading = false;
+        this.zone.run(() => {
+          console.error('API Error:', err);
+          this.loading = false;
+          this.cd.detectChanges();
+        });
       }
     });
   }

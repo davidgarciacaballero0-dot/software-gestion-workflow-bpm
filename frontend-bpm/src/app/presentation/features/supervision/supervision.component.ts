@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TramiteService } from '../../../data/services/tramite.service';
@@ -37,7 +37,9 @@ export class SupervisionComponent implements OnInit {
 
   constructor(
     private tramiteService: TramiteService,
-    private authService: AuthService
+    private authService: AuthService,
+    private cd: ChangeDetectorRef,
+    private zone: NgZone
   ) {}
 
   ngOnInit(): void {
@@ -57,16 +59,43 @@ export class SupervisionComponent implements OnInit {
   }
 
   cargarDatos(): void {
+    if (!this.deptId) {
+       console.warn('Supervision: Sin contexto de departamento.');
+       this.loading = false;
+       this.tramites = [];
+       this.calcularStats();
+       this.cd.detectChanges();
+       return;
+    }
+
     this.loading = true;
+
+    const safetyTimer = setTimeout(() => {
+      this.zone.run(() => {
+        if (this.loading) {
+          this.loading = false;
+          this.cd.detectChanges();
+        }
+      });
+    }, 4000);
+
     this.tramiteService.listarSupervision(this.deptId).subscribe({
       next: (data) => {
-        this.tramites = data;
-        this.calcularStats();
-        this.loading = false;
+        clearTimeout(safetyTimer);
+        this.zone.run(() => {
+          this.tramites = data || [];
+          this.calcularStats();
+          this.loading = false;
+          this.cd.detectChanges();
+        });
       },
       error: (err) => {
-        console.error(err);
-        this.loading = false;
+        clearTimeout(safetyTimer);
+        this.zone.run(() => {
+          console.error(err);
+          this.loading = false;
+          this.cd.detectChanges();
+        });
       }
     });
   }

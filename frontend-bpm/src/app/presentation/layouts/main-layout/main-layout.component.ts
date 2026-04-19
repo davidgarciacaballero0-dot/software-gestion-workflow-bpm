@@ -36,6 +36,23 @@ import { AuthService } from '../../../data/services/auth.service';
             <span class="icon">📊</span>
             <span>Métricas de Supervisión</span>
           </a>
+
+          <!-- Módulos de Gestión Administrativa (CU-1.2) -->
+          <div class="nav-divider" *ngIf="isAdmin()">
+             <span>Gestión</span>
+          </div>
+          <a routerLink="/app/organizations" routerLinkActive="active" class="nav-item" *ngIf="isAdmin()">
+            <span class="icon">🏢</span>
+            <span>Organizaciones</span>
+          </a>
+          <a routerLink="/app/departments" routerLinkActive="active" class="nav-item" *ngIf="isAdmin()">
+            <span class="icon">🏘️</span>
+            <span>Departamentos</span>
+          </a>
+          <a routerLink="/app/users" routerLinkActive="active" class="nav-item" *ngIf="isAdmin()">
+            <span class="icon">👥</span>
+            <span>Usuarios</span>
+          </a>
         </nav>
 
         <div class="sidebar-footer">
@@ -45,7 +62,7 @@ import { AuthService } from '../../../data/services/auth.service';
             </div>
             <div class="user-details">
               <span class="name">{{ user.nombre }}</span>
-              <span class="role">{{ user.idRol }}</span>
+              <span class="role">{{ user.nombreRol }}</span>
             </div>
           </div>
           
@@ -153,6 +170,18 @@ import { AuthService } from '../../../data/services/auth.service';
       background: var(--surface-container-lowest);
       color: var(--primary);
       box-shadow: var(--shadow-ambient);
+    }
+
+    .nav-divider {
+      margin-top: 1rem;
+      margin-bottom: 0.5rem;
+      padding: 0 1rem;
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      opacity: 0.7;
     }
 
     /* Main Content Styles */
