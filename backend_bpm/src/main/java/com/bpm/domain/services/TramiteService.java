@@ -8,6 +8,7 @@ import com.bpm.app.exceptions.WorkflowValidationException;
 import com.bpm.data.entities.EventoHistorial;
 import com.bpm.data.entities.PoliticaWorkflow;
 import com.bpm.data.entities.TramiteInstancia;
+import com.bpm.data.entities.Usuario;
 import com.bpm.data.entities.embedded.Condition;
 import com.bpm.data.entities.embedded.WorkflowEdge;
 import com.bpm.data.entities.embedded.WorkflowNode;
@@ -18,6 +19,7 @@ import com.bpm.data.repositories.DepartamentoRepository;
 import com.bpm.data.repositories.EventoHistorialRepository;
 import com.bpm.data.repositories.PoliticaWorkflowRepository;
 import com.bpm.data.repositories.TramiteInstanciaRepository;
+import com.bpm.data.repositories.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
@@ -37,6 +39,7 @@ public class TramiteService {
     private final SequenceGeneratorService sequenceGenerator;
     private final NotificationService notificationService;
     private final EventoHistorialRepository historialRepository;
+    private final UsuarioRepository usuarioRepository;
 
     @Autowired
     public TramiteService(TramiteInstanciaRepository tramiteRepository,
@@ -44,13 +47,15 @@ public class TramiteService {
                           DepartamentoRepository departamentoRepository,
                           SequenceGeneratorService sequenceGenerator,
                           NotificationService notificationService,
-                          EventoHistorialRepository historialRepository) {
+                          EventoHistorialRepository historialRepository,
+                          UsuarioRepository usuarioRepository) {
         this.tramiteRepository = tramiteRepository;
         this.politicaRepository = politicaRepository;
         this.departamentoRepository = departamentoRepository;
         this.sequenceGenerator = sequenceGenerator;
         this.notificationService = notificationService;
         this.historialRepository = historialRepository;
+        this.usuarioRepository = usuarioRepository;
     }
 
     public TramiteResponseDTO iniciarTramite(StartProcedureRequestDTO request) {
@@ -84,14 +89,22 @@ public class TramiteService {
         int year = Calendar.getInstance().get(Calendar.YEAR);
         String code = String.format("TRM-%d-%04d", year, seqNum);
 
+        // Obtener datos del solicitante para denormalización (REQ FASE 4)
+        Usuario solicitante = usuarioRepository.findById(request.getIdUsuarioSolicitante())
+                .orElse(null);
+        String ci = (solicitante != null) ? solicitante.getCi() : "";
+        String nombreCompleto = (solicitante != null) ? (solicitante.getNombre() + " " + solicitante.getApellidos()) : "";
+
         TramiteInstancia instancia = TramiteInstancia.builder()
                 .codigoTramite(code)
                 .idPolitica(politica.getId())
                 .idUsuarioSolicitante(request.getIdUsuarioSolicitante())
+                .ciSolicitante(ci)
+                .nombreSolicitante(nombreCompleto)
                 .estadoActual("EN_PROGRESO")
                 .nodoActualId(firstOpNode.getId())
                 .departamentoActualId(firstOpNode.getDepartmentId())
-                .prioridad(request.getPrioridad() != null ? request.getPrioridad() : 2) // Default priority 2 (Normal)
+                .prioridad(request.getPrioridad() != null ? request.getPrioridad() : 2)
                 .datosAcumuladosFormulario(request.getDatosIniciales() != null ? request.getDatosIniciales() : new HashMap<>())
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
@@ -138,6 +151,9 @@ public class TramiteService {
                 .codigoTramite(instancia.getCodigoTramite())
                 .idPolitica(instancia.getIdPolitica())
                 .idUsuarioSolicitante(instancia.getIdUsuarioSolicitante())
+                .ciSolicitante(instancia.getCiSolicitante())
+                .nombreSolicitante(instancia.getNombreSolicitante())
+                .funcionarioAsignadoId(instancia.getFuncionarioAsignadoId())
                 .nombrePolitica(nombrePolitica != null ? nombrePolitica : "Sin definir")
                 .estadoActual(instancia.getEstadoActual())
                 .nodoActualId(instancia.getNodoActualId())
@@ -317,6 +333,12 @@ public class TramiteService {
     public List<TramiteResponseDTO> listarSupervisionDepartamento(String departamentoId) {
         // Incluye los FINALIZADOS para que la jefatura vea el histórico completo
         return tramiteRepository.findByDepartamentoActualId(departamentoId).stream()
+                .map(this::transformarADTO)
+                .collect(Collectors.toList());
+    }
+
+    public List<TramiteResponseDTO> buscarPorCi(String ci) {
+        return tramiteRepository.findByCiSolicitanteContaining(ci).stream()
                 .map(this::transformarADTO)
                 .collect(Collectors.toList());
     }

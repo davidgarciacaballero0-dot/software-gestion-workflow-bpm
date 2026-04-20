@@ -42,5 +42,9 @@ export class TramiteService {
   intervenirTramite(request: any): Observable<TramiteResponseDTO> {
     return this.http.post<TramiteResponseDTO>(`${this.apiUrl}/intervencion`, request);
   }
+
+  buscarPorCi(ci: string): Observable<TramiteResponseDTO[]> {
+    return this.http.get<TramiteResponseDTO[]>(`${this.apiUrl}/search/ci/${ci}`);
+  }
 }
 

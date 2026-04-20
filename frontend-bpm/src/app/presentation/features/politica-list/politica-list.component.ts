@@ -1,17 +1,18 @@
 import { Component, OnInit, ChangeDetectorRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { PoliticaWorkflowService } from '../../../data/services/politica-workflow.service';
 import { TramiteService } from '../../../data/services/tramite.service';
 import { OrganizacionService } from '../../../data/services/organizacion.service';
 import { PoliticaWorkflow, PolicyStatus } from '../../../data/models/politica-workflow.model';
-import { StartProcedureRequestDTO } from '../../../data/models/tramite.model';
+import { StartProcedureRequestDTO, TramiteResponseDTO } from '../../../data/models/tramite.model';
 import { AuthService } from '../../../data/services/auth.service';
 import { forkJoin, of } from 'rxjs';
 
 @Component({
   selector: 'app-politica-list',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterLink],
   templateUrl: './politica-list.component.html',
   styleUrls: ['./politica-list.component.css']
 })
@@ -24,6 +25,8 @@ export class PoliticaListComponent implements OnInit {
   pendingPolitica: PoliticaWorkflow | null = null;
   resultMessage: string | null = null;
   resultIsError = false;
+  welcomeMessage = '';
+  tramitesActivos: TramiteResponseDTO[] = [];
 
   constructor(
     private politicaService: PoliticaWorkflowService,
@@ -37,7 +40,23 @@ export class PoliticaListComponent implements OnInit {
   ngOnInit(): void {
     const user = this.authService.currentUser();
     this.isClient = user?.nombreRol === 'CLIENTE';
+    this.welcomeMessage = `¡Bienvenido, ${user?.nombre} ${user?.apellidos || ''}!`;
     this.cargarDatos();
+    
+    if (this.isClient && user?.nombre) {
+      this.cargarTramitesActivos(user.nombre);
+    }
+  }
+
+  cargarTramitesActivos(username: string): void {
+    this.tramiteService.listarPorUsuario(username).subscribe({
+      next: (data) => {
+        this.zone.run(() => {
+          this.tramitesActivos = (data || []).filter(t => t.estadoActual !== 'FINALIZADO');
+          this.cd.detectChanges();
+        });
+      }
+    });
   }
 
   cargarDatos(): void {

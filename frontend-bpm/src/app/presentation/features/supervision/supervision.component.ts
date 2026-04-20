@@ -5,6 +5,7 @@ import { TramiteService } from '../../../data/services/tramite.service';
 import { AuthService } from '../../../data/services/auth.service';
 import { DepartamentoService } from '../../../data/services/departamento.service';
 import { PoliticaWorkflowService } from '../../../data/services/politica-workflow.service';
+import { AnaliticaService, MetricData } from '../../../data/services/analitica.service';
 import { Departamento } from '../../../data/models/departamento.model';
 import { TramiteResponseDTO } from '../../../data/models/tramite.model';
 
@@ -17,7 +18,10 @@ import { TramiteResponseDTO } from '../../../data/models/tramite.model';
 })
 export class SupervisionComponent implements OnInit {
   tramites: TramiteResponseDTO[] = [];
+  metricasDepartamentales: MetricData[] = [];
   loading = false;
+  searchTerm = '';
+  resultsSearch: TramiteResponseDTO[] = [];
   
   private deptId = '';
   private userId = '';
@@ -51,6 +55,7 @@ export class SupervisionComponent implements OnInit {
     private authService: AuthService,
     private deptService: DepartamentoService,
     private polService: PoliticaWorkflowService,
+    private analiticaService: AnaliticaService,
     private cd: ChangeDetectorRef,
     private zone: NgZone
   ) {}
@@ -75,6 +80,18 @@ export class SupervisionComponent implements OnInit {
 
     this.cargarDatos();
     this.cargarCatalogos();
+    this.cargarMetricas();
+  }
+
+  cargarMetricas(): void {
+    this.analiticaService.getMetrics().subscribe({
+      next: (data) => {
+        this.zone.run(() => {
+          this.metricasDepartamentales = data || [];
+          this.cd.detectChanges();
+        });
+      }
+    });
   }
 
   cargarCatalogos(): void {
@@ -118,9 +135,37 @@ export class SupervisionComponent implements OnInit {
           this.loading = false;
           this.cd.detectChanges();
         });
+        // Refrescar métricas generales también
+        this.cargarMetricas();
       },
       error: (err) => {
         clearTimeout(safetyTimer);
+        this.zone.run(() => {
+          console.error(err);
+          this.loading = false;
+          this.cd.detectChanges();
+        });
+      }
+    });
+  }
+
+  buscarPorCI(): void {
+    if (!this.searchTerm || this.searchTerm.trim() === '') {
+      this.cargarDatos();
+      return;
+    }
+
+    this.loading = true;
+    this.tramiteService.buscarPorCi(this.searchTerm).subscribe({
+      next: (data) => {
+        this.zone.run(() => {
+          this.tramites = data || [];
+          this.calcularStats();
+          this.loading = false;
+          this.cd.detectChanges();
+        });
+      },
+      error: (err) => {
         this.zone.run(() => {
           console.error(err);
           this.loading = false;

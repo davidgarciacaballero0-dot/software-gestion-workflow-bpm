@@ -28,18 +28,11 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        log.info("Starting Data Seeding (Full Clean)...");
+        log.info("Starting Data Seeding (Incremental Mode)...");
         
-        // Limpieza para evitar duplicados en desarrollo
-        rolRepository.deleteAll();
-        orgRepository.deleteAll();
-        depRepository.deleteAll();
-        usuarioRepository.deleteAll();
-        politicaRepository.saveAll(List.of()); // Not deleting all to preserve other potential types if any, but actually for this app deleteAll is fine
-        politicaRepository.deleteAll();
-        tramiteRepository.deleteAll();
-
-        boolean partialSeed = false; // Forzamos carga completa
+        // El modo de limpieza total ha sido desactivado para permitir la persistencia de datos manuales (Fase 4.1)
+        
+        boolean partialSeed = false; 
 
         // 1. Roles
         Rol adminRol = getOrCreateRol("ADMIN", List.of("ALL"));
@@ -65,14 +58,14 @@ public class DataInitializer implements CommandLineRunner {
         String commonPass = passwordEncoder.encode("password123");
 
         // Admin
-        getOrCreateUser("Gerente General (Admin)", "admin@bpm.com", commonPass, adminRol.getId(), org.getId(), null);
+        getOrCreateUser("Gerente", "General", "10000001", "70000001", "admin@bpm.com", commonPass, adminRol.getId(), org.getId(), null);
 
         // Jefes
-        Usuario jefeIT = getOrCreateUser("Jefe de Sistemas", "jefe.it@bpm.com", commonPass, jefeRol.getId(), org.getId(), depIT.getId());
-        Usuario jefeRRHH = getOrCreateUser("Jefe de RRHH", "jefe.rrhh@bpm.com", commonPass, jefeRol.getId(), org.getId(), depRRHH.getId());
-        Usuario jefeFin = getOrCreateUser("Jefe de Finanzas", "jefe.finanzas@bpm.com", commonPass, jefeRol.getId(), org.getId(), depFin.getId());
-        Usuario jefeOp = getOrCreateUser("Jefe de Operaciones", "jefe.op@bpm.com", commonPass, jefeRol.getId(), org.getId(), depOp.getId());
-        Usuario jefeVentas = getOrCreateUser("Jefe de Ventas", "jefe.ventas@bpm.com", commonPass, jefeRol.getId(), org.getId(), depVentas.getId());
+        Usuario jefeIT = getOrCreateUser("Jefe", "Sistemas", "20000001", "70000002", "jefe.it@bpm.com", commonPass, jefeRol.getId(), org.getId(), depIT.getId());
+        Usuario jefeRRHH = getOrCreateUser("Jefe", "Recursos Humanos", "20000002", "70000003", "jefe.rrhh@bpm.com", commonPass, jefeRol.getId(), org.getId(), depRRHH.getId());
+        Usuario jefeFin = getOrCreateUser("Jefe", "Finanzas", "20000003", "70000004", "jefe.finanzas@bpm.com", commonPass, jefeRol.getId(), org.getId(), depFin.getId());
+        Usuario jefeOp = getOrCreateUser("Jefe", "Operaciones", "20000004", "70000005", "jefe.op@bpm.com", commonPass, jefeRol.getId(), org.getId(), depOp.getId());
+        Usuario jefeVentas = getOrCreateUser("Jefe", "Ventas", "20000005", "70000006", "jefe.ventas@bpm.com", commonPass, jefeRol.getId(), org.getId(), depVentas.getId());
 
         // Update departamentos with Jefes IDs (CU-17)
         if (depIT.getIdJefe() == null) { depIT.setIdJefe(jefeIT.getId()); depRepository.save(depIT); }
@@ -83,15 +76,15 @@ public class DataInitializer implements CommandLineRunner {
 
         // Funcionarios (Existentes)
         if (!partialSeed) {
-            for (int i = 1; i <= 3; i++) createUsuario("Dvp IT " + i, "user.it" + i + "@bpm.com", commonPass, funcRol.getId(), org.getId(), depIT.getId());
-            for (int i = 1; i <= 3; i++) createUsuario("Analista HR " + i, "user.rh" + i + "@bpm.com", commonPass, funcRol.getId(), org.getId(), depRRHH.getId());
-            for (int i = 1; i <= 2; i++) createUsuario("Contador " + i, "user.fn" + i + "@bpm.com", commonPass, funcRol.getId(), org.getId(), depFin.getId());
-            for (int i = 1; i <= 2; i++) createUsuario("Operador " + i, "user.op" + i + "@bpm.com", commonPass, funcRol.getId(), org.getId(), depOp.getId());
+            for (int i = 1; i <= 3; i++) getOrCreateUser("Dvp IT " + i, "Sistemas", "3000000" + i, "6000000" + i, "user.it" + i + "@bpm.com", commonPass, funcRol.getId(), org.getId(), depIT.getId());
+            for (int i = 1; i <= 3; i++) getOrCreateUser("Analista HR " + i, "Recursos Humanos", "4000000" + i, "6100000" + i, "user.rh" + i + "@bpm.com", commonPass, funcRol.getId(), org.getId(), depRRHH.getId());
+            for (int i = 1; i <= 2; i++) getOrCreateUser("Contador " + i, "Finanzas", "5000000" + i, "6200000" + i, "user.fn" + i + "@bpm.com", commonPass, funcRol.getId(), org.getId(), depFin.getId());
+            for (int i = 1; i <= 2; i++) getOrCreateUser("Operador " + i, "Operaciones", "6000000" + i, "6300000" + i, "user.op" + i + "@bpm.com", commonPass, funcRol.getId(), org.getId(), depOp.getId());
         }
 
         // 4.1 Usuarios Ventas (Nuevos)
-        getOrCreateUser("Asistente de Jefatura", "asistente.ventas@bpm.com", commonPass, funcRol.getId(), org.getId(), depVentas.getId());
-        for (int i = 1; i <= 3; i++) getOrCreateUser("Vendedor " + i, "vendedor" + i + "@bpm.com", commonPass, funcRol.getId(), org.getId(), depVentas.getId());
+        getOrCreateUser("Asistente", "Ventas", "70000001", "71000001", "asistente.ventas@bpm.com", commonPass, funcRol.getId(), org.getId(), depVentas.getId());
+        for (int i = 1; i <= 3; i++) getOrCreateUser("Vendedor " + i, "Ventas", "8000000" + i, "7200000" + i, "vendedor" + i + "@bpm.com", commonPass, funcRol.getId(), org.getId(), depVentas.getId());
 
         // Clientes (Existentes)
         List<Usuario> clientes = usuarioRepository.findAll().stream()
@@ -102,12 +95,16 @@ public class DataInitializer implements CommandLineRunner {
             clientes = new ArrayList<>();
             for (int i = 1; i <= 8; i++) {
                 clientes.add(usuarioRepository.save(Usuario.builder()
-                    .nombre("Cliente Externo " + i)
+                    .nombre("Cliente " + i)
+                    .apellidos("Externo " + i)
+                    .ci("9000000" + i)
+                    .celular("7990000" + i)
                     .email("cliente" + i + "@bpm.com")
                     .passwordHash(commonPass)
                     .idRol(clienteRol.getId())
                     .idOrganizacion(null)
                     .idDepartamento(null)
+                    .fechaNacimiento(LocalDateTime.now().minusYears(18 + i))
                     .build()));
             }
         }
@@ -116,9 +113,11 @@ public class DataInitializer implements CommandLineRunner {
         PoliticaWorkflow polVacaciones = getOrCreatePoliticaVacaciones(org.getId(), depRRHH.getId());
         PoliticaWorkflow polFibra = getOrCreatePoliticaFibra(org.getId(), depVentas.getId(), depIT.getId(), depFin.getId(), depOp.getId());
 
-        // 6. Trámites (~15 instancias)
-        seedTramitesVacaciones(polVacaciones, clientes, depRRHH.getId());
-        seedTramitesFibra(polFibra, clientes, depVentas.getId());
+        // 6. Trámites (~15 instancias si está vacío)
+        if (tramiteRepository.count() == 0) {
+            seedTramitesVacaciones(polVacaciones, clientes, depRRHH.getId());
+            seedTramitesFibra(polFibra, clientes, depVentas.getId());
+        }
 
         log.info("Data Seeding completed successfully. 23 Users and 15 Trámites created.");
     }
@@ -133,9 +132,9 @@ public class DataInitializer implements CommandLineRunner {
             .orElseGet(() -> depRepository.save(Departamento.builder().nombre(nombre).codigoArea(codigo).idOrganizacion(idOrg).build()));
     }
 
-    private Usuario getOrCreateUser(String nombre, String email, String pass, String idRol, String idOrg, String idDep) {
+    private Usuario getOrCreateUser(String nombre, String apellidos, String ci, String celular, String email, String pass, String idRol, String idOrg, String idDep) {
         return usuarioRepository.findByEmail(email)
-            .orElseGet(() -> createUsuario(nombre, email, pass, idRol, idOrg, idDep));
+            .orElseGet(() -> createUsuario(nombre, apellidos, ci, celular, email, pass, idRol, idOrg, idDep));
     }
 
     private PoliticaWorkflow getOrCreatePoliticaVacaciones(String idOrg, String idDepRRHH) {
@@ -148,14 +147,18 @@ public class DataInitializer implements CommandLineRunner {
             .orElseGet(() -> politicaRepository.save(createPoliticaFibra(idOrg, idVentas, idIT, idFin, idOp)));
     }
 
-    private Usuario createUsuario(String nombre, String email, String pass, String idRol, String idOrg, String idDep) {
+    private Usuario createUsuario(String nombre, String apellidos, String ci, String celular, String email, String pass, String idRol, String idOrg, String idDep) {
         return usuarioRepository.save(Usuario.builder()
                 .nombre(nombre)
+                .apellidos(apellidos)
+                .ci(ci)
+                .celular(celular)
                 .email(email)
                 .passwordHash(pass)
                 .idRol(idRol)
                 .idOrganizacion(idOrg)
                 .idDepartamento(idDep)
+                .fechaNacimiento(LocalDateTime.now().minusYears(20 + new Random().nextInt(20)))
                 .build());
     }
 
@@ -278,12 +281,14 @@ public class DataInitializer implements CommandLineRunner {
         String[] estados = {"EN_PROGRESO", "EN_PROGRESO", "EN_PROGRESO", "FINALIZADO"};
         Random rand = new Random();
         for (int i = 1; i <= 10; i++) {
-            String idSolicitante = clientes.get(rand.nextInt(clientes.size())).getId();
+            Usuario c = clientes.get(rand.nextInt(clientes.size()));
             String estado = estados[rand.nextInt(estados.length)];
             tramiteRepository.save(TramiteInstancia.builder()
                 .codigoTramite("VAC-2026-" + String.format("%04d", i))
                 .idPolitica(pol.getId())
-                .idUsuarioSolicitante(idSolicitante)
+                .idUsuarioSolicitante(c.getId())
+                .ciSolicitante(c.getCi())
+                .nombreSolicitante(c.getNombre() + " " + c.getApellidos())
                 .estadoActual(estado)
                 .nodoActualId("solicitud")
                 .departamentoActualId(idDep)
@@ -301,14 +306,16 @@ public class DataInitializer implements CommandLineRunner {
                 .codigoTramite("FIB-2026-" + String.format("%04d", i))
                 .idPolitica(pol.getId())
                 .idUsuarioSolicitante(c.getId())
+                .ciSolicitante(c.getCi())
+                .nombreSolicitante(c.getNombre() + " " + c.getApellidos())
                 .estadoActual("EN_PROGRESO")
                 .nodoActualId("registro")
                 .departamentoActualId(idDepVentas)
                 .createdAt(LocalDateTime.now().minusHours(rand.nextInt(48)))
                 .datosAcumuladosFormulario(Map.of(
-                    "f_nombre", c.getNombre().split(" ")[0],
-                    "f_apellidos", "Externo " + i,
-                    "f_ci", "8765432" + i,
+                    "f_nombre", c.getNombre(),
+                    "f_apellidos", c.getApellidos(),
+                    "f_ci", c.getCi(),
                     "f_dir", "Calle Ficticia #" + (10 + i)
                 ))
                 .build());

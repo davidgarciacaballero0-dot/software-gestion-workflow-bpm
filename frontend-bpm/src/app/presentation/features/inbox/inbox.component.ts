@@ -5,10 +5,12 @@ import { TramiteService } from '../../../data/services/tramite.service';
 import { NotificationService } from '../../../data/services/notification.service';
 import { AuthService } from '../../../data/services/auth.service';
 
+import { FormsModule } from '@angular/forms';
+
 @Component({
   selector: 'app-inbox',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './inbox.component.html',
   styleUrls: ['./inbox.component.css']
 })
@@ -17,9 +19,11 @@ export class InboxComponent implements OnInit {
   tramites: any[] = [];
   tramitesActivos: any[] = [];
   tramitesFinalizados: any[] = [];
-  loading = false;
   isClient = false;
   hasDept = false;
+  loading = false;
+  searchTerm = '';
+  resultsSearch: any[] = [];
 
   private userId = '';
   private deptId = '';
@@ -109,6 +113,35 @@ export class InboxComponent implements OnInit {
 
   atenderTramite(tramiteId: string): void {
     this.router.navigate(['/app/tramite/atencion', tramiteId]);
+  }
+
+  buscarPorCI(): void {
+    if (!this.searchTerm || this.searchTerm.trim() === '') {
+      this.resultsSearch = [];
+      this.loadInbox();
+      return;
+    }
+
+    this.loading = true;
+    this.tramiteService.buscarPorCi(this.searchTerm).subscribe({
+      next: (data) => {
+        this.zone.run(() => {
+          this.resultsSearch = data || [];
+          this.tramites = this.resultsSearch;
+          this.tramitesActivos = this.tramites.filter(t => t.estadoActual !== 'FINALIZADO' && t.estadoActual !== 'RECHAZADO');
+          this.tramitesFinalizados = this.tramites.filter(t => t.estadoActual === 'FINALIZADO' || t.estadoActual === 'RECHAZADO');
+          this.loading = false;
+          this.cd.detectChanges();
+        });
+      },
+      error: (err) => {
+        this.zone.run(() => {
+          console.error(err);
+          this.loading = false;
+          this.cd.detectChanges();
+        });
+      }
+    });
   }
 
   verHistorial(tramiteId: string): void {

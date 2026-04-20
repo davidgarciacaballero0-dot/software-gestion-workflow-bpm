@@ -1,11 +1,41 @@
 <div class="catalog-container animate-fade-in">
+  <!-- Header Personalizado (Fase 4) -->
   <div class="header">
-    <h1 class="page-title">{{ isClient ? 'Catálogo Global de Servicios' : 'Trámites de mi Organización' }}</h1>
-    <p class="page-subtitle">
-      {{ isClient 
-        ? 'Acceda a todos los flujos de trabajo publicados por las entidades afiliadas al ecosistema BPM.' 
-        : 'Listado de procesos internos autorizados para su rol y departamento.' }}
+    <h1 class="page-title">{{ welcomeMessage }}</h1>
+    <p class="page-subtitle" *ngIf="!isClient">
+      Acceda a los procesos operativos autorizados para su gestión departamental.
     </p>
+    <p class="page-subtitle" *ngIf="isClient">
+      Eche un vistazo al estado de sus solicitudes vigentes.
+    </p>
+  </div>
+
+  <!-- Widget de Trámites Activos (Solo Clientes) -->
+  <div class="dashboard-widgets" *ngIf="isClient">
+    <div class="active-tasks-widget" *ngIf="tramitesActivos.length > 0">
+      <h2 class="widget-title">Mis Trámites en Curso</h2>
+      <div class="active-grid">
+        <div *ngFor="let t of tramitesActivos" class="active-card glass-premium animate-pop">
+           <div class="active-status-ring" [style.border-color]="'#4d40ff'"></div>
+           <div class="active-info">
+             <span class="t-code">{{ t.codigoTramite }}</span>
+             <h4 class="t-name">{{ t.nombrePolitica }}</h4>
+             <div class="t-location">
+               <span class="loc-tag">📍 {{ t.nombreDepartamentoActual }}</span>
+               <span class="step-tag">⚙️ {{ t.nombreNodoActual }}</span>
+             </div>
+           </div>
+           <button class="btn-goto" [routerLink]="['/app/tramites', t.id]">Ver Detalles →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mensaje No Pendientes -->
+    <div class="no-pending-msg glass-premium animate-fade-in" *ngIf="tramitesActivos.length === 0">
+       <div class="icon">✨</div>
+       <h3>No tiene trámites pendientes</h3>
+       <p>Puede iniciar un nuevo proceso desde nuestro catálogo de servicios a continuación.</p>
+    </div>
   </div>
 
   <!-- Result Banner -->
@@ -17,8 +47,12 @@
     <button style="float:right; background:none; border:none; cursor:pointer; font-size:1.1rem;" (click)="resultMessage = null">✕</button>
   </div>
 
-  <!-- UI de Tarjetas (Catálogo Premium) -->
-  <div class="policy-grid" *ngIf="!loading">
+  <!-- UI de Tarjetas (Catálogo Premium) - Oculto si cliente tiene trámites activos -->
+  <div class="policy-grid" *ngIf="!loading && (!isClient || tramitesActivos.length === 0)">
+    <div class="grid-header-title" *ngIf="isClient" 
+         style="grid-column: 1 / -1; margin-bottom: 1rem; color: var(--primary); font-weight: 600; font-size: 1.2rem;">
+      Catálogo de Servicios
+    </div>
     <div *ngFor="let p of politicas" class="policy-card glass-premium animate-slide-up">
         <div class="card-status-bar" [ngClass]="getStatusBadgeClass(p.status)"></div>
         <div class="card-content">

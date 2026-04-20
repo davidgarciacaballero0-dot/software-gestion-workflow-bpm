@@ -12,6 +12,9 @@ public class TramiteResponseDTO {
     private String codigoTramite;
     private String idPolitica;
     private String idUsuarioSolicitante;
+    private String ciSolicitante;
+    private String nombreSolicitante;
+    private String funcionarioAsignadoId;
     private String nombrePolitica;
     private String estadoActual;
     private String nodoActualId;

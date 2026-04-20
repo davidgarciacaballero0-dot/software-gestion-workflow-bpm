@@ -26,7 +26,11 @@ public class Usuario {
     private String idRol;
 
     private String nombre;
+    private String apellidos;
+    private String ci; // Carnet de Identidad
     private String email;
+    private String celular;
+    private LocalDateTime fechaNacimiento;
     private String passwordHash;
 
     @CreatedDate

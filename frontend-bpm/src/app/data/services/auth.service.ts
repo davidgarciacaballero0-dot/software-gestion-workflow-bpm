@@ -5,6 +5,12 @@ import { Observable, tap } from 'rxjs';
 export interface AuthResponse {
   token: string;
   nombre: string;
+  apellidos: string;
+  email: string;
+  ci: string;
+  celular: string;
+  fechaNacimiento: string;
+  createdAt: string;
   idRol: string;
   idOrganizacion: string;
   esJefe?: boolean;
@@ -14,6 +20,12 @@ export interface AuthResponse {
 
 export interface UserData {
   nombre: string;
+  apellidos: string;
+  email: string;
+  ci: string;
+  celular: string;
+  fechaNacimiento: string;
+  createdAt: string;
   idRol: string;
   idOrganizacion: string;
   esJefe: boolean;
@@ -60,6 +72,12 @@ export class AuthService {
       tap(response => {
         const userData: UserData = {
           nombre: response.nombre,
+          apellidos: response.apellidos,
+          email: response.email,
+          ci: response.ci,
+          celular: response.celular,
+          fechaNacimiento: response.fechaNacimiento,
+          createdAt: response.createdAt,
           idRol: response.idRol,
           idOrganizacion: response.idOrganizacion,
           esJefe: response.esJefe || false,

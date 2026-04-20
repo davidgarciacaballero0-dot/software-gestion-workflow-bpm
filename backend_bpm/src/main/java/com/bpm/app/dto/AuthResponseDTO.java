@@ -8,6 +8,12 @@ import lombok.Data;
 public class AuthResponseDTO {
     private String token;
     private String nombre;
+    private String apellidos;
+    private String email;
+    private String ci;
+    private String celular;
+    private String fechaNacimiento;
+    private String createdAt;
     private String idRol;
     private String idOrganizacion;
     private boolean esJefe; // CU-17

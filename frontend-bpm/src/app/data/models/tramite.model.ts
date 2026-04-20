@@ -10,6 +10,9 @@ export interface TramiteResponseDTO {
   nombrePolitica: string;
   idPolitica: string;
   idUsuarioSolicitante: string;
+  ciSolicitante: string;
+  nombreSolicitante: string;
+  funcionarioAsignadoId: string;
   estadoActual: string;
   nodoActualId: string;
   nombreNodoActual?: string;

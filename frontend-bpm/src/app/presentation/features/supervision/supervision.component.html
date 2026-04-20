@@ -29,8 +29,47 @@
     </div>
   </div>
 
+  <!-- Desglose por Departamento (Analítica) -->
+  <div class="grid-card monolith-surface shadow-ambient mt-2" *ngIf="metricasDepartamentales.length > 0">
+    <h3 class="section-title">📊 Distribución de Carga por Departamento</h3>
+    <table class="supervision-table mini-table">
+      <thead>
+        <tr>
+          <th>Departamento</th>
+          <th>Trámites Activos</th>
+          <th>Tiempo Promedio</th>
+          <th>Personal</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let m of metricasDepartamentales">
+          <td><strong>{{ m.nombreDepartamento }}</strong></td>
+          <td class="text-center">{{ m.cantidadTramites }}</td>
+          <td class="text-center">{{ m.tiempoPromedioHoras | number:'1.1-1' }}h</td>
+          <td class="text-center">{{ m.capacidadPersonal }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
   <!-- Lista de Supervisión -->
   <div class="grid-card monolith-surface shadow-ambient mt-2">
+    <div class="supervision-header-flex">
+      <h3 class="section-title">📋 Registro de Trámites en Supervisión</h3>
+      
+      <!-- Barra de Búsqueda (Fase 4) -->
+      <div class="search-box glass-premium search-small">
+        <span class="search-icon">🔍</span>
+        <input 
+          type="text" 
+          placeholder="Buscar por CI del Cliente..." 
+          [(ngModel)]="searchTerm"
+          (keyup.enter)="buscarPorCI()"
+        />
+        <button class="btn-search" (click)="buscarPorCI()">Buscar</button>
+      </div>
+    </div>
+
     <div *ngIf="loading" class="loading-state">
       <span class="spinner"></span> Consolidando métricas del departamento...
     </div>
@@ -38,10 +77,11 @@
     <table class="supervision-table" *ngIf="!loading">
       <thead>
         <tr>
-          <th>Trámite / Paso</th>
-          <th>Estado / Dept.</th>
-          <th>Ingreso</th>
-          <th>SLA Acumulado</th>
+          <th>ID / Nombre del Trámite</th>
+          <th>Solicitante / CI</th>
+          <th>Estado Actual</th>
+          <th>Sección / Paso (Workflow)</th>
+          <th>Departamento Responsable</th>
           <th>Acciones</th>
         </tr>
       </thead>
@@ -49,25 +89,29 @@
         <tr *ngFor="let t of tramites" class="animate-slide-up">
           <td>
             <div class="font-strong">{{ t.codigoTramite }}</div>
-            <div class="text-blue-small">{{ t.nombreNodoActual }}</div>
+            <div class="text-muted-small">{{ t.nombrePolitica }}</div>
+          </td>
+          <td>
+             <div class="font-strong">{{ t.nombreSolicitante || 'Desconocido' }}</div>
+             <div class="text-muted-small">CI: {{ t.ciSolicitante || '---' }}</div>
           </td>
           <td>
             <span class="badge" [ngClass]="'badge-' + t.estadoActual.toLowerCase()">{{ t.estadoActual }}</span>
-            <div class="text-muted-small">{{ t.nombreDepartamentoActual }}</div>
           </td>
-          <td class="text-muted text-center">{{ formatDate(t.createdAt) }}</td>
           <td>
-            <div class="sla-indicator">
-              <div class="sla-bar" style="width: 45%; background: var(--success);"></div>
-              <span class="sla-text">A tiempo</span>
+            <div class="workflow-step">
+              <span class="step-icon">📍</span> {{ t.nombreNodoActual }}
             </div>
+          </td>
+          <td>
+             <span class="dept-tag">{{ t.nombreDepartamentoActual || 'Sin Asignar' }}</span>
           </td>
           <td class="text-center">
             <button class="btn btn-warning btn-sm" (click)="abrirIntervencion(t)">🛠️ Intervenir</button>
           </td>
         </tr>
         <tr *ngIf="tramites.length === 0">
-          <td colspan="5" class="empty-state">No se registran trámites bajo supervisión en su contexto actual.</td>
+          <td colspan="6" class="empty-state">No se registran trámites bajo supervisión en su contexto actual.</td>
         </tr>
       </tbody>
     </table>

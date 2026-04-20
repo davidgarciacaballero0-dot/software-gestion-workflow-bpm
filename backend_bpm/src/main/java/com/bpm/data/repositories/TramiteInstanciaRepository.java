@@ -14,4 +14,8 @@ public interface TramiteInstanciaRepository extends MongoRepository<TramiteInsta
 
     // Consulta de la Bandeja Personal (Trámites iniciados por un usuario)
     List<TramiteInstancia> findByIdUsuarioSolicitante(String idUsuarioSolicitante);
+
+    // Búsqueda por Carnet de Identidad (CI) - REQ FASE 4
+    List<TramiteInstancia> findByCiSolicitanteContaining(String ci);
+    List<TramiteInstancia> findByCiSolicitante(String ci);
 }

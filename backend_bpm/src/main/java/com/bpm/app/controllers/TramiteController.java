@@ -59,6 +59,12 @@ public class TramiteController {
         return ResponseEntity.ok(tramiteService.listarBandejaPersonal(usuarioId));
     }
 
+    // Búsqueda por Carnet de Identidad (REQ FASE 4)
+    @GetMapping("/search/ci/{ci}")
+    public ResponseEntity<List<TramiteResponseDTO>> buscarPorCi(@PathVariable String ci) {
+        return ResponseEntity.ok(tramiteService.buscarPorCi(ci));
+    }
+
     // CU-20: Supervisión de Jefatura
     @GetMapping("/supervision/{departamentoId}")
     public ResponseEntity<List<TramiteResponseDTO>> listarSupervision(@PathVariable String departamentoId) {

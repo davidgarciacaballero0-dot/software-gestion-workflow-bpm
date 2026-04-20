@@ -58,10 +58,16 @@ public class AuthController {
             if (rol != null) nombreRol = rol.getNombre();
         }
 
-        // 4. Devolver token + metadata segura (sin password)
+        // 4. Devolver token + metadata completa (sin password)
         AuthResponseDTO response = new AuthResponseDTO(
                 token,
                 usuario.getNombre(),
+                usuario.getApellidos() != null ? usuario.getApellidos() : "",
+                usuario.getEmail(),
+                usuario.getCi() != null ? usuario.getCi() : "",
+                usuario.getCelular() != null ? usuario.getCelular() : "",
+                usuario.getFechaNacimiento() != null ? usuario.getFechaNacimiento().toString() : "",
+                usuario.getCreatedAt() != null ? usuario.getCreatedAt().toString() : "",
                 usuario.getIdRol(),
                 usuario.getIdOrganizacion(),
                 esJefe,

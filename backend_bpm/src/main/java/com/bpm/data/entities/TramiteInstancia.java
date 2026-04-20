@@ -27,8 +27,12 @@ public class TramiteInstancia {
     private String idUsuarioSolicitante; // Referencia <Ref>
     
     private String estadoActual;
-    private String nodoActualId; // Ubicacion exacta dentro del BPMN
-    private String departamentoActualId; // Util para mostrarlo rapidísimo en las Bandejas de Entrada (WebSockets)
+    private String nodoActualId; 
+    private String departamentoActualId;
+    
+    private String ciSolicitante; // Denormalizado para busqueda rapida
+    private String nombreSolicitante; // Denormalizado para visualizacion inmediata
+    private String funcionarioAsignadoId; // ID del funcionario que lo atiende actualmente
     
     private Integer prioridad; // REQ-06: 1 (Baja) a 5 (Critica)
     
