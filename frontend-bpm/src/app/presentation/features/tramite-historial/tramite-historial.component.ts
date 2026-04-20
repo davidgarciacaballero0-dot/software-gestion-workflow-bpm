@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TramiteService } from '../../../data/services/tramite.service';
@@ -18,7 +18,9 @@ export class TramiteHistorialComponent implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private tramiteService: TramiteService
+    private tramiteService: TramiteService,
+    private cd: ChangeDetectorRef,
+    private zone: NgZone
   ) {}
 
   ngOnInit(): void {
@@ -30,27 +32,56 @@ export class TramiteHistorialComponent implements OnInit {
 
   cargarDatos(id: string): void {
     this.loading = true;
+
+    // Safety timeout to prevent infinite spinner
+    const safetyTimer = setTimeout(() => {
+      this.zone.run(() => {
+        if (this.loading) {
+          this.loading = false;
+          this.cd.detectChanges();
+        }
+      });
+    }, 6000);
+
     this.tramiteService.obtenerTramite(id).subscribe({
       next: (tramite) => {
-        this.tramite = tramite;
-        this.cargarHistorial(id);
+        this.zone.run(() => {
+          this.tramite = tramite;
+          this.cargarHistorial(id, safetyTimer);
+        });
       },
       error: (err) => {
-        console.error(err);
-        this.loading = false;
+        clearTimeout(safetyTimer);
+        this.zone.run(() => {
+          console.error(err);
+          this.loading = false;
+          this.cd.detectChanges();
+        });
       }
     });
   }
 
-  cargarHistorial(id: string): void {
+  cargarHistorial(id: string, safetyTimer?: any): void {
     this.tramiteService.obtenerHistorial(id).subscribe({
       next: (data) => {
-        this.eventos = data.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-        this.loading = false;
+        if (safetyTimer) clearTimeout(safetyTimer);
+        this.zone.run(() => {
+          this.eventos = (data || []).sort((a: any, b: any) => {
+            const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+            const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+            return dateB - dateA;
+          });
+          this.loading = false;
+          this.cd.detectChanges();
+        });
       },
       error: (err) => {
-        console.error(err);
-        this.loading = false;
+        if (safetyTimer) clearTimeout(safetyTimer);
+        this.zone.run(() => {
+          console.error(err);
+          this.loading = false;
+          this.cd.detectChanges();
+        });
       }
     });
   }

@@ -12,7 +12,9 @@ export interface TramiteResponseDTO {
   idUsuarioSolicitante: string;
   estadoActual: string;
   nodoActualId: string;
+  nombreNodoActual?: string;
   departamentoActualId: string;
+  nombreDepartamentoActual?: string;
   prioridad: number;
   createdAt: string;
 }

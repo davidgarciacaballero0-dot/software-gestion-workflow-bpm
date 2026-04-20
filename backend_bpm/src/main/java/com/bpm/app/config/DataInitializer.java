@@ -210,14 +210,21 @@ public class DataInitializer implements CommandLineRunner {
                     new FormFieldDefinition("f_dir", "Dirección de Instalación", FormFieldType.TEXT, true, null)
                 )).build(),
             WorkflowNode.builder()
-                .id("factibilidad")
-                .type(NodeType.EXCLUSIVE_GATEWAY)
-                .name("Análisis de Cobertura")
+                .id("analisis_itt")
+                .type(NodeType.USER_TASK)
+                .name("Verificación Técnica (IT)")
                 .departmentId(idIT)
-                .uiPosition(new UIPosition(400.0, 250.0))
+                .slaHours(48)
+                .uiPosition(new UIPosition(350.0, 250.0))
                 .formDefinition(List.of(
                     new FormFieldDefinition("f_cobertura", "¿Hay factibilidad técnica?", FormFieldType.BOOLEAN, true, null)
                 )).build(),
+            WorkflowNode.builder()
+                .id("factibilidad")
+                .type(NodeType.EXCLUSIVE_GATEWAY)
+                .name("Decisión de Cobertura")
+                .uiPosition(new UIPosition(500.0, 250.0))
+                .build(),
             WorkflowNode.builder()
                 .id("pago")
                 .type(NodeType.USER_TASK)
@@ -247,7 +254,8 @@ public class DataInitializer implements CommandLineRunner {
 
         List<WorkflowEdge> edges = List.of(
             new WorkflowEdge("e1", "start", "registro", null),
-            new WorkflowEdge("e2", "registro", "factibilidad", null),
+            new WorkflowEdge("e2", "registro", "analisis_itt", null),
+            new WorkflowEdge("e_add1", "analisis_itt", "factibilidad", null),
             new WorkflowEdge("e3", "factibilidad", "pago", Condition.builder().variable("f_cobertura").operator(ConditionOperator.EQUALS).value("true").build()),
             new WorkflowEdge("e4", "factibilidad", "rechazo", Condition.builder().variable("f_cobertura").operator(ConditionOperator.EQUALS).value("false").build()),
             new WorkflowEdge("e5", "pago", "instalacion", null),
@@ -267,7 +275,7 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void seedTramitesVacaciones(PoliticaWorkflow pol, List<Usuario> clientes, String idDep) {
-        String[] estados = {"INICIADO", "EN_PROGRESO", "REVISIÓN", "FINALIZADO"};
+        String[] estados = {"EN_PROGRESO", "EN_PROGRESO", "EN_PROGRESO", "FINALIZADO"};
         Random rand = new Random();
         for (int i = 1; i <= 10; i++) {
             String idSolicitante = clientes.get(rand.nextInt(clientes.size())).getId();
@@ -293,7 +301,7 @@ public class DataInitializer implements CommandLineRunner {
                 .codigoTramite("FIB-2026-" + String.format("%04d", i))
                 .idPolitica(pol.getId())
                 .idUsuarioSolicitante(c.getId())
-                .estadoActual("INICIADO")
+                .estadoActual("EN_PROGRESO")
                 .nodoActualId("registro")
                 .departamentoActualId(idDepVentas)
                 .createdAt(LocalDateTime.now().minusHours(rand.nextInt(48)))

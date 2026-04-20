@@ -25,9 +25,11 @@
 .subtitle { color: var(--text-muted); font-size: 0.875rem; }
 
 /* Stats Panel */
-.stats-panel {
-  display: flex;
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 1.5rem;
+  margin-bottom: 2rem;
 }
 
 .stat-card {
@@ -143,7 +145,7 @@
 
 .modal-content {
   width: 90%;
-  max-width: 500px;
+  max-width: 650px;
   padding: 2.5rem;
   border: 1px solid var(--outline-variant); /* Ghost border */
 }
@@ -173,9 +175,13 @@
 }
 
 .modal-body {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 1.5rem;
+}
+
+.modal-body p.modal-hint, .modal-body .full-width {
+  grid-column: 1 / -1;
 }
 
 .form-group label {

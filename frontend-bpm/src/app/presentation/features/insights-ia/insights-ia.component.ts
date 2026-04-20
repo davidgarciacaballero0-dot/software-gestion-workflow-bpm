@@ -24,7 +24,7 @@ export class InsightsIAComponent implements OnInit {
     cantidad: 1
   };
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   ngOnInit(): void {
     this.fetchMetrics();
@@ -60,7 +60,19 @@ export class InsightsIAComponent implements OnInit {
   }
 
   descargarReporte(): void {
-    window.open('/api/v1/optimization/report/excel', '_blank');
+    this.http.get('/api/v1/optimization/report/excel', { responseType: 'blob' }).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'reporte_optimizacion.xlsx';
+        a.click();
+        window.URL.revokeObjectURL(url);
+      },
+      error: (err) => {
+        this.aiReport = '⚠️ Error: No posee permisos para descargar el reporte.';
+      }
+    });
   }
 
   descargarPDF(): void {
@@ -77,21 +89,21 @@ export class InsightsIAComponent implements OnInit {
 
   ejecutarOptimizacion(): void {
     if (!this.reassignForm.idOrigen || !this.reassignForm.idDestino) {
-      alert('Debe especificar origen y destino para la reasignación.');
+      this.aiReport = '⚠️ Error: Debe especificar origen y destino para la reasignación.';
       return;
     }
 
     this.applying = true;
     const url = `/api/v1/optimization/reassign?idOrigen=${this.reassignForm.idOrigen}&idDestino=${this.reassignForm.idDestino}&cantidad=${this.reassignForm.cantidad}`;
-    
+
     this.http.post(url, {}).subscribe({
       next: (res: any) => {
-        alert('🚀 ¡Optimización ejecutada! El personal ha sido reubicado.');
+        this.aiReport = '🚀 ¡Optimización ejecutada exitosamente! El personal ha sido reubicado.';
         this.applying = false;
         this.fetchMetrics();
       },
       error: (err) => {
-        alert('Error al ejecutar reasignación.');
+        this.aiReport = '⚠️ Error: Hubo un conflicto al ejecutar reasignación. Verifique permisos.';
         this.applying = false;
       }
     });

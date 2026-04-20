@@ -33,33 +33,79 @@
     </div>
 
     <div class="inbox-list" *ngIf="!loading">
-      <div *ngFor="let t of tramites" class="tramite-row glass-hover animate-slide-up">
-        <div class="tramite-main">
-          <div class="info-group">
-            <span class="tramite-code font-strong">{{ t.codigoTramite }}</span>
-            <span class="priority-indicator" [ngClass]="'priority-' + (t.prioridad || 2)">
-              {{ (t.prioridad === 5 ? '🔥 Crítica' : t.prioridad === 4 ? '🟠 Alta' : t.prioridad === 3 ? '🔵 Media' : t.prioridad === 1 ? '🟢 Baja' : '⚪ Normal') }}
-            </span>
-            <span class="badge" [ngClass]="'badge-' + t.estadoActual.toLowerCase()">{{ t.estadoActual }}</span>
+      
+      <!-- VISTA ADMINISTRATIVA / FUNCIONARIO -->
+      <ng-container *ngIf="!isClient">
+        <div *ngFor="let t of tramites" class="tramite-row glass-hover animate-slide-up">
+          <div class="tramite-main">
+            <div class="info-group">
+              <span class="tramite-code font-strong">{{ t.codigoTramite }}</span>
+              <span class="priority-indicator" [ngClass]="'priority-' + (t.prioridad || 2)">
+                {{ (t.prioridad === 5 ? '🔥 Crítica' : t.prioridad === 4 ? '🟠 Alta' : t.prioridad === 3 ? '🔵 Media' : t.prioridad === 1 ? '🟢 Baja' : '⚪ Normal') }}
+              </span>
+              <span class="badge" [ngClass]="'badge-' + t.estadoActual.toLowerCase()">{{ t.estadoActual }}</span>
+            </div>
+            <div class="tramite-details">
+              <span class="detail-item">📅 {{ formatDate(t.createdAt) }}</span>
+              <span class="detail-item" *ngIf="activeTab === 'department'">👤 Solicitante: {{ t.idUsuarioSolicitante | slice:0:8 }}...</span>
+              <span class="detail-item text-secondary ml-1" *ngIf="activeTab === 'department'">📍 {{ t.nombreNodoActual }}</span>
+            </div>
           </div>
-          <div class="tramite-details">
-            <span class="detail-item">📅 {{ formatDate(t.createdAt) }}</span>
-            <span class="detail-item" *ngIf="activeTab === 'department'">👤 Solicitante: {{ t.idUsuarioSolicitante | slice:0:8 }}...</span>
+
+          <div class="tramite-actions">
+            <button class="btn btn-primary btn-sm" (click)="atenderTramite(t.id)">🛠️ Atender</button>
+            <button class="btn btn-secondary btn-sm" (click)="verHistorial(t.id)">📜 Historial</button>
           </div>
         </div>
 
-        <div class="tramite-actions">
-          <button class="btn btn-primary btn-sm" (click)="atenderTramite(t.id)" *ngIf="!isClient">🛠️ Atender</button>
-          <button class="btn btn-secondary btn-sm" (click)="verHistorial(t.id)">📜 Historial</button>
+        <div *ngIf="tramites.length === 0" class="empty-state">
+          <div class="icon">✨</div>
+          <h3>Bandeja impecable</h3>
+          <p>No tienes trámites pendientes {{ activeTab === 'personal' ? 'en tu despacho personal' : 'en la cola del departamento' }}.</p>
         </div>
-      </div>
+      </ng-container>
 
-      <!-- Estado Vacío -->
-      <div *ngIf="tramites.length === 0" class="empty-state">
-        <div class="icon">✨</div>
-        <h3>Bandeja impecable</h3>
-        <p>No tienes trámites pendientes {{ activeTab === 'personal' ? 'en tu despacho personal' : 'en la cola del departamento' }}.</p>
-      </div>
+      <!-- VISTA CLIENTE EXTERNO -->
+      <ng-container *ngIf="isClient">
+        
+        <h3 class="client-section-title" *ngIf="tramitesActivos.length > 0">Tus Trámites en Progreso</h3>
+        <div *ngFor="let t of tramitesActivos" class="tramite-row client-card glass-hover animate-slide-up mb-1">
+          <div class="tramite-main">
+            <div class="info-group">
+              <span class="tramite-code font-strong text-primary">{{ t.codigoTramite }}</span>
+              <span class="badge" [ngClass]="'badge-' + t.estadoActual.toLowerCase()">{{ t.estadoActual }}</span>
+            </div>
+            <div class="tramite-details mt-1">
+              <span class="detail-item"><strong>Ubicación Actual:</strong> {{ t.nombreDepartamentoActual || 'En asignación' }}</span>
+              <span class="detail-item"><strong>Próximo Paso:</strong> {{ t.nombreNodoActual || 'Pendiente' }}</span>
+            </div>
+            <p class="text-sm text-muted mt-1">🕒 Iniciado el: {{ formatDate(t.createdAt) }}</p>
+          </div>
+          <div class="tramite-actions">
+            <button class="btn btn-secondary btn-sm" (click)="verHistorial(t.id)">📜 Ver Trazabilidad</button>
+          </div>
+        </div>
+
+        <h3 class="client-section-title mt-3" *ngIf="tramitesFinalizados.length > 0">Histórico Finalizado</h3>
+        <div *ngFor="let t of tramitesFinalizados" class="tramite-row client-card opacity-muted animate-slide-up mb-1">
+          <div class="tramite-main">
+            <div class="info-group">
+              <span class="tramite-code font-strong text-muted">{{ t.codigoTramite }}</span>
+              <span class="badge badge-finalizado">Histórico</span>
+            </div>
+          </div>
+          <div class="tramite-actions">
+            <button class="btn btn-outline btn-sm" (click)="verHistorial(t.id)">📜 Consultar</button>
+          </div>
+        </div>
+
+        <div *ngIf="tramites.length === 0" class="empty-state">
+          <div class="icon">🔍</div>
+          <h3>Sin Trámites Detectados</h3>
+          <p>Aún no ha iniciado ninguna solicitud en el portal.</p>
+        </div>
+      </ng-container>
+
     </div>
   </div>
 </div>

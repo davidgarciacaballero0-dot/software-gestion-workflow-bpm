@@ -3,6 +3,10 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TramiteService } from '../../../data/services/tramite.service';
 import { AuthService } from '../../../data/services/auth.service';
+import { DepartamentoService } from '../../../data/services/departamento.service';
+import { PoliticaWorkflowService } from '../../../data/services/politica-workflow.service';
+import { Departamento } from '../../../data/models/departamento.model';
+import { TramiteResponseDTO } from '../../../data/models/tramite.model';
 
 @Component({
   selector: 'app-supervision',
@@ -12,11 +16,16 @@ import { AuthService } from '../../../data/services/auth.service';
   styleUrls: ['./supervision.component.css']
 })
 export class SupervisionComponent implements OnInit {
-  tramites: any[] = [];
+  tramites: TramiteResponseDTO[] = [];
   loading = false;
   
   private deptId = '';
   private userId = '';
+  private orgId = '';
+
+  // Catálogos para el modal
+  departamentos: Departamento[] = [];
+  nodosPolitica: any[] = [];
 
   // Stats
   stats = {
@@ -28,6 +37,8 @@ export class SupervisionComponent implements OnInit {
   // Intervention Modal State
   showModal = false;
   selectedTramite: any = null;
+  resultMessage: string | null = null;
+  resultIsError = false;
   intervencion = {
     nuevoNodoId: '',
     nuevoDepartamentoId: '',
@@ -38,6 +49,8 @@ export class SupervisionComponent implements OnInit {
   constructor(
     private tramiteService: TramiteService,
     private authService: AuthService,
+    private deptService: DepartamentoService,
+    private polService: PoliticaWorkflowService,
     private cd: ChangeDetectorRef,
     private zone: NgZone
   ) {}
@@ -49,13 +62,30 @@ export class SupervisionComponent implements OnInit {
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));
         this.userId = payload.userId || '';
+        this.orgId = payload.orgId || '';
       } catch (e) {}
     }
     const user = this.authService.currentUser();
     this.deptId = user?.idDepartamento || '';
+    // Fallback: si el JWT no tenía orgId, usar el del login response
+    if (!this.orgId) {
+      this.orgId = user?.idOrganizacion || '';
+    }
     this.intervencion.usuarioInterventorId = this.userId;
 
     this.cargarDatos();
+    this.cargarCatalogos();
+  }
+
+  cargarCatalogos(): void {
+    if (this.orgId) {
+      this.deptService.listarPorOrganizacion(this.orgId).subscribe({
+        next: (depts) => {
+          this.departamentos = depts;
+          this.cd.detectChanges();
+        }
+      });
+    }
   }
 
   cargarDatos(): void {
@@ -106,11 +136,23 @@ export class SupervisionComponent implements OnInit {
     this.stats.finalizados = this.tramites.filter(t => t.estadoActual === 'FINALIZADO').length;
   }
 
-  abrirIntervencion(tramite: any): void {
+  abrirIntervencion(tramite: TramiteResponseDTO): void {
     this.selectedTramite = tramite;
     this.intervencion.nuevoNodoId = tramite.nodoActualId;
     this.intervencion.nuevoDepartamentoId = tramite.departamentoActualId;
     this.intervencion.motivo = '';
+    
+    // Cargar nodos de la política específica
+    this.nodosPolitica = [];
+    if (tramite.idPolitica) {
+      this.polService.obtenerPorId(tramite.idPolitica).subscribe({
+        next: (pol) => {
+          this.nodosPolitica = pol.nodes || [];
+          this.cd.detectChanges();
+        }
+      });
+    }
+
     this.showModal = true;
   }
 
@@ -127,12 +169,20 @@ export class SupervisionComponent implements OnInit {
 
     this.tramiteService.intervenirTramite(request).subscribe({
       next: () => {
-        alert('🛠️ Intervención ejecutada con éxito. El trámite ha sido reasignado.');
-        this.showModal = false;
-        this.cargarDatos();
+        this.zone.run(() => {
+          this.resultMessage = '🛠️ Intervención ejecutada con éxito. El trámite ha sido reasignado.';
+          this.resultIsError = false;
+          this.showModal = false;
+          this.cargarDatos();
+          this.cd.detectChanges();
+        });
       },
       error: (err) => {
-        alert('Error: ' + (err.error?.message || 'No se pudo realizar la intervención'));
+        this.zone.run(() => {
+          this.resultMessage = 'Error: ' + (err.error?.message || 'No se pudo realizar la intervención');
+          this.resultIsError = true;
+          this.cd.detectChanges();
+        });
       }
     });
   }

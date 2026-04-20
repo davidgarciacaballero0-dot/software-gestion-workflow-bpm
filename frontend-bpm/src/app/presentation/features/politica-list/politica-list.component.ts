@@ -20,6 +20,10 @@ export class PoliticaListComponent implements OnInit {
   organizacionesMap: Map<string, string> = new Map();
   loading = false;
   isClient = false;
+  showConfirmDialog = false;
+  pendingPolitica: PoliticaWorkflow | null = null;
+  resultMessage: string | null = null;
+  resultIsError = false;
 
   constructor(
     private politicaService: PoliticaWorkflowService,
@@ -32,7 +36,7 @@ export class PoliticaListComponent implements OnInit {
 
   ngOnInit(): void {
     const user = this.authService.currentUser();
-    this.isClient = !user?.idOrganizacion;
+    this.isClient = user?.nombreRol === 'CLIENTE';
     this.cargarDatos();
   }
 
@@ -73,7 +77,13 @@ export class PoliticaListComponent implements OnInit {
 
   iniciarTramite(politica: PoliticaWorkflow): void {
     if (!politica.id || politica.status !== PolicyStatus.PUBLISHED) return;
+    // Show confirm dialog instead of blocking confirm()
+    this.pendingPolitica = politica;
+    this.showConfirmDialog = true;
+  }
 
+  confirmarInicio(): void {
+    if (!this.pendingPolitica) return;
     const user = this.authService.currentUser();
     if (!user) return;
 
@@ -87,7 +97,7 @@ export class PoliticaListComponent implements OnInit {
     }
 
     const request: StartProcedureRequestDTO = {
-      idPolitica: politica.id,
+      idPolitica: this.pendingPolitica.id!,
       idUsuarioSolicitante: userId,
       datosIniciales: {
         timestamp_inicio: new Date().toISOString(),
@@ -95,16 +105,24 @@ export class PoliticaListComponent implements OnInit {
       }
     };
 
-    if (confirm(`¿Confirma la ejecución inmediata del flujo "${politica.nombre}"?`)) {
-      this.tramiteService.iniciarTramite(request).subscribe({
-        next: (res) => {
-          alert(`🚀 Instancia Creada exitosamente.\nCódigo: ${res.codigoTramite}\nPuede seguir el estado en su Bandeja de Entrada.`);
-        },
-        error: (err) => {
-          alert('Error de Ejecución: ' + (err.error?.message || 'Falla en el motor de procesos'));
-        }
-      });
-    }
+    this.showConfirmDialog = false;
+    this.tramiteService.iniciarTramite(request).subscribe({
+      next: (res) => {
+        this.resultMessage = `🚀 Instancia Creada exitosamente. Código: ${res.codigoTramite}. Puede seguir el estado en su Bandeja de Entrada.`;
+        this.resultIsError = false;
+        this.pendingPolitica = null;
+      },
+      error: (err) => {
+        this.resultMessage = 'Error de Ejecución: ' + (err.error?.message || 'Falla en el motor de procesos');
+        this.resultIsError = true;
+        this.pendingPolitica = null;
+      }
+    });
+  }
+
+  cancelarInicio(): void {
+    this.showConfirmDialog = false;
+    this.pendingPolitica = null;
   }
 
   getNombreOrganizacion(idOrg: string): string {

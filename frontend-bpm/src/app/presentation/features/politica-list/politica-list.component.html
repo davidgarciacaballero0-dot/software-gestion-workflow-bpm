@@ -8,6 +8,15 @@
     </p>
   </div>
 
+  <!-- Result Banner -->
+  <div *ngIf="resultMessage" class="grid-card shadow-ambient" 
+       [style.background]="resultIsError ? 'rgba(186,26,26,0.08)' : 'rgba(16,185,129,0.08)'"
+       [style.border-left]="resultIsError ? '4px solid #ba1a1a' : '4px solid #10b981'"
+       style="padding: 1rem 1.5rem; border-radius: 0.5rem; margin-bottom: 1.5rem;">
+    <span>{{ resultMessage }}</span>
+    <button style="float:right; background:none; border:none; cursor:pointer; font-size:1.1rem;" (click)="resultMessage = null">✕</button>
+  </div>
+
   <!-- UI de Tarjetas (Catálogo Premium) -->
   <div class="policy-grid" *ngIf="!loading">
     <div *ngFor="let p of politicas" class="policy-card glass-premium animate-slide-up">
@@ -41,3 +50,16 @@
       </div>
   </div>
 </div>
+
+<!-- Confirm Dialog -->
+<div class="modal-overlay" *ngIf="showConfirmDialog">
+  <div class="modal-content glass-premium animate-pop" style="max-width: 450px; padding: 2rem; text-align: center;">
+    <h3 style="margin-bottom: 1rem; color: var(--primary);">Confirmar Inicio de Trámite</h3>
+    <p>¿Confirma la ejecución inmediata del flujo <strong>"{{ pendingPolitica?.nombre }}"</strong>?</p>
+    <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 1.5rem;">
+      <button class="btn btn-secondary" (click)="cancelarInicio()">Cancelar</button>
+      <button class="btn btn-primary" (click)="confirmarInicio()">Confirmar</button>
+    </div>
+  </div>
+</div>
+

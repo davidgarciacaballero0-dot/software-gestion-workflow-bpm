@@ -38,9 +38,9 @@ public class TramiteController {
     }
 
     @GetMapping("/{tramiteId}")
-    public ResponseEntity<TramiteInstancia> obtenerTramite(@PathVariable String tramiteId) {
+    public ResponseEntity<TramiteResponseDTO> obtenerTramite(@PathVariable String tramiteId) {
         TramiteInstancia tramite = tramiteService.obtenerTramitePorId(tramiteId);
-        return ResponseEntity.ok(tramite);
+        return ResponseEntity.ok(tramiteService.mapearADTO(tramite, null)); // El service buscará la política si es null
     }
 
     // CU-10: Historial de Trazabilidad
@@ -50,18 +50,18 @@ public class TramiteController {
     }
 
     @GetMapping("/departamento/{departamentoId}")
-    public ResponseEntity<List<TramiteInstancia>> listarBandejaDepartamento(@PathVariable String departamentoId) {
+    public ResponseEntity<List<TramiteResponseDTO>> listarBandejaDepartamento(@PathVariable String departamentoId) {
         return ResponseEntity.ok(tramiteService.listarBandejaDepartamento(departamentoId));
     }
 
     @GetMapping("/solicitante/{usuarioId}")
-    public ResponseEntity<List<TramiteInstancia>> listarBandejaPersonal(@PathVariable String usuarioId) {
+    public ResponseEntity<List<TramiteResponseDTO>> listarBandejaPersonal(@PathVariable String usuarioId) {
         return ResponseEntity.ok(tramiteService.listarBandejaPersonal(usuarioId));
     }
 
     // CU-20: Supervisión de Jefatura
     @GetMapping("/supervision/{departamentoId}")
-    public ResponseEntity<List<TramiteInstancia>> listarSupervision(@PathVariable String departamentoId) {
+    public ResponseEntity<List<TramiteResponseDTO>> listarSupervision(@PathVariable String departamentoId) {
         return ResponseEntity.ok(tramiteService.listarSupervisionDepartamento(departamentoId));
     }
 

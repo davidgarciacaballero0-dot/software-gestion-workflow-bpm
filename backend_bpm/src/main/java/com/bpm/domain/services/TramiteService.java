@@ -14,23 +14,26 @@ import com.bpm.data.entities.embedded.WorkflowNode;
 import com.bpm.data.entities.enums.NodeType;
 import com.bpm.data.entities.enums.PolicyStatus;
 import com.bpm.data.entities.enums.TipoEvento;
+import com.bpm.data.repositories.DepartamentoRepository;
 import com.bpm.data.repositories.EventoHistorialRepository;
 import com.bpm.data.repositories.PoliticaWorkflowRepository;
 import com.bpm.data.repositories.TramiteInstanciaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
 import java.time.LocalDateTime;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class TramiteService {
 
     private final TramiteInstanciaRepository tramiteRepository;
     private final PoliticaWorkflowRepository politicaRepository;
+    private final DepartamentoRepository departamentoRepository;
     private final SequenceGeneratorService sequenceGenerator;
     private final NotificationService notificationService;
     private final EventoHistorialRepository historialRepository;
@@ -38,11 +41,13 @@ public class TramiteService {
     @Autowired
     public TramiteService(TramiteInstanciaRepository tramiteRepository,
                           PoliticaWorkflowRepository politicaRepository,
+                          DepartamentoRepository departamentoRepository,
                           SequenceGeneratorService sequenceGenerator,
                           NotificationService notificationService,
                           EventoHistorialRepository historialRepository) {
         this.tramiteRepository = tramiteRepository;
         this.politicaRepository = politicaRepository;
+        this.departamentoRepository = departamentoRepository;
         this.sequenceGenerator = sequenceGenerator;
         this.notificationService = notificationService;
         this.historialRepository = historialRepository;
@@ -109,14 +114,38 @@ public class TramiteService {
     }
 
     public TramiteResponseDTO mapearADTO(TramiteInstancia instancia, String nombrePolitica) {
+        String nombreDept = "N/A";
+        if (instancia.getDepartamentoActualId() != null) {
+            nombreDept = departamentoRepository.findById(instancia.getDepartamentoActualId())
+                    .map(d -> d.getNombre())
+                    .orElse("Desconocido");
+        }
+
+        String nombreNodo = "N/A";
+        if (instancia.getNodoActualId() != null) {
+            Optional<PoliticaWorkflow> polOpt = politicaRepository.findById(instancia.getIdPolitica());
+            if (polOpt.isPresent() && polOpt.get().getNodes() != null) {
+                nombreNodo = polOpt.get().getNodes().stream()
+                        .filter(n -> n.getId().equals(instancia.getNodoActualId()))
+                        .map(n -> n.getName())
+                        .findFirst()
+                        .orElse(instancia.getNodoActualId());
+            }
+        }
+
         return TramiteResponseDTO.builder()
                 .id(instancia.getId())
                 .codigoTramite(instancia.getCodigoTramite())
-                .nombrePolitica(nombrePolitica)
+                .idPolitica(instancia.getIdPolitica())
+                .idUsuarioSolicitante(instancia.getIdUsuarioSolicitante())
+                .nombrePolitica(nombrePolitica != null ? nombrePolitica : "Sin definir")
                 .estadoActual(instancia.getEstadoActual())
                 .nodoActualId(instancia.getNodoActualId())
+                .nombreNodoActual(nombreNodo)
                 .departamentoActualId(instancia.getDepartamentoActualId())
+                .nombreDepartamentoActual(nombreDept)
                 .prioridad(instancia.getPrioridad())
+                .datosAcumuladosFormulario(instancia.getDatosAcumuladosFormulario())
                 .createdAt(instancia.getCreatedAt())
                 .build();
     }
@@ -156,7 +185,7 @@ public class TramiteService {
         if (nextStopNode.getType() == NodeType.END) {
             instancia.setEstadoActual("FINALIZADO");
             instancia.setNodoActualId(nextStopNode.getId());
-            instancia.setDepartamentoActualId(null);
+            // Se elimina la asignación de departamento a null para preservar el histórico en base de datos.
         } else {
             instancia.setNodoActualId(nextStopNode.getId());
             instancia.setDepartamentoActualId(nextStopNode.getDepartmentId());
@@ -269,21 +298,32 @@ public class TramiteService {
                 .orElseThrow(() -> new WorkflowValidationException("Trámite no encontrado: " + id));
     }
 
-    public List<TramiteInstancia> listarBandejaDepartamento(String departamentoId) {
-        return tramiteRepository.findByDepartamentoActualId(departamentoId);
+    public List<TramiteResponseDTO> listarBandejaDepartamento(String departamentoId) {
+        return tramiteRepository.findByDepartamentoActualId(departamentoId).stream()
+                .map(this::transformarADTO)
+                .collect(Collectors.toList());
     }
 
-    public List<TramiteInstancia> listarBandejaPersonal(String usuarioId) {
-        return tramiteRepository.findByIdUsuarioSolicitante(usuarioId);
+    public List<TramiteResponseDTO> listarBandejaPersonal(String usuarioId) {
+        return tramiteRepository.findByIdUsuarioSolicitante(usuarioId).stream()
+                .map(this::transformarADTO)
+                .collect(Collectors.toList());
     }
 
     // ========================================================================================
     // CU-20: SUPERVISIÓN DE JEFATURA — Vista de carga departamental completa
     // ========================================================================================
 
-    public List<TramiteInstancia> listarSupervisionDepartamento(String departamentoId) {
+    public List<TramiteResponseDTO> listarSupervisionDepartamento(String departamentoId) {
         // Incluye los FINALIZADOS para que la jefatura vea el histórico completo
-        return tramiteRepository.findByDepartamentoActualId(departamentoId);
+        return tramiteRepository.findByDepartamentoActualId(departamentoId).stream()
+                .map(this::transformarADTO)
+                .collect(Collectors.toList());
+    }
+
+    private TramiteResponseDTO transformarADTO(TramiteInstancia t) {
+        PoliticaWorkflow p = politicaRepository.findById(t.getIdPolitica()).orElse(null);
+        return mapearADTO(t, p != null ? p.getNombre() : "N/A");
     }
 
     // ========================================================================================

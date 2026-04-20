@@ -32,6 +32,7 @@
             <input 
               *ngSwitchCase="'TEXT'" 
               [id]="field.fieldId"
+              [name]="field.fieldId"
               type="text" 
               [(ngModel)]="formData[field.fieldId]" 
               class="form-control"
@@ -40,6 +41,7 @@
             <input 
               *ngSwitchCase="'NUMBER'" 
               [id]="field.fieldId"
+              [name]="field.fieldId"
               type="number" 
               [(ngModel)]="formData[field.fieldId]" 
               class="form-control">
@@ -47,9 +49,22 @@
             <input 
               *ngSwitchCase="'DATE'" 
               [id]="field.fieldId"
+              [name]="field.fieldId"
               type="date" 
               [(ngModel)]="formData[field.fieldId]" 
               class="form-control">
+
+            <!-- Booleanos (Select Sí/No para enviar string 'true'/'false') -->
+            <select 
+              *ngSwitchCase="'BOOLEAN'" 
+              [id]="field.fieldId"
+              [name]="field.fieldId"
+              [(ngModel)]="formData[field.fieldId]" 
+              class="form-control">
+              <option value="" disabled>Seleccione...</option>
+              <option value="true">✅ Sí</option>
+              <option value="false">❌ No</option>
+            </select>
 
             <!-- Archivos (Integración con FileUploader) -->
             <div *ngSwitchCase="'FILE'" class="uploader-wrapper">
@@ -65,6 +80,7 @@
             <input 
               *ngSwitchDefault 
               [id]="field.fieldId"
+              [name]="field.fieldId"
               type="text" 
               [(ngModel)]="formData[field.fieldId]" 
               class="form-control">

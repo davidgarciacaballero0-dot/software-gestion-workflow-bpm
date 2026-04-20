@@ -1,4 +1,5 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, NgZone } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -6,6 +7,7 @@ import { TramiteService } from '../../../data/services/tramite.service';
 import { PoliticaWorkflowService } from '../../../data/services/politica-workflow.service';
 import { AuthService } from '../../../data/services/auth.service';
 import { FileUploaderComponent } from '../../shared/file-uploader/file-uploader.component';
+import { switchMap, finalize } from 'rxjs';
 
 @Component({
   selector: 'app-tramite-atencion',
@@ -31,7 +33,10 @@ export class TramiteAtencionComponent implements OnInit {
     private router: Router,
     private tramiteService: TramiteService,
     private politicaService: PoliticaWorkflowService,
-    private authService: AuthService
+    private authService: AuthService,
+    private cd: ChangeDetectorRef,
+    private zone: NgZone,
+    private http: HttpClient
   ) {}
 
   ngOnInit(): void {
@@ -52,66 +57,67 @@ export class TramiteAtencionComponent implements OnInit {
   cargarTramite(id: string): void {
     this.loading = true;
     this.errorMessage = null;
-    this.tramiteService.obtenerTramite(id).subscribe({
-      next: (tramite) => {
+
+    this.tramiteService.obtenerTramite(id).pipe(
+      switchMap(tramite => {
+        console.log('📦 Trámite cargado:', tramite);
         if (!tramite) {
-          this.errorMessage = 'No se encontró información del trámite.';
-          this.loading = false;
-          return;
+          throw new Error('No se encontró información del trámite.');
         }
         this.tramite = tramite;
-        if (tramite.idPolitica) {
-          this.cargarPolitica(tramite.idPolitica);
-        } else {
-          this.errorMessage = 'El trámite no tiene una política asociada.';
-          this.loading = false;
+        if (!tramite.idPolitica) {
+          throw new Error('El trámite no tiene una política asociada.');
         }
+        return this.politicaService.obtenerPorId(tramite.idPolitica);
+      }),
+      finalize(() => {
+        this.zone.run(() => {
+          this.loading = false;
+          this.cd.detectChanges();
+          console.log('⏳ Carga finalizada (Loading set to false)');
+        });
+      })
+    ).subscribe({
+      next: (politica) => {
+        this.zone.run(() => {
+          console.log('🗺️ Política cargada:', politica);
+          this.politica = politica;
+          this.procesarPolitica(politica);
+          this.cd.detectChanges();
+        });
       },
       error: (err) => {
-        console.error(err);
-        this.errorMessage = 'Error al cargar el trámite: ' + (err.error?.message || 'Error de conexión');
-        this.loading = false;
+        this.zone.run(() => {
+          console.error('❌ Error en el flujo de carga:', err);
+          this.errorMessage = 'No se pudo cargar el entorno: ' + (err.message || 'Error de conexión');
+          this.cd.detectChanges();
+        });
       }
     });
   }
 
-  cargarPolitica(idPolitica: string): void {
-    this.politicaService.obtenerPorId(idPolitica).subscribe({
-      next: (politica) => {
-        try {
-          this.politica = politica;
-          if (!politica || !politica.nodes) {
-            throw new Error('La política no contiene nodos configurados.');
-          }
+  private procesarPolitica(politica: any): void {
+    if (!politica || !politica.nodes) {
+      this.errorMessage = 'La política no contiene nodos configurados.';
+      return;
+    }
 
-          this.nodoActual = politica.nodes.find((n: any) => n.id === this.tramite.nodoActualId);
-          
-          if (!this.nodoActual) {
-            this.errorMessage = `No se encontró el paso actual (${this.tramite.nodoActualId}) en la definición del flujo.`;
-            this.loading = false;
-            return;
-          }
+    this.nodoActual = politica.nodes.find((n: any) => n.id === this.tramite.nodoActualId);
+    
+    if (!this.nodoActual) {
+      this.errorMessage = `No se encontró el paso actual (${this.tramite.nodoActualId}) en la definición del flujo.`;
+      return;
+    }
 
-          this.formFields = this.nodoActual.formDefinition || [];
-          
-          // Inicializar formData con valores vacíos
-          this.formData = {};
-          this.formFields.forEach((field: any) => {
-            this.formData[field.fieldId] = '';
-          });
-          
-          this.loading = false;
-        } catch (e: any) {
-          console.error('Error procesando política:', e);
-          this.errorMessage = 'Error en la estructura del flujo: ' + e.message;
-          this.loading = false;
-        }
-      },
-      error: (err) => {
-        console.error(err);
-        this.errorMessage = 'Error al cargar la definición del flujo.';
-        this.loading = false;
-      }
+    this.formFields = this.nodoActual.formDefinition || [];
+    
+    // Inicializar formData: precargar con datos acumulados existentes del trámite
+    // para que los gateways puedan evaluar las condiciones correctamente
+    this.formData = {};
+    this.formFields.forEach((field: any) => {
+      // Si el trámite ya tiene datos acumulados para este campo, usarlos como default
+      const existingValue = this.tramite.datosAcumuladosFormulario?.[field.fieldId];
+      this.formData[field.fieldId] = existingValue !== undefined ? existingValue : '';
     });
   }
 
@@ -133,11 +139,29 @@ export class TramiteAtencionComponent implements OnInit {
 
   descargarArchivo(fileId: string): void {
     const url = `/api/v1/archivos/download/${fileId}`;
-    window.open(url, '_blank');
+    this.http.get(url, { responseType: 'blob' }).subscribe({
+      next: (blob) => {
+        const objectUrl = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = objectUrl;
+        a.download = `documento_${fileId}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(objectUrl);
+      },
+      error: (err) => {
+        this.zone.run(() => {
+          this.errorMessage = 'Acceso Denegado: No se pudo descargar el archivo.';
+          this.cd.detectChanges();
+        });
+      }
+    });
   }
 
   completarYEnviar(): void {
     this.submitting = true;
+    this.errorMessage = null; // Clear prev error
     
     const request = {
       idTramite: this.tramite.id,
@@ -147,16 +171,17 @@ export class TramiteAtencionComponent implements OnInit {
 
     this.tramiteService.avanzarTramite(request).subscribe({
       next: (res) => {
-        this.submitting = false;
-        const msg = res.estadoActual === 'FINALIZADO'
-          ? `🎉 Trámite ${res.codigoTramite} FINALIZADO exitosamente.`
-          : `✅ Trámite ${res.codigoTramite} avanzó al siguiente paso.`;
-        alert(msg);
-        this.router.navigate(['/app/inbox']);
+        this.zone.run(() => {
+          this.submitting = false;
+          this.router.navigate(['/app/inbox']);
+        });
       },
       error: (err) => {
-        this.submitting = false;
-        alert('Error al avanzar: ' + (err.error?.message || 'Error desconocido'));
+        this.zone.run(() => {
+          this.submitting = false;
+          this.errorMessage = 'Error al avanzar: ' + (err.error?.message || 'Validación fallida');
+          this.cd.detectChanges();
+        });
       }
     });
   }

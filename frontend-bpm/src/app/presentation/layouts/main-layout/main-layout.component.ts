@@ -23,9 +23,9 @@ import { VoiceAssistantComponent } from '../../shared/voice-assistant/voice-assi
         </div>
 
         <nav class="sidebar-nav">
-          <a routerLink="/app/catalog" routerLinkActive="active" class="nav-item">
+          <a routerLink="/app/catalog" routerLinkActive="active" class="nav-item" *ngIf="!isClient()">
             <span class="icon">🚀</span>
-            <span>{{ isClient() ? 'Catálogo de Servicios' : 'Catálogo de Trámites' }}</span>
+            <span>Catálogo de Trámites</span>
           </a>
           <a routerLink="/app/inbox" routerLinkActive="active" class="nav-item">
             <span class="icon">📥</span>
@@ -297,5 +297,9 @@ export class MainLayoutComponent {
 
   isJefe() {
     return this.authService.currentUser()?.esJefe === true;
+  }
+
+  isClient() {
+    return this.authService.currentUser()?.nombreRol === 'CLIENTE';
   }
 }

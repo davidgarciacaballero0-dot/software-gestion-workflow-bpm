@@ -15,6 +15,8 @@ import { AuthService } from '../../../data/services/auth.service';
 export class InboxComponent implements OnInit {
   activeTab: 'personal' | 'department' = 'personal';
   tramites: any[] = [];
+  tramitesActivos: any[] = [];
+  tramitesFinalizados: any[] = [];
   loading = false;
   isClient = false;
   hasDept = false;
@@ -33,7 +35,7 @@ export class InboxComponent implements OnInit {
 
   ngOnInit(): void {
     const user = this.authService.currentUser();
-    this.isClient = !user?.idOrganizacion;
+    this.isClient = user?.nombreRol === 'CLIENTE';
     this.hasDept = !!user?.idDepartamento;
     this.deptId = user?.idDepartamento || '';
     
@@ -88,6 +90,8 @@ export class InboxComponent implements OnInit {
         clearTimeout(safetyTimer);
         this.zone.run(() => {
           this.tramites = (data || []).sort((a: any, b: any) => (b.prioridad || 0) - (a.prioridad || 0));
+          this.tramitesActivos = this.tramites.filter(t => t.estadoActual !== 'FINALIZADO' && t.estadoActual !== 'RECHAZADO');
+          this.tramitesFinalizados = this.tramites.filter(t => t.estadoActual === 'FINALIZADO' || t.estadoActual === 'RECHAZADO');
           this.loading = false;
           this.cd.detectChanges();
         });
