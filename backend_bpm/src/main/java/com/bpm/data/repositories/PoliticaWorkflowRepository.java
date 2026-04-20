@@ -9,6 +9,7 @@ import java.util.List;
 @Repository
 public interface PoliticaWorkflowRepository extends MongoRepository<PoliticaWorkflow, String> {
     List<PoliticaWorkflow> findByIdOrganizacion(String idOrganizacion);
+    java.util.Optional<PoliticaWorkflow> findByNombre(String nombre);
     // Para versionado en el futuro
     List<PoliticaWorkflow> findByIdOrganizacionAndNombre(String idOrganizacion, String nombre);
 }

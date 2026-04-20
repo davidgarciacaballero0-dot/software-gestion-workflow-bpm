@@ -9,5 +9,5 @@ import java.util.List;
 @Repository
 public interface UsuarioRepository extends MongoRepository<Usuario, String> {
     List<Usuario> findByIdDepartamento(String idDepartamento);
-    Usuario findByEmail(String email); // Útil a futuro para el Login (CU-03)
+    java.util.Optional<Usuario> findByEmail(String email); // Útil para Login e idempotencia
 }

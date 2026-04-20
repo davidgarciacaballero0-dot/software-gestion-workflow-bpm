@@ -68,4 +68,27 @@ export class NotificationService {
   getNotifications(): Observable<Notification> {
     return this.notificationSubject.asObservable();
   }
+
+  // REQ-10: Métodos genéricos para colaboración en tiempo real
+  subscribeToTopic(topic: string, callback: (payload: any) => void): any {
+    if (this.stompClient && this.stompClient.connected) {
+      return this.stompClient.subscribe(topic, (message: IMessage) => {
+        if (message.body) {
+          callback(JSON.parse(message.body));
+        }
+      });
+    }
+    // Si no está conectado, reintentar después de un breve delay (recursión simple para conveniencia)
+    setTimeout(() => this.subscribeToTopic(topic, callback), 1000);
+    return null;
+  }
+
+  sendMessage(destination: string, payload: any): void {
+    if (this.stompClient && this.stompClient.connected) {
+      this.stompClient.publish({
+        destination: destination,
+        body: JSON.stringify(payload)
+      });
+    }
+  }
 }

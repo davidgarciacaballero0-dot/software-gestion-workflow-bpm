@@ -30,6 +30,8 @@ public class TramiteInstancia {
     private String nodoActualId; // Ubicacion exacta dentro del BPMN
     private String departamentoActualId; // Util para mostrarlo rapidísimo en las Bandejas de Entrada (WebSockets)
     
+    private Integer prioridad; // REQ-06: 1 (Baja) a 5 (Critica)
+    
     // Todos los campos dinámicos acumulados en el formulario en tiempo real
     private Map<String, Object> datosAcumuladosFormulario;
 

@@ -7,5 +7,6 @@ import java.util.Map;
 public class StartProcedureRequestDTO {
     private String idPolitica;
     private String idUsuarioSolicitante;
+    private Integer prioridad; // Opcional, 1-5
     private Map<String, Object> datosIniciales;
 }

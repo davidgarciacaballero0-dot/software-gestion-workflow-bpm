@@ -87,7 +87,7 @@ export class InboxComponent implements OnInit {
       next: (data) => {
         clearTimeout(safetyTimer);
         this.zone.run(() => {
-          this.tramites = data || [];
+          this.tramites = (data || []).sort((a: any, b: any) => (b.prioridad || 0) - (a.prioridad || 0));
           this.loading = false;
           this.cd.detectChanges();
         });

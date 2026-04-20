@@ -6,6 +6,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import google.generativeai as genai
+from tenacity import retry, wait_exponential, stop_after_attempt, retry_if_exception
 from dotenv import load_dotenv
 
 # Cargar variables de entorno
@@ -66,8 +67,8 @@ REGLAS DE OPERACIÓN:
    - FORMATO REQUERIDO: [RESUMEN], [MÉTRICAS_CRÍTICAS], [RECOMENDACIÓN], [JUSTIFICACIÓN].
 """
 
-model_logic = genai.GenerativeModel(model_name="gemini-1.5-pro", system_instruction=SYSTEM_INSTRUCTION)
-model_creative = genai.GenerativeModel(model_name="gemini-1.5-flash", system_instruction=SYSTEM_INSTRUCTION)
+model_logic = genai.GenerativeModel(model_name="gemini-2.0-flash", system_instruction=SYSTEM_INSTRUCTION)
+model_creative = genai.GenerativeModel(model_name="gemini-2.0-flash", system_instruction=SYSTEM_INSTRUCTION)
 
 def extract_json(text: str) -> dict:
     """Intenta extraer un objeto JSON de un texto sucio (con markdown o texto extra)."""
@@ -102,6 +103,28 @@ async def analizar_rendimiento(req: AnalysisRequest):
         return {"reporte": response.text}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"IA Analysis Error: {str(e)}")
+
+def is_quota_error(exception):
+    return "429" in str(exception) or "quota" in str(exception).lower()
+
+@app.post("/ia/asistente")
+@retry(
+    wait=wait_exponential(multiplier=1, min=2, max=10),
+    stop=stop_after_attempt(3),
+    retry=retry_if_exception(is_quota_error),
+    reraise=True
+)
+async def asistente_virtual(req: FlowRequest):
+    """Responder consultas generales sobre el uso del sistema BPM."""
+    prompt = f"Como asistente virtual del sistema BPM, responde de forma concisa (máx 2 párrafos). Evita datos sensibles: {req.descripcion}"
+    try:
+        response = model_logic.generate_content(prompt)
+        return {"respuesta": response.text}
+    except Exception as e:
+        print(f"ERROR IA ASISTENTE: {str(e)}")
+        if is_quota_error(e):
+             raise HTTPException(status_code=429, detail="La cuota de la IA se ha agotado. Por favor, espera unos segundos.")
+        raise HTTPException(status_code=500, detail=f"IA Assistant Error: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn

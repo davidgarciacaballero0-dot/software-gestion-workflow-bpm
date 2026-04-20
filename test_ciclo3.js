@@ -29,9 +29,16 @@ async function testCiclo3() {
   const clientUserId = JSON.parse(Buffer.from(clientToken.split('.')[1], 'base64').toString()).userId;
 
   // 2. Iniciar Trámite (CU-07)
-  // Primero necesitamos una política publicada
-  const pols = await req('GET', '/policies/organization/' + clientRes.json.idOrganizacion, null, adminToken);
-  const publishedPol = pols.json.find(p => p.status === 'PUBLISHED') || pols.json[0];
+  // Primero necesitamos una política publicada (la org es la de Admin, ya que el cliente es externo)
+  const pols = await req('GET', '/policies/organization/' + adminRes.json.idOrganizacion, null, adminToken);
+  const publishedPol = (pols.json && pols.json.length > 0) 
+    ? (pols.json.find(p => p.status === 'PUBLISHED') || pols.json[0])
+    : null;
+
+  if (!publishedPol) {
+    console.log('❌ 3.1 Error: No se encontraron políticas para iniciar trámites.');
+    process.exit(1);
+  }
 
   const iniciarRes = await req('POST', '/tramites/iniciar', {
     idPolitica: publishedPol.id,

@@ -8,14 +8,9 @@
     </p>
   </div>
 
-  <div class="grid-card monolith-surface shadow-ambient">
-    <div *ngIf="loading" class="loading-state">
-      <span class="spinner"></span> Sincronizando catálogo de políticas...
-    </div>
-
-    <!-- UI de Tarjetas (Catálogo Premium) -->
-    <div class="policy-grid" *ngIf="!loading">
-      <div *ngFor="let p of politicas" class="policy-card glass-premium animate-slide-up">
+  <!-- UI de Tarjetas (Catálogo Premium) -->
+  <div class="policy-grid" *ngIf="!loading">
+    <div *ngFor="let p of politicas" class="policy-card glass-premium animate-slide-up">
         <div class="card-status-bar" [ngClass]="getStatusBadgeClass(p.status)"></div>
         <div class="card-content">
           <div class="org-info" *ngIf="isClient">
@@ -44,6 +39,5 @@
         <h3>Sin Servicios Disponibles</h3>
         <p>Actualmente no existen políticas publicadas que coincidan con su perfil de acceso.</p>
       </div>
-    </div>
   </div>
 </div>

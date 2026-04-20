@@ -22,6 +22,7 @@ export class TramiteAtencionComponent implements OnInit {
   formData: { [key: string]: any } = {};
   loading = true;
   submitting = false;
+  errorMessage: string | null = null;
 
   private userId = '';
 
@@ -50,13 +51,25 @@ export class TramiteAtencionComponent implements OnInit {
 
   cargarTramite(id: string): void {
     this.loading = true;
+    this.errorMessage = null;
     this.tramiteService.obtenerTramite(id).subscribe({
       next: (tramite) => {
+        if (!tramite) {
+          this.errorMessage = 'No se encontró información del trámite.';
+          this.loading = false;
+          return;
+        }
         this.tramite = tramite;
-        this.cargarPolitica(tramite.idPolitica);
+        if (tramite.idPolitica) {
+          this.cargarPolitica(tramite.idPolitica);
+        } else {
+          this.errorMessage = 'El trámite no tiene una política asociada.';
+          this.loading = false;
+        }
       },
       error: (err) => {
         console.error(err);
+        this.errorMessage = 'Error al cargar el trámite: ' + (err.error?.message || 'Error de conexión');
         this.loading = false;
       }
     });
@@ -65,19 +78,38 @@ export class TramiteAtencionComponent implements OnInit {
   cargarPolitica(idPolitica: string): void {
     this.politicaService.obtenerPorId(idPolitica).subscribe({
       next: (politica) => {
-        this.politica = politica;
-        this.nodoActual = politica.nodes.find((n: any) => n.id === this.tramite.nodoActualId);
-        this.formFields = this.nodoActual?.formDefinition || [];
-        
-        // Inicializar formData con valores vacíos
-        this.formFields.forEach((field: any) => {
-          this.formData[field.fieldId] = '';
-        });
-        
-        this.loading = false;
+        try {
+          this.politica = politica;
+          if (!politica || !politica.nodes) {
+            throw new Error('La política no contiene nodos configurados.');
+          }
+
+          this.nodoActual = politica.nodes.find((n: any) => n.id === this.tramite.nodoActualId);
+          
+          if (!this.nodoActual) {
+            this.errorMessage = `No se encontró el paso actual (${this.tramite.nodoActualId}) en la definición del flujo.`;
+            this.loading = false;
+            return;
+          }
+
+          this.formFields = this.nodoActual.formDefinition || [];
+          
+          // Inicializar formData con valores vacíos
+          this.formData = {};
+          this.formFields.forEach((field: any) => {
+            this.formData[field.fieldId] = '';
+          });
+          
+          this.loading = false;
+        } catch (e: any) {
+          console.error('Error procesando política:', e);
+          this.errorMessage = 'Error en la estructura del flujo: ' + e.message;
+          this.loading = false;
+        }
       },
       error: (err) => {
         console.error(err);
+        this.errorMessage = 'Error al cargar la definición del flujo.';
         this.loading = false;
       }
     });

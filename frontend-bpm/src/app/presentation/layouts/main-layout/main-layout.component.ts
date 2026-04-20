@@ -25,11 +25,11 @@ import { VoiceAssistantComponent } from '../../shared/voice-assistant/voice-assi
         <nav class="sidebar-nav">
           <a routerLink="/app/catalog" routerLinkActive="active" class="nav-item">
             <span class="icon">🚀</span>
-            <span>Catálogo de Trámites</span>
+            <span>{{ isClient() ? 'Catálogo de Servicios' : 'Catálogo de Trámites' }}</span>
           </a>
           <a routerLink="/app/inbox" routerLinkActive="active" class="nav-item">
             <span class="icon">📥</span>
-            <span>Bandeja de Entrada</span>
+            <span>{{ isClient() ? 'Mis Trámites' : 'Bandeja de Entrada' }}</span>
           </a>
           <a routerLink="/app/designer" routerLinkActive="active" class="nav-item" *ngIf="isAdmin()">
             <span class="icon">🎨</span>

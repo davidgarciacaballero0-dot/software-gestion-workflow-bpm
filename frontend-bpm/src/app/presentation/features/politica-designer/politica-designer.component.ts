@@ -1,12 +1,14 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DragDropModule, CdkDragEnd } from '@angular/cdk/drag-drop';
 import { PoliticaWorkflow, WorkflowNode, WorkflowEdge, NodeType, PolicyStatus } from '../../../data/models/politica-workflow.model';
 import { PoliticaWorkflowService } from '../../../data/services/politica-workflow.service';
 import { DepartamentoService } from '../../../data/services/departamento.service';
-import { Departamento } from '../../../data/models/departamento.model';
 import { AuthService } from '../../../data/services/auth.service';
+import { NotificationService } from '../../../data/services/notification.service';
+import { Departamento } from '../../../data/models/departamento.model';
 
 @Component({
   selector: 'app-politica-designer',
@@ -37,11 +39,13 @@ export class PoliticaDesignerComponent implements OnInit {
     edges: []
   };
 
-  constructor(
-    private workflowService: PoliticaWorkflowService,
-    private depService: DepartamentoService,
-    private authService: AuthService
-  ) {}
+  private route = inject(ActivatedRoute);
+  private workflowService = inject(PoliticaWorkflowService);
+  private depService = inject(DepartamentoService);
+  private authService = inject(AuthService);
+  private notificationService = inject(NotificationService);
+
+  constructor() {}
 
   ngOnInit(): void {
     const user = this.authService.currentUser();
@@ -54,6 +58,41 @@ export class PoliticaDesignerComponent implements OnInit {
         this.departamentos = data;
       },
       error: (err: any) => console.error(err)
+    });
+
+    // REQ-10: Suscripción a colaboración en tiempo real
+    this.notificationService.subscribeToTopic('/topic/designer', (event: any) => {
+      if (event.senderId === this.authService.getToken()) return; // Ignorar mis propios mensajes
+      
+      console.log('Sync Event Received:', event);
+      this.handleSyncEvent(event);
+    });
+  }
+
+  private handleSyncEvent(event: any): void {
+    const payload = event.payload;
+    if (event.eventType === 'NODE_MOVED') {
+      const node = this.nodes.find(n => n.id === payload.id);
+      if (node) {
+        node.uiPosition = payload.uiPosition;
+      }
+    } else if (event.eventType === 'NODE_ADDED') {
+      if (!this.nodes.find(n => n.id === payload.id)) {
+        this.nodes.push(payload);
+      }
+    } else if (event.eventType === 'NODE_REMOVED') {
+      this.nodes = this.nodes.filter(n => n.id !== payload.id);
+      this.edges = this.edges.filter(e => e.sourceNodeId !== payload.id && e.targetNodeId !== payload.id);
+    }
+    // Podríamos agregar más eventos como conexiones agregadas, etc.
+  }
+
+  private broadcastChange(type: string, payload: any): void {
+    this.notificationService.sendMessage('/app/designer/sync', {
+      idPolitica: this.currentPolicy.id || 'new',
+      eventType: type,
+      senderId: this.authService.getToken(),
+      payload: payload
     });
   }
 
@@ -69,6 +108,7 @@ export class PoliticaDesignerComponent implements OnInit {
     };
     this.nodes.push(newNode);
     this.selectedNode = newNode;
+    this.broadcastChange('NODE_ADDED', newNode);
   }
 
   onNodeMoved(event: CdkDragEnd, node: WorkflowNode): void {
@@ -76,6 +116,7 @@ export class PoliticaDesignerComponent implements OnInit {
     node.uiPosition.x += transform.x;
     node.uiPosition.y += transform.y;
     event.source.reset();
+    this.broadcastChange('NODE_MOVED', node);
   }
 
   selectNode(node: WorkflowNode): void {
@@ -90,6 +131,7 @@ export class PoliticaDesignerComponent implements OnInit {
     this.nodes = this.nodes.filter(n => n.id !== node.id);
     this.edges = this.edges.filter(e => e.sourceNodeId !== node.id && e.targetNodeId !== node.id);
     this.selectedNode = null;
+    this.broadcastChange('NODE_REMOVED', node);
   }
 
   // --- Lógica del Form Builder (CU-06) ---

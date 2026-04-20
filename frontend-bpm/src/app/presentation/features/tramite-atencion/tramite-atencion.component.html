@@ -54,7 +54,7 @@
             <!-- Archivos (Integración con FileUploader) -->
             <div *ngSwitchCase="'FILE'" class="uploader-wrapper">
               <app-file-uploader 
-                (onUploadFinished)="onFileUpload(field.fieldId, $event)">
+                (onUploadSuccess)="onFileUpload(field.fieldId, $event)">
               </app-file-uploader>
               <div *ngIf="formData[field.fieldId]" class="file-success">
                 ✅ Archivo cargado (ID: {{ formData[field.fieldId] | slice:0:8 }}...)
@@ -107,5 +107,15 @@
   <div class="spinner-container">
     <div class="spinner"></div>
     <p>Preparando entorno de atención...</p>
+  </div>
+</div>
+
+<!-- Error State -->
+<div *ngIf="!loading && errorMessage" class="atencion-container animate-fade-in">
+  <div class="grid-card glass-premium shadow-ambient text-center p-3">
+    <div class="error-icon" style="font-size: 3rem; margin-bottom: 1rem;">⚠️</div>
+    <h2 class="text-danger">No se pudo cargar el entorno</h2>
+    <p class="mt-1">{{ errorMessage }}</p>
+    <button class="btn btn-primary mt-2" (click)="volver()">Volver a la Bandeja</button>
   </div>
 </div>

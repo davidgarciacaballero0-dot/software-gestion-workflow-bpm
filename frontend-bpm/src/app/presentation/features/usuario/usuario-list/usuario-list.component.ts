@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { UsuarioService } from '../../../../data/services/usuario.service';
@@ -37,7 +37,8 @@ export class UsuarioListComponent implements OnInit {
     private orgService: OrganizacionService,
     private depService: DepartamentoService,
     private rolService: RolService,
-    private authService: AuthService
+    private authService: AuthService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -50,9 +51,9 @@ export class UsuarioListComponent implements OnInit {
       orgs: this.orgService.listarTodas(),
       roles: this.rolService.listarRoles()
     }).subscribe({
-      next: ({ orgs, roles }) => {
+      next: ({ orgs, roles }: { orgs: Organizacion[], roles: Rol[] }) => {
         this.organizaciones = orgs;
-        roles.forEach(r => {
+        roles.forEach((r: Rol) => {
           if (r.id) this.rolesMap.set(r.id, r.nombre);
         });
 
@@ -69,7 +70,7 @@ export class UsuarioListComponent implements OnInit {
           }
         }
       },
-      error: (err) => console.error('Error cargando datos iniciales', err)
+      error: (err: any) => console.error('Error cargando datos iniciales', err)
     });
   }
 
@@ -81,10 +82,10 @@ export class UsuarioListComponent implements OnInit {
     if (!this.selectedOrgId) return;
 
     this.depService.listarPorOrganizacion(this.selectedOrgId).subscribe({
-      next: (data) => {
+      next: (data: Departamento[]) => {
         this.departamentos = data;
       },
-      error: (err) => console.error('Error cargando departamentos', err)
+      error: (err: any) => console.error('Error cargando departamentos', err)
     });
   }
 
@@ -102,13 +103,15 @@ export class UsuarioListComponent implements OnInit {
 
     this.loading = true;
     this.usuarioService.listarPorDepartamento(this.selectedDepId).subscribe({
-      next: (data) => {
+      next: (data: Usuario[]) => {
         this.usuarios = data;
         this.loading = false;
+        this.cdr.detectChanges();
       },
-      error: (err) => {
+      error: (err: any) => {
         console.error('Error al cargar usuarios', err);
         this.loading = false;
+        this.cdr.detectChanges();
       }
     });
   }
@@ -127,6 +130,7 @@ export class UsuarioListComponent implements OnInit {
     if (this.selectedDepId) {
       this.cargarUsuarios();
     }
+    this.cdr.detectChanges();
   }
 
   onFormCancel() {

@@ -2,8 +2,12 @@
   <!-- Header con Tabs -->
   <div class="inbox-header">
     <div class="header-text">
-      <h1 class="page-title">Bandeja de Entrada</h1>
-      <p class="page-subtitle">Gestione sus trámites activos y las tareas asignadas a su dependencia institucional.</p>
+      <h1 class="page-title">{{ isClient ? 'Seguimiento de Mis Trámites' : 'Bandeja de Entrada' }}</h1>
+      <p class="page-subtitle">
+        {{ isClient 
+          ? 'Consulte el estado actual y el historial de progreso de sus solicitudes enviadas.' 
+          : 'Gestione sus trámites activos y las tareas asignadas a su dependencia institucional.' }}
+      </p>
     </div>
 
     <div class="tabs-navigation glass-surface shadow-ambient" *ngIf="!isClient && hasDept">
@@ -33,6 +37,9 @@
         <div class="tramite-main">
           <div class="info-group">
             <span class="tramite-code font-strong">{{ t.codigoTramite }}</span>
+            <span class="priority-indicator" [ngClass]="'priority-' + (t.prioridad || 2)">
+              {{ (t.prioridad === 5 ? '🔥 Crítica' : t.prioridad === 4 ? '🟠 Alta' : t.prioridad === 3 ? '🔵 Media' : t.prioridad === 1 ? '🟢 Baja' : '⚪ Normal') }}
+            </span>
             <span class="badge" [ngClass]="'badge-' + t.estadoActual.toLowerCase()">{{ t.estadoActual }}</span>
           </div>
           <div class="tramite-details">
@@ -42,7 +49,7 @@
         </div>
 
         <div class="tramite-actions">
-          <button class="btn btn-primary btn-sm" (click)="atenderTramite(t.id)">🛠️ Atender</button>
+          <button class="btn btn-primary btn-sm" (click)="atenderTramite(t.id)" *ngIf="!isClient">🛠️ Atender</button>
           <button class="btn btn-secondary btn-sm" (click)="verHistorial(t.id)">📜 Historial</button>
         </div>
       </div>

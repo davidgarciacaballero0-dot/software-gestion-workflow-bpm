@@ -9,5 +9,6 @@ import java.util.List;
 @Repository
 public interface DepartamentoRepository extends MongoRepository<Departamento, String> {
     List<Departamento> findByIdOrganizacion(String idOrganizacion);
+    java.util.Optional<Departamento> findByNombre(String nombre);
     boolean existsByIdJefe(String idJefe); // Verificar si un usuario es jefe de algún departamento
 }

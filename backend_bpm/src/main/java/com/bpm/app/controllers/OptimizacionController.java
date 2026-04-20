@@ -4,6 +4,7 @@ import com.bpm.domain.services.AnaliticaService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.HashMap;
@@ -87,5 +88,28 @@ public class OptimizacionController {
                 .header("Content-Type", "application/pdf")
                 .header("Content-Disposition", "attachment; filename=informe_ia_consultoria.pdf")
                 .body(content);
+    }
+
+    @PostMapping("/asistente")
+    public ResponseEntity<Map<String, Object>> chatAssistant(@RequestBody Map<String, String> request) {
+        try {
+            @SuppressWarnings("unchecked")
+            Class<Map<String, Object>> responseType = (Class<Map<String, Object>>) (Class<?>) Map.class;
+            ResponseEntity<Map<String, Object>> response = restTemplate.postForEntity(IA_URL + "/asistente", request, responseType);
+            return ResponseEntity.ok(response.getBody());
+        } catch (HttpStatusCodeException e) {
+            Map<String, Object> error = new HashMap<>();
+            if (e.getStatusCode().value() == 429) {
+                error.put("error", "El asistente virtual está muy solicitado en este momento.");
+                error.put("details", "Por favor, espera unos segundos e intenta de nuevo.");
+                return ResponseEntity.status(429).body(error);
+            }
+            error.put("error", "Error en el asistente virtual.");
+            return ResponseEntity.status(e.getStatusCode()).body(error);
+        } catch (Exception e) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", "Error al conectar con el asistente virtual.");
+            return ResponseEntity.status(503).body(error);
+        }
     }
 }

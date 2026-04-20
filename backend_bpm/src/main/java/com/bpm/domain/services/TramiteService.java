@@ -86,6 +86,7 @@ public class TramiteService {
                 .estadoActual("EN_PROGRESO")
                 .nodoActualId(firstOpNode.getId())
                 .departamentoActualId(firstOpNode.getDepartmentId())
+                .prioridad(request.getPrioridad() != null ? request.getPrioridad() : 2) // Default priority 2 (Normal)
                 .datosAcumuladosFormulario(request.getDatosIniciales() != null ? request.getDatosIniciales() : new HashMap<>())
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
@@ -104,14 +105,19 @@ public class TramiteService {
                 "Se ha recibido el trámite " + guardado.getCodigoTramite() + " para su revisión."
         );
 
+        return mapearADTO(guardado, politica.getNombre());
+    }
+
+    public TramiteResponseDTO mapearADTO(TramiteInstancia instancia, String nombrePolitica) {
         return TramiteResponseDTO.builder()
-                .id(guardado.getId())
-                .codigoTramite(guardado.getCodigoTramite())
-                .nombrePolitica(politica.getNombre())
-                .estadoActual(guardado.getEstadoActual())
-                .nodoActualId(guardado.getNodoActualId())
-                .departamentoActualId(guardado.getDepartamentoActualId())
-                .createdAt(guardado.getCreatedAt())
+                .id(instancia.getId())
+                .codigoTramite(instancia.getCodigoTramite())
+                .nombrePolitica(nombrePolitica)
+                .estadoActual(instancia.getEstadoActual())
+                .nodoActualId(instancia.getNodoActualId())
+                .departamentoActualId(instancia.getDepartamentoActualId())
+                .prioridad(instancia.getPrioridad())
+                .createdAt(instancia.getCreatedAt())
                 .build();
     }
 
@@ -174,15 +180,7 @@ public class TramiteService {
             );
         }
 
-        return TramiteResponseDTO.builder()
-                .id(guardado.getId())
-                .codigoTramite(guardado.getCodigoTramite())
-                .nombrePolitica(politica.getNombre())
-                .estadoActual(guardado.getEstadoActual())
-                .nodoActualId(guardado.getNodoActualId())
-                .departamentoActualId(guardado.getDepartamentoActualId())
-                .createdAt(guardado.getCreatedAt())
-                .build();
+        return mapearADTO(guardado, politica.getNombre());
     }
 
     // ========================================================================================
@@ -322,15 +320,7 @@ public class TramiteService {
         PoliticaWorkflow politica = politicaRepository.findById(guardado.getIdPolitica())
                 .orElse(null);
 
-        return TramiteResponseDTO.builder()
-                .id(guardado.getId())
-                .codigoTramite(guardado.getCodigoTramite())
-                .nombrePolitica(politica != null ? politica.getNombre() : "")
-                .estadoActual(guardado.getEstadoActual())
-                .nodoActualId(guardado.getNodoActualId())
-                .departamentoActualId(guardado.getDepartamentoActualId())
-                .createdAt(guardado.getCreatedAt())
-                .build();
+        return mapearADTO(guardado, politica != null ? politica.getNombre() : "");
     }
 
     // ========================================================================================

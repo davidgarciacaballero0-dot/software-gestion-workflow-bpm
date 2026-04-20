@@ -1,0 +1,41 @@
+import { Injectable } from '@angular/core';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Observable } from 'rxjs';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class ElevenLabsService {
+  // En una implementación real, esto debería venir de un environment o proxy
+  private readonly VOIC_ID = '21m00Tcm4lcv85onWvbf'; // Rachel
+  private readonly API_KEY = 'sk_cb7bae10b9e3d105747d02ed660cdb54a0bc472b9d6ce287'; // Configurada por el usuario
+
+  constructor(private http: HttpClient) {}
+
+  speak(text: string): void {
+    const url = `https://api.elevenlabs.io/v1/text-to-speech/${this.VOIC_ID}`;
+    
+    const headers = new HttpHeaders({
+      'Content-Type': 'application/json',
+      'xi-api-key': this.API_KEY
+    });
+
+    const body = {
+      text: text,
+      model_id: 'eleven_multilingual_v2',
+      voice_settings: {
+        stability: 0.5,
+        similarity_boost: 0.5
+      }
+    };
+
+    this.http.post(url, body, { headers, responseType: 'blob' }).subscribe({
+      next: (blob) => {
+        const audioUrl = URL.createObjectURL(blob);
+        const audio = new Audio(audioUrl);
+        audio.play();
+      },
+      error: (err) => console.error('ElevenLabs Error:', err)
+    });
+  }
+}

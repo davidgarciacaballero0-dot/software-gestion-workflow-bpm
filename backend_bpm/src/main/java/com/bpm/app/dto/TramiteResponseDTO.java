@@ -13,5 +13,6 @@ public class TramiteResponseDTO {
     private String estadoActual;
     private String nodoActualId;
     private String departamentoActualId;
+    private Integer prioridad;
     private LocalDateTime createdAt;
 }

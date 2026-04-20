@@ -28,7 +28,7 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody AuthRequestDTO request) {
         // 1. Buscar usuario por email en MongoDB
-        Usuario usuario = usuarioRepository.findByEmail(request.getEmail());
+        Usuario usuario = usuarioRepository.findByEmail(request.getEmail()).orElse(null);
 
         if (usuario == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)

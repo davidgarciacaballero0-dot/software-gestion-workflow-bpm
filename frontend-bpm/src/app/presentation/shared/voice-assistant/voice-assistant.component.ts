@@ -1,6 +1,8 @@
 import { Component, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
+import { ElevenLabsService } from '../../../data/services/eleven-labs.service';
 
 @Component({
   selector: 'app-voice-assistant',
@@ -67,7 +69,12 @@ export class VoiceAssistantComponent {
   recognition: any;
   lastCommand = '';
 
-  constructor(private router: Router, private zone: NgZone) {
+  constructor(
+    private router: Router, 
+    private zone: NgZone,
+    private http: HttpClient,
+    private elevenLabs: ElevenLabsService
+  ) {
     const { webkitSpeechRecognition }: any = window;
     if (webkitSpeechRecognition) {
       this.recognition = new webkitSpeechRecognition();
@@ -104,18 +111,52 @@ export class VoiceAssistantComponent {
   processCommand(cmd: string) {
     console.log('Voice Command:', cmd);
     
+    // 1. Comandos de Navegación Locales
     if (cmd.includes('bandeja') || cmd.includes('inbox')) {
       this.router.navigate(['/app/inbox']);
-    } else if (cmd.includes('catálogo') || cmd.includes('servicios')) {
+      return;
+    } 
+    
+    if (cmd.includes('catálogo') || cmd.includes('servicios')) {
       this.router.navigate(['/app/catalog']);
-    } else if (cmd.includes('audit') || cmd.includes('historial')) {
+      return;
+    } 
+    
+    if (cmd.includes('audit') || cmd.includes('historial')) {
       this.router.navigate(['/app/audit']);
-    } else if (cmd.includes('diseño') || cmd.includes('crear política')) {
+      return;
+    } 
+    
+    if (cmd.includes('diseño') || cmd.includes('crear política')) {
       this.router.navigate(['/app/designer']);
-    } else if (cmd.includes('inteligencia') || cmd.includes('insights') || cmd.includes('reportes')) {
+      return;
+    } 
+    
+    if (cmd.includes('inteligencia') || cmd.includes('insights') || cmd.includes('reportes')) {
       this.router.navigate(['/app/insights']);
-    } else if (cmd.includes('supervisión') || cmd.includes('dashboard')) {
+      return;
+    } 
+    
+    if (cmd.includes('supervisión') || cmd.includes('dashboard')) {
       this.router.navigate(['/app/supervision']);
+      return;
     }
+
+    // 2. Consulta Global a la IA (REQ-13)
+    this.consultarAsistenteIA(cmd);
+  }
+
+  private consultarAsistenteIA(prompt: string) {
+    // URL del microservicio de IA
+    const url = 'http://localhost:8000/ia/asistente';
+    this.http.post(url, { descripcion: prompt }).subscribe({
+      next: (res: any) => {
+        const respuesta = res.respuesta;
+        this.lastCommand = respuesta;
+        // REQ-13: Síntesis de voz vía ElevenLabs
+        this.elevenLabs.speak(respuesta);
+      },
+      error: (err) => console.error('IA Assistant Error:', err)
+    });
   }
 }

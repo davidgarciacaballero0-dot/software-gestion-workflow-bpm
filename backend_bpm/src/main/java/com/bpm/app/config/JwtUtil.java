@@ -53,6 +53,10 @@ public class JwtUtil {
         return extractClaims(token).getSubject();
     }
 
+    public String extractIdRol(String token) {
+        return extractClaims(token).get("rol", String.class);
+    }
+
     public boolean isTokenValid(String token) {
         try {
             extractClaims(token);
