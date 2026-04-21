@@ -6,6 +6,7 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class AuthResponseDTO {
+    private String id; // ID único de MongoDB
     private String token;
     private String nombre;
     private String apellidos;

@@ -60,6 +60,7 @@ public class AuthController {
 
         // 4. Devolver token + metadata completa (sin password)
         AuthResponseDTO response = new AuthResponseDTO(
+                usuario.getId(),
                 token,
                 usuario.getNombre(),
                 usuario.getApellidos() != null ? usuario.getApellidos() : "",

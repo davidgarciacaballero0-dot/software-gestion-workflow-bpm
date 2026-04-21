@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
 
 export interface AuthResponse {
+  id: string; // ID de MongoDB
   token: string;
   nombre: string;
   apellidos: string;
@@ -19,6 +20,7 @@ export interface AuthResponse {
 }
 
 export interface UserData {
+  id: string; // ID de MongoDB
   nombre: string;
   apellidos: string;
   email: string;
@@ -71,6 +73,7 @@ export class AuthService {
     return this.http.post<AuthResponse>(`${this.apiUrl}/login`, { email, password }).pipe(
       tap(response => {
         const userData: UserData = {
+          id: response.id,
           nombre: response.nombre,
           apellidos: response.apellidos,
           email: response.email,

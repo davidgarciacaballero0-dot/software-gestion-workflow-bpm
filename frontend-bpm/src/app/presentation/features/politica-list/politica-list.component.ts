@@ -43,8 +43,8 @@ export class PoliticaListComponent implements OnInit {
     this.welcomeMessage = `¡Bienvenido, ${user?.nombre} ${user?.apellidos || ''}!`;
     this.cargarDatos();
     
-    if (this.isClient && user?.nombre) {
-      this.cargarTramitesActivos(user.nombre);
+    if (this.isClient && user?.id) {
+      this.cargarTramitesActivos(user.id);
     }
   }
 
