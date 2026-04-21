@@ -316,6 +316,7 @@
   background: var(--surface-bright);
 }
 
+.sidebar h4 {
   color: var(--text-muted);
   font-weight: 600;
   margin-bottom: 1rem;
