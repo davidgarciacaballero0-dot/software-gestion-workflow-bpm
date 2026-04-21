@@ -10,11 +10,14 @@ from tenacity import retry, wait_exponential, stop_after_attempt, retry_if_excep
 from dotenv import load_dotenv
 
 # Cargar variables de entorno
-load_dotenv(dotenv_path="../.env")
+load_dotenv() # Cargar desde CWD
 api_key = os.getenv("GEMINI_API_KEY")
 
+def is_quota_error(exception):
+    return "429" in str(exception) or "quota" in str(exception).lower()
+
 if not api_key:
-    print("⚠️ ADVERTENCIA: GEMINI_API_KEY no encontrada")
+    print("ADVERTENCIA: GEMINI_API_KEY no encontrada")
 else:
     genai.configure(api_key=api_key)
 
@@ -32,7 +35,7 @@ app.add_middleware(
 # --- Modelos de Datos ---
 
 class FlowRequest(BaseModel):
-    descripcion: str
+    prompt: str
 
 class MetricData(BaseModel):
     departamentoId: str
@@ -60,20 +63,19 @@ REGLAS DE OPERACIÓN:
 2. ANÁLISIS DE CUELLOS DE BOTELLA Y REOPTIMIZACIÓN:
    - Recibirás una lista de métricas por departamento.
    - Identifica el departamento con mayor latencia (tiempo promedio alto) y alta carga (muchos trámites).
-   - Busca departamentos subutilizados (baja carga y bajo tiempo).
-   - Genera una RECOMENDACIÓN de reasignación de personal cuantificable (ej: Mover X personas de Dept A a Dept B).
+   - Genera una RECOMENDACIÓN de reasignación de personal cuantificable.
+   - **IMPORTANTE**: Al final del texto, incluye una sección llamada [DATA_PROJECTION] con un JSON que contenga:
+     `{"departamentos": ["NombreA", "NombreB"], "mejora_tiempo": [20, 15], "carga_final": [10, 12]}`.
    - Proporciona una JUSTIFICACIÓN ESTADÍSTICA detallada.
-   - Incluye un párrafo final con la explicación humana y profesional del caso.
-   - FORMATO REQUERIDO: [RESUMEN], [MÉTRICAS_CRÍTICAS], [RECOMENDACIÓN], [JUSTIFICACIÓN].
+   - FORMATO REQUERIDO: [RESUMEN], [MÉTRICAS_CRÍTICAS], [RECOMENDACIÓN], [JUSTIFICACIÓN], [DATA_PROJECTION].
 """
 
-model_logic = genai.GenerativeModel(model_name="gemini-2.0-flash", system_instruction=SYSTEM_INSTRUCTION)
-model_creative = genai.GenerativeModel(model_name="gemini-2.0-flash", system_instruction=SYSTEM_INSTRUCTION)
+model_logic = genai.GenerativeModel(model_name="gemini-1.5-flash", system_instruction=SYSTEM_INSTRUCTION)
+model_creative = genai.GenerativeModel(model_name="gemini-1.5-flash", system_instruction=SYSTEM_INSTRUCTION)
 
 def extract_json(text: str) -> dict:
     """Intenta extraer un objeto JSON de un texto sucio (con markdown o texto extra)."""
     try:
-        # Buscar el primer '{' y el último '}'
         match = re.search(r'\{.*\}', text, re.DOTALL)
         if match:
             return json.loads(match.group())
@@ -87,60 +89,41 @@ def read_root():
 
 @app.post("/ia/generar-flujo")
 @retry(
-    wait=wait_exponential(multiplier=1, min=2, max=10),
-    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=2, max=15),
+    stop=stop_after_attempt(5),
     retry=retry_if_exception(is_quota_error),
     reraise=True
 )
 async def generar_flujo(req: FlowRequest):
-    prompt = f"Genera un flujo de trabajo para: {req.descripcion}. Devuelve solo JSON."
-    try:
-        response = model_creative.generate_content(prompt)
-        return extract_json(response.text)
-    except Exception as e:
-        if is_quota_error(e):
-             raise HTTPException(status_code=429, detail="La cuota de la IA se ha agotado. Por favor, espera unos segundos.")
-        raise HTTPException(status_code=500, detail=f"IA Error: {str(e)}")
+    prompt = f"Genera un flujo de trabajo para: {req.prompt}. Devuelve solo JSON."
+    response = model_creative.generate_content(prompt)
+    return extract_json(response.text)
 
 @app.post("/ia/analizar-rendimiento")
 @retry(
-    wait=wait_exponential(multiplier=1, min=2, max=10),
-    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=2, max=15),
+    stop=stop_after_attempt(5),
     retry=retry_if_exception(is_quota_error),
     reraise=True
 )
 async def analizar_rendimiento(req: AnalysisRequest):
     data_str = json.dumps([m.dict() for m in req.metricas])
     prompt = f"Analiza y genera recomendaciones para estas métricas: {data_str}"
-    try:
-        response = model_logic.generate_content(prompt)
-        return {"reporte": response.text}
-    except Exception as e:
-        if is_quota_error(e):
-             raise HTTPException(status_code=429, detail="La cuota de la IA se ha agotado. Por favor, espera unos segundos.")
-        raise HTTPException(status_code=500, detail=f"IA Analysis Error: {str(e)}")
-
-def is_quota_error(exception):
-    return "429" in str(exception) or "quota" in str(exception).lower()
+    response = model_logic.generate_content(prompt)
+    return {"reporte": response.text}
 
 @app.post("/ia/asistente")
 @retry(
-    wait=wait_exponential(multiplier=1, min=2, max=10),
-    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=2, max=15),
+    stop=stop_after_attempt(5),
     retry=retry_if_exception(is_quota_error),
     reraise=True
 )
 async def asistente_virtual(req: FlowRequest):
     """Responder consultas generales sobre el uso del sistema BPM."""
-    prompt = f"Como asistente virtual del sistema BPM, responde de forma concisa (máx 2 párrafos). Evita datos sensibles: {req.descripcion}"
-    try:
-        response = model_logic.generate_content(prompt)
-        return {"respuesta": response.text}
-    except Exception as e:
-        print(f"ERROR IA ASISTENTE: {str(e)}")
-        if is_quota_error(e):
-             raise HTTPException(status_code=429, detail="La cuota de la IA se ha agotado. Por favor, espera unos segundos.")
-        raise HTTPException(status_code=500, detail=f"IA Assistant Error: {str(e)}")
+    prompt = f"Como asistente virtual del sistema BPM, responde de forma concisa (máx 2 párrafos). Evita datos sensibles: {req.prompt}"
+    response = model_logic.generate_content(prompt)
+    return {"respuesta": response.text}
 
 if __name__ == "__main__":
     import uvicorn

@@ -1,143 +1,163 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild, AfterViewInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
+import { AnaliticaService, MetricData } from '../../../data/services/analitica.service';
+import { BaseChartDirective } from 'ng2-charts';
+import { Chart, registerables } from 'chart.js';
+
+// Registro global necesario para Chart.js en versiones modernas
+Chart.register(...registerables);
 
 @Component({
   selector: 'app-insights-ia',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, BaseChartDirective],
   templateUrl: './insights-ia.component.html',
   styleUrls: ['./insights-ia.component.css']
 })
-export class InsightsIAComponent implements OnInit {
-  metrics: any[] = [];
+export class InsightsIAComponent implements OnInit, AfterViewInit {
+  @ViewChild(BaseChartDirective) chart?: BaseChartDirective;
+
+  activeTab: 'analisis' | 'ejecucion' = 'analisis';
+  loadingMetrics = false;
+  analyzingIA = false;
+  executingAction = false;
+  
+  metrics: MetricData[] = [];
   aiReport: string = '';
-  loading = false;
-  analyzing = false;
-  applying = false;
+  errorMsg: string = '';
 
-  // Form for manual reassignment based on IA suggestion
-  reassignForm = {
-    idOrigen: '',
-    idDestino: ''
-  };
-
+  reassignForm = { idOrigen: '', idDestino: '', motivo: 'Reequilibrio sugerido por IA' };
   usuariosOrigen: any[] = [];
   selectedUserIds: string[] = [];
 
-  constructor(private http: HttpClient) { }
+  public barChartOptions: any = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: true, labels: { color: '#94a3b8' } }
+    },
+    scales: {
+      y: { beginAtZero: true, ticks: { color: '#64748b' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+      x: { ticks: { color: '#64748b' }, grid: { display: false } }
+    }
+  };
+
+  public barChartType: any = 'bar';
+  public barChartData: any = {
+    labels: [],
+    datasets: [
+      { data: [], label: 'Carga Real', backgroundColor: '#6366f1', borderRadius: 4 },
+      { data: [], label: 'Capacidad', backgroundColor: 'rgba(99, 102, 241, 0.1)', borderRadius: 4 }
+    ]
+  };
+
+  constructor(
+    private analiticaService: AnaliticaService,
+    private http: HttpClient,
+    private cdr: ChangeDetectorRef
+  ) {}
 
   ngOnInit(): void {
-    this.fetchMetrics();
+    this.cargarMetricas();
   }
 
-  fetchMetrics(): void {
-    this.loading = true;
-    this.http.get<any[]>('/api/v1/optimization/metrics').subscribe({
+  ngAfterViewInit(): void {
+    setTimeout(() => this.refreshCharts(), 500);
+  }
+
+  switchTab(tab: 'analisis' | 'ejecucion') {
+    this.activeTab = tab;
+    this.cdr.detectChanges();
+    if (tab === 'analisis') {
+      setTimeout(() => this.refreshCharts(), 150);
+    }
+  }
+
+  cargarMetricas() {
+    this.loadingMetrics = true;
+    this.errorMsg = '';
+    this.analiticaService.getMetrics().subscribe({
       next: (data) => {
         this.metrics = data;
-        this.loading = false;
+        this.updateChartData();
+        this.loadingMetrics = false;
+        this.cdr.detectChanges();
       },
       error: (err) => {
-        console.error(err);
-        this.loading = false;
+        console.error('Error -100 Detection:', err);
+        this.errorMsg = 'Error de conexión con el Backend (Code -100). Verifique que el servicio Java esté corriendo.';
+        this.loadingMetrics = false;
       }
     });
   }
 
-  solicitarAnalisisIA(): void {
-    this.analyzing = true;
+  updateChartData() {
+    if (!this.metrics.length) return;
+    this.barChartData.labels = this.metrics.map(m => m.nombreDepartamento);
+    this.barChartData.datasets[0].data = this.metrics.map(m => m.cantidadTramites);
+    this.barChartData.datasets[1].data = this.metrics.map(m => m.capacidadPersonal);
+    this.refreshCharts();
+  }
+
+  refreshCharts() {
+    if (this.chart && this.chart.chart) {
+      this.chart.chart.update();
+    }
+  }
+
+  solicitarAnalisisIA() {
+    this.analyzingIA = true;
     this.aiReport = '';
     this.http.post<any>('/api/v1/optimization/analyze', {}).subscribe({
       next: (res) => {
         this.aiReport = res.reporte;
-        this.analyzing = false;
+        this.analyzingIA = false;
+        this.cdr.detectChanges();
       },
-      error: (err) => {
-        this.aiReport = '⚠️ Error: No se pudo conectar con el Cerebro IA.';
-        this.analyzing = false;
+      error: () => {
+        this.aiReport = '⚠️ El Cerebro IA (Puerto 8000) no respondió. Inicie el servicio Python.';
+        this.analyzingIA = false;
       }
     });
   }
 
-  descargarReporte(): void {
-    this.http.get('/api/v1/optimization/report/excel', { responseType: 'blob' }).subscribe({
-      next: (blob) => {
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'reporte_optimizacion.xlsx';
-        a.click();
-        window.URL.revokeObjectURL(url);
-      },
-      error: (err) => {
-        this.aiReport = '⚠️ Error: No posee permisos para descargar el reporte.';
-      }
-    });
-  }
-
-  descargarPDF(): void {
-    if (!this.aiReport) return;
-    this.http.post('/api/v1/optimization/report/pdf', { text: this.aiReport }, { responseType: 'blob' })
-      .subscribe(blob => {
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'informe_ia_consultoria.pdf';
-        a.click();
-      });
-  }
-
-  onOrigenChange(): void {
-    this.selectedUserIds = [];
+  onOrigenChange() {
     this.usuariosOrigen = [];
+    this.selectedUserIds = [];
     if (!this.reassignForm.idOrigen) return;
-
-    this.http.get<any[]>('/api/v1/usuarios/departamento/' + this.reassignForm.idOrigen).subscribe({
-      next: (users) => {
-        this.usuariosOrigen = users;
-      },
-      error: (err) => {
-        console.error('Error fetching users:', err);
-      }
+    this.http.get<any[]>('/api/v1/usuarios/departamento/' + this.reassignForm.idOrigen).subscribe(users => {
+      this.usuariosOrigen = users;
+      this.cdr.detectChanges();
     });
   }
 
-  toggleUserSelection(userId: string, event: any): void {
-    if (event.target.checked) {
-      this.selectedUserIds.push(userId);
-    } else {
-      this.selectedUserIds = this.selectedUserIds.filter(id => id !== userId);
-    }
+  toggleUser(userId: string) {
+    const idx = this.selectedUserIds.indexOf(userId);
+    if (idx > -1) this.selectedUserIds.splice(idx, 1);
+    else this.selectedUserIds.push(userId);
   }
 
-  ejecutarOptimizacion(): void {
-    if (!this.reassignForm.idOrigen || !this.reassignForm.idDestino || this.selectedUserIds.length === 0) {
-      this.aiReport = '⚠️ Error: Debe especificar origen, destino y seleccionar al menos un funcionario.';
-      return;
-    }
-
-    this.applying = true;
-    const body = {
+  ejecutarTransferencia() {
+    if (this.selectedUserIds.length === 0) return;
+    this.executingAction = true;
+    this.analiticaService.reassignPersonal({
       idOrigen: this.reassignForm.idOrigen,
       idDestino: this.reassignForm.idDestino,
-      userIds: this.selectedUserIds
-    };
-
-    this.http.post('/api/v1/optimization/reassign', body).subscribe({
-      next: (res: any) => {
-        this.aiReport = '🚀 ¡Optimización ejecutada exitosamente! El personal ha sido reubicado y el sistema estabilizado en BD.';
-        this.applying = false;
-        this.reassignForm.idOrigen = '';
-        this.reassignForm.idDestino = '';
+      userIds: this.selectedUserIds,
+      motivo: this.reassignForm.motivo
+    }).subscribe({
+      next: () => {
+        this.executingAction = false;
+        this.cargarMetricas();
         this.usuariosOrigen = [];
         this.selectedUserIds = [];
-        this.fetchMetrics();
+        alert('🚀 Reequilibrio de personal ejecutado con éxito.');
       },
-      error: (err) => {
-        this.aiReport = '⚠️ Error: Hubo un conflicto al ejecutar reasignación. Verifique permisos.';
-        this.applying = false;
+      error: () => {
+        this.executingAction = false;
+        alert('Fallo en la ejecución de transferencia.');
       }
     });
   }

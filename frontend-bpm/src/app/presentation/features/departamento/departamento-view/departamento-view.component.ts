@@ -4,6 +4,8 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angula
 import { FormsModule } from '@angular/forms';
 import { DepartamentoService } from '../../../../data/services/departamento.service';
 import { OrganizacionService } from '../../../../data/services/organizacion.service';
+import { AnaliticaService } from '../../../../data/services/analitica.service';
+import { HttpClient } from '@angular/common/http';
 import { Departamento } from '../../../../data/models/departamento.model';
 import { Organizacion } from '../../../../data/models/organizacion.model';
 import { AuthService } from '../../../../data/services/auth.service';
@@ -25,11 +27,21 @@ export class DepartamentoViewComponent implements OnInit {
   loading = false;
   needsOrgSelection = false;
 
+  // Reasignación Manual
+  showReassignPanel = false;
+  applyingReassign = false;
+  reassignForm = { idOrigen: '', idDestino: '', motivo: '' };
+  usuariosOrigen: any[] = [];
+  selectedUserIds: string[] = [];
+  reassignStatus: string = '';
+
   constructor(
     private fb: FormBuilder, 
     private depService: DepartamentoService, 
     private orgService: OrganizacionService,
-    private authService: AuthService
+    private authService: AuthService,
+    private analiticaService: AnaliticaService,
+    private http: HttpClient
   ) {}
 
   ngOnInit(): void {
@@ -128,5 +140,73 @@ export class DepartamentoViewComponent implements OnInit {
   getNombreOrganizacion(): string {
     const org = this.organizaciones.find(o => o.id === this.idOrganizacion);
     return org ? org.nombre : this.idOrganizacion;
+  }
+
+  // --- Métodos de Reasignación Manual ---
+  toggleReassignPanel() {
+    this.showReassignPanel = !this.showReassignPanel;
+    if (!this.showReassignPanel) {
+      this.resetReassignForm();
+    }
+  }
+
+  onOrigenChange(): void {
+    this.selectedUserIds = [];
+    this.usuariosOrigen = [];
+    if (!this.reassignForm.idOrigen) return;
+
+    this.http.get<any[]>('/api/v1/usuarios/departamento/' + this.reassignForm.idOrigen).subscribe({
+      next: (users) => {
+        this.usuariosOrigen = users;
+      },
+      error: (err) => {
+        console.error('Error fetching users:', err);
+      }
+    });
+  }
+
+  toggleUserSelection(userId: string, event: any): void {
+    if (event.target.checked) {
+      this.selectedUserIds.push(userId);
+    } else {
+      this.selectedUserIds = this.selectedUserIds.filter(id => id !== userId);
+    }
+  }
+
+  confirmarReasignacion() {
+    if (!this.reassignForm.idOrigen || !this.reassignForm.idDestino || this.selectedUserIds.length === 0) {
+      this.reassignStatus = '⚠️ Debe completar todos los campos.';
+      return;
+    }
+
+    this.applyingReassign = true;
+    const request = {
+      idOrigen: this.reassignForm.idOrigen,
+      idDestino: this.reassignForm.idDestino,
+      userIds: this.selectedUserIds,
+      motivo: this.reassignForm.motivo
+    };
+
+    this.analiticaService.reassignPersonal(request).subscribe({
+      next: () => {
+        this.reassignStatus = '✅ Reasignación exitosa.';
+        this.applyingReassign = false;
+        setTimeout(() => {
+          this.toggleReassignPanel();
+          this.cargarDatos();
+        }, 1500);
+      },
+      error: (err) => {
+        this.reassignStatus = '❌ Error al procesar la solicitud.';
+        this.applyingReassign = false;
+      }
+    });
+  }
+
+  private resetReassignForm() {
+    this.reassignForm = { idOrigen: '', idDestino: '', motivo: '' };
+    this.usuariosOrigen = [];
+    this.selectedUserIds = [];
+    this.reassignStatus = '';
   }
 }

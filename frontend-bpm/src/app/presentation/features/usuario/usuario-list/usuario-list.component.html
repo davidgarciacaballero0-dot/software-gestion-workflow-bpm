@@ -59,6 +59,7 @@
           <th>Acceso Restringido (Email)</th>
           <th>Nivel de Jerarquía</th>
           <th>Fecha de Inserción</th>
+          <th>Acciones</th>
         </tr>
       </thead>
       <tbody>
@@ -66,17 +67,55 @@
           <td class="font-mono">{{ u.id | slice:0:6 }}</td>
           <td class="font-strong">{{ u.nombre }}</td>
           <td class="text-muted">{{ u.email }}</td>
-          <td><span class="badge badge-secondary">{{ getNombreRol(u.idRol) }}</span></td>
-          <!-- NOTA DE SEGURIDAD: Password nunca es enviado por Backend -->
+          <td><span class="badge badge-secondary">{{ rolesMap.get(u.idRol) }}</span></td>
           <td>{{ u.createdAt | date:'shortDate' }}</td>
+          <td class="text-center">
+            <button class="btn-action-small" title="Transferir Departamento" (click)="openReassignModal(u)">
+              🔄
+            </button>
+          </td>
         </tr>
         
         <tr *ngIf="usuarios.length === 0">
-          <td colspan="5" class="empty-state">
+          <td colspan="6" class="empty-state">
             Estructura intacta. No existe talento asignado a este segmento departamental.
           </td>
         </tr>
       </tbody>
     </table>
+  </div>
+
+  <!-- Modal de Reasignación de Personal -->
+  <div class="modal-overlay" *ngIf="showReassignModal">
+    <div class="modal-content glass-premium animate-pop">
+      <div class="modal-header">
+        <h2>🔄 Reasignación de Personal</h2>
+        <button class="close-btn" (click)="closeReassignModal()">✕</button>
+      </div>
+      <div class="modal-body" *ngIf="selectedUser">
+        <p class="modal-hint">Transfiriendo a <strong>{{ selectedUser.nombre }}</strong> a una nueva unidad operativa.</p>
+        
+        <div class="form-group">
+          <label>Departamento de Destino</label>
+          <select [(ngModel)]="targetDeptId" class="form-control">
+            <option value="">-- Seleccionar Nuevo Departamento --</option>
+            <option *ngFor="let d of departamentos" [value]="d.id" [disabled]="d.id === selectedDepId">
+              {{ d.nombre }} {{ d.id === selectedDepId ? '(Actual)' : '' }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group full-width" style="margin-top:1rem;">
+          <label>Motivo de la Transferencia</label>
+          <textarea [(ngModel)]="reassignMotivo" class="form-control" rows="3" placeholder="Ej: Optimización de carga, reestructuración..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-premium btn-premium-secondary" (click)="closeReassignModal()">Cancelar</button>
+        <button class="btn-premium btn-premium-primary" (click)="confirmReassign()" [disabled]="!targetDeptId || !reassignMotivo">
+          Confirmar Transferencia
+        </button>
+      </div>
+    </div>
   </div>
 </div>

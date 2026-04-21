@@ -23,6 +23,13 @@ public class PoliticaController {
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<WorkflowResponseDTO> actualizarPolitica(@PathVariable String id, @RequestBody WorkflowRequestDTO request) {
+        request.setId(id);
+        WorkflowResponseDTO response = politicaService.guardarPolitica(request);
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/organization/{idOrganizacion}")
     public ResponseEntity<List<WorkflowResponseDTO>> listarPorOrganizacion(@PathVariable String idOrganizacion) {
         return ResponseEntity.ok(politicaService.listarPorOrganizacion(idOrganizacion));

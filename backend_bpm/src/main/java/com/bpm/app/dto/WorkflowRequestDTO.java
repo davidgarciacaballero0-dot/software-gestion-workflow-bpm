@@ -9,6 +9,7 @@ import java.util.List;
 
 @Data
 public class WorkflowRequestDTO {
+    private String id;
     private String idOrganizacion;
     private String nombre;
     private String description;

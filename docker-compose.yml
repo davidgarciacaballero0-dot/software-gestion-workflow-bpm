@@ -35,5 +35,33 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRATION_MS=${JWT_EXPIRATION_MS:-86400000}
 
+  # ============================================================
+  # IA Microservice - FastAPI
+  # ============================================================
+  ia-service:
+    build:
+      context: ./ia_microservice
+      dockerfile: Dockerfile
+    container_name: ia_microservice_api
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    env_file:
+      - .env
+
+  # ============================================================
+  # Frontend Angular - SPA
+  # ============================================================
+  frontend-angular:
+    build:
+      context: ./frontend-bpm
+      dockerfile: Dockerfile
+    container_name: frontend_bpm_app
+    ports:
+      - "4200:80"
+    depends_on:
+      - backend-spring
+    restart: unless-stopped
+
 volumes:
   mongodb_data:

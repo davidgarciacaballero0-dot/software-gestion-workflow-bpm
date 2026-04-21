@@ -3,9 +3,59 @@
   <div class="list-module">
     <div class="header-tools" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
       <h3>Organigrama de Áreas</h3>
-      <button *ngIf="!needsOrgSelection && idOrganizacion" class="btn-icon" (click)="cambiarOrganizacion()" style="font-size:0.8rem; cursor:pointer;">
-        🔄 Cambiar Organización
-      </button>
+      <div class="btn-group">
+        <button *ngIf="!needsOrgSelection" class="btn-premium btn-premium-secondary" (click)="toggleReassignPanel()" style="margin-right: 0.5rem;">
+          🔄 Transferir Personal
+        </button>
+        <button *ngIf="!needsOrgSelection && idOrganizacion" class="btn-icon" (click)="cambiarOrganizacion()" style="font-size:0.8rem; cursor:pointer;">
+          🏢 Cambiar Organización
+        </button>
+      </div>
+    </div>
+
+    <!-- Panel de Reasignación Manual -->
+    <div *ngIf="showReassignPanel" class="reassign-panel monolith-surface animate-slide-in" style="margin-bottom: 2rem; padding: 1.5rem; border-left: 4px solid var(--primary);">
+      <div style="display:flex; justify-content:space-between;">
+        <h4>🛠️ Consola de Transferencia de Funcionarios</h4>
+        <button class="btn-close" (click)="toggleReassignPanel()">✕</button>
+      </div>
+      
+      <div class="reassign-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1rem;">
+        <div class="form-group">
+          <label>Departamento Origen:</label>
+          <select [(ngModel)]="reassignForm.idOrigen" (change)="onOrigenChange()" class="form-control">
+            <option value="">-- Seleccionar Origen --</option>
+            <option *ngFor="let d of departamentos" [value]="d.id">{{ d.nombre }}</option>
+          </select>
+          
+          <div *ngIf="usuariosOrigen.length > 0" class="mt-1">
+            <label class="text-sm">Seleccione Funcionarios:</label>
+            <div class="user-selection-list" style="max-height: 150px; overflow-y: auto; background: rgba(255,255,255,0.05); padding: 0.5rem; border-radius: 4px;">
+              <div *ngFor="let u of usuariosOrigen" style="margin-bottom: 0.3rem;">
+                <input type="checkbox" (change)="toggleUserSelection(u.id, $event)"> 👤 {{ u.nombre }} {{ u.apellidos }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Departamento Destino:</label>
+          <select [(ngModel)]="reassignForm.idDestino" class="form-control">
+            <option value="">-- Seleccionar Destino --</option>
+            <option *ngFor="let d of departamentos" [value]="d.id" [disabled]="d.id === reassignForm.idOrigen">{{ d.nombre }}</option>
+          </select>
+
+          <label class="mt-1">Motivo de Transferencia:</label>
+          <textarea [(ngModel)]="reassignForm.motivo" class="form-control" placeholder="Ej: Reestructuración por carga laboral"></textarea>
+        </div>
+      </div>
+
+      <div class="mt-1" style="display:flex; align-items:center; justify-content:space-between;">
+        <span class="status-msg">{{ reassignStatus }}</span>
+        <button class="btn btn-warning" (click)="confirmarReasignacion()" [disabled]="applyingReassign || selectedUserIds.length === 0 || !reassignForm.idDestino">
+          {{ applyingReassign ? 'Procesando...' : 'Confirmar Reasignación' }}
+        </button>
+      </div>
     </div>
 
     <!-- Selector de Organización cuando no hay una asignada -->

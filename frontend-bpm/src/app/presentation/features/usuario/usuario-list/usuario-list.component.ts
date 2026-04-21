@@ -1,11 +1,12 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { UsuarioService } from '../../../../data/services/usuario.service';
 import { OrganizacionService } from '../../../../data/services/organizacion.service';
 import { DepartamentoService } from '../../../../data/services/departamento.service';
 import { RolService } from '../../../../data/services/rol.service';
-import { Usuario } from '../../../../data/models/usuario.model';
+import { AnaliticaService } from '../../../../data/services/analitica.service';
+import { Usuario, UsuarioResponseDTO } from '../../../../data/models/usuario.model';
 import { Organizacion } from '../../../../data/models/organizacion.model';
 import { Departamento } from '../../../../data/models/departamento.model';
 import { Rol } from '../../../../data/models/rol.model';
@@ -21,10 +22,11 @@ import { forkJoin } from 'rxjs';
   styleUrls: ['./usuario-list.component.css']
 })
 export class UsuarioListComponent implements OnInit {
-  usuarios: Usuario[] = [];
+  usuarios: UsuarioResponseDTO[] = [];
   organizaciones: Organizacion[] = [];
   departamentos: Departamento[] = [];
   rolesMap: Map<string, string> = new Map(); // id → nombre
+  roles: Rol[] = [];
 
   selectedOrgId = '';
   selectedDepId = '';
@@ -32,11 +34,19 @@ export class UsuarioListComponent implements OnInit {
   loading = false;
   showForm = false;
 
+  // Reassignment State
+  showReassignModal = false;
+  selectedUser: UsuarioResponseDTO | null = null;
+  targetDeptId = '';
+  reassignMotivo = '';
+
+  private usuarioService = inject(UsuarioService);
+  private orgService = inject(OrganizacionService);
+  private depService = inject(DepartamentoService);
+  private rolService = inject(RolService);
+  private analiticaService = inject(AnaliticaService);
+
   constructor(
-    private usuarioService: UsuarioService,
-    private orgService: OrganizacionService,
-    private depService: DepartamentoService,
-    private rolService: RolService,
     private authService: AuthService,
     private cdr: ChangeDetectorRef
   ) {}
@@ -53,6 +63,7 @@ export class UsuarioListComponent implements OnInit {
     }).subscribe({
       next: ({ orgs, roles }: { orgs: Organizacion[], roles: Rol[] }) => {
         this.organizaciones = orgs;
+        this.roles = roles;
         roles.forEach((r: Rol) => {
           if (r.id) this.rolesMap.set(r.id, r.nombre);
         });
@@ -103,7 +114,7 @@ export class UsuarioListComponent implements OnInit {
 
     this.loading = true;
     this.usuarioService.listarPorDepartamento(this.selectedDepId).subscribe({
-      next: (data: Usuario[]) => {
+      next: (data: UsuarioResponseDTO[]) => {
         this.usuarios = data;
         this.loading = false;
         this.cdr.detectChanges();
@@ -133,7 +144,43 @@ export class UsuarioListComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
-  onFormCancel() {
+  onFormCancel(): void {
     this.showForm = false;
+  }
+
+  // --- REASIGNACION ---
+  openReassignModal(user: UsuarioResponseDTO): void {
+    this.selectedUser = user;
+    this.targetDeptId = '';
+    this.reassignMotivo = '';
+    this.showReassignModal = true;
+  }
+
+  closeReassignModal(): void {
+    this.showReassignModal = false;
+    this.selectedUser = null;
+  }
+
+  confirmReassign(): void {
+    if (!this.selectedUser || !this.targetDeptId) return;
+
+    this.loading = true;
+    this.analiticaService.reassignPersonal({
+      idOrigen: this.selectedDepId,
+      idDestino: this.targetDeptId,
+      userIds: [this.selectedUser.id],
+      motivo: this.reassignMotivo
+    }).subscribe({
+      next: () => {
+        alert('✅ Funcionario transferido exitosamente.');
+        this.closeReassignModal();
+        this.cargarUsuarios(); // Recargar lista
+      },
+      error: (err) => {
+        console.error(err);
+        alert('❌ Error al transferir: ' + (err.error?.message || 'Error desconocido'));
+        this.loading = false;
+      }
+    });
   }
 }

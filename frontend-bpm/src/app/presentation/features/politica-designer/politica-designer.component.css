@@ -16,7 +16,8 @@
   align-items: center;
   padding: 0 2rem;
   z-index: 100;
-  border-bottom: 1px solid rgba(200, 197, 208, 0.3); /* ghost border */
+  border-bottom: 1px solid rgba(200, 197, 208, 0.3);
+  /* ghost border */
 }
 
 .policy-info {
@@ -55,8 +56,17 @@
   letter-spacing: 0.05em;
 }
 
-.badge.DRAFT { background: var(--surface-container-high); color: var(--text-main); border: 1px solid rgba(200, 197, 208, 0.4); }
-.badge.PUBLISHED { background: rgba(196, 193, 251, 0.2); color: var(--primary-container); border: 1px solid rgba(196, 193, 251, 0.4); }
+.badge.DRAFT {
+  background: var(--surface-container-high);
+  color: var(--text-main);
+  border: 1px solid rgba(200, 197, 208, 0.4);
+}
+
+.badge.PUBLISHED {
+  background: rgba(196, 193, 251, 0.2);
+  color: var(--primary-container);
+  border: 1px solid rgba(196, 193, 251, 0.4);
+}
 
 /* Cuerpo del Diseñador */
 .designer-body {
@@ -82,7 +92,7 @@
 .canvas-area {
   flex: 1;
   position: relative;
-  background-image: 
+  background-image:
     radial-gradient(circle, var(--outline-variant) 1px, transparent 1px);
   background-size: 30px 30px;
   overflow: auto;
@@ -93,7 +103,8 @@
   position: absolute;
   width: 180px;
   background: var(--surface-container-lowest);
-  border: 1px solid rgba(200, 197, 208, 0.15); /* Ghost Border */
+  border: 1px solid rgba(200, 197, 208, 0.15);
+  /* Ghost Border */
   border-radius: 0.5rem;
   padding: 0.75rem;
   cursor: grab;
@@ -130,7 +141,8 @@
   align-items: center;
   justify-content: center;
   font-size: 0.9rem;
-  color: white; /* Icons keep their color accents but nodes themselves are white */
+  color: white;
+  /* Icons keep their color accents but nodes themselves are white */
 }
 
 .node-sub {
@@ -156,7 +168,8 @@
   padding: 2rem;
   transform: translateX(100%);
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: -10px 0 30px rgba(7, 2, 53, 0.04); /* Ambient shadow on edge */
+  box-shadow: -10px 0 30px rgba(7, 2, 53, 0.04);
+  /* Ambient shadow on edge */
 }
 
 .properties-panel.open {
@@ -228,7 +241,10 @@
   align-items: center;
 }
 
-.text-error { color: #ba1a1a; font-size: 0.75rem; }
+.text-error {
+  color: #ba1a1a;
+  font-size: 0.75rem;
+}
 
 .form-builder-section h4 {
   font-size: 0.75rem;
@@ -242,7 +258,8 @@
   margin-bottom: 0.75rem;
 }
 
-.field-input, .field-select {
+.field-input,
+.field-select {
   background: transparent;
   border: none;
   border-bottom: 1px solid var(--outline-variant);
@@ -276,25 +293,59 @@
 .d-flex {
   display: flex;
 }
+
 .justify-content-between {
   justify-content: space-between;
 }
+
 .align-items-center {
   align-items: center;
 }
-.mb-3 { margin-bottom: 1rem; }
-.mb-2 { margin-bottom: 0.5rem; }
-.mt-4 { margin-top: 1.5rem; }
-.border-0 { border: none; }
-.p-0 { padding: 0; }
-.m-0 { margin: 0; }
-.uppercase { text-transform: uppercase; }
+
+.mb-3 {
+  margin-bottom: 1rem;
+}
+
+.mb-2 {
+  margin-bottom: 0.5rem;
+}
+
+.mt-4 {
+  margin-top: 1.5rem;
+}
+
+.border-0 {
+  border: none;
+}
+
+.p-0 {
+  padding: 0;
+}
+
+.m-0 {
+  margin: 0;
+}
+
+.uppercase {
+  text-transform: uppercase;
+}
 
 /* Colores de Iconos por Tipo en Nodos */
-.node-item.START .icon-box { background: #10b981; }
-.node-item.USER_TASK .icon-box { background: linear-gradient(135deg, var(--primary), var(--primary-container)); }
-.node-item.EXCLUSIVE_GATEWAY .icon-box { background: #f59e0b; }
-.node-item.END .icon-box { background: #ba1a1a; }
+.node-item.START .icon-box {
+  background: #10b981;
+}
+
+.node-item.USER_TASK .icon-box {
+  background: linear-gradient(135deg, var(--primary), var(--primary-container));
+}
+
+.node-item.EXCLUSIVE_GATEWAY .icon-box {
+  background: #f59e0b;
+}
+
+.node-item.END .icon-box {
+  background: #ba1a1a;
+}
 
 /* Caja de Herramientas Estilos */
 .node-tool {

@@ -175,13 +175,25 @@ export class PoliticaDesignerComponent implements OnInit {
     const target = this.nodes.find(n => n.id === edge.targetNodeId);
     if (!source || !target) return '';
 
-    const startX = source.uiPosition.x + 180; // Derecha del nodo
-    const startY = source.uiPosition.y + 35;
-    const endX = target.uiPosition.x; // Izquierda del nodo
-    const endY = target.uiPosition.y + 35;
+    const isBackwards = target.uiPosition.x < source.uiPosition.x;
 
-    const controlX = startX + (endX - startX) / 2;
-    return `M ${startX} ${startY} C ${controlX} ${startY}, ${controlX} ${endY}, ${endX} ${endY}`;
+    // Puntos de anclaje (ajustados a los círculos visuales)
+    const startX = source.uiPosition.x + 180; // Derecha
+    const startY = source.uiPosition.y + 40;
+    const endX = target.uiPosition.x;         // Izquierda
+    const endY = target.uiPosition.y + 40;
+
+    if (isBackwards) {
+      // Loopback: curva amplia hacia arriba o abajo para evitar solapamiento
+      const midY = Math.min(startY, endY) - 60;
+      const cp1X = startX + 50;
+      const cp2X = endX - 50;
+      return `M ${startX} ${startY} C ${cp1X} ${midY}, ${cp2X} ${midY}, ${endX} ${endY}`;
+    } else {
+      // Flujo normal: Bezier horizontal
+      const controlX = startX + (endX - startX) / 2;
+      return `M ${startX} ${startY} C ${controlX} ${startY}, ${controlX} ${endY}, ${endX} ${endY}`;
+    }
   }
 
   getEdgeLabelPosition(edge: WorkflowEdge): { x: number, y: number } {

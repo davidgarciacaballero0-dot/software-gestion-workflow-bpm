@@ -10,6 +10,13 @@ export interface MetricData {
   capacidadPersonal: number;
 }
 
+export interface ReassignMassRequest {
+  idOrigen: string;
+  idDestino: string;
+  userIds: string[];
+  motivo?: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -28,5 +35,9 @@ export class AnaliticaService {
 
   downloadPdf(text: string): Observable<Blob> {
     return this.http.post(`${this.apiUrl}/report/pdf`, { text }, { responseType: 'blob' });
+  }
+
+  reassignPersonal(request: ReassignMassRequest): Observable<any> {
+    return this.http.post(`${this.apiUrl}/reassign`, request);
   }
 }

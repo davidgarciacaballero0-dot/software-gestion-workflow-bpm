@@ -1,106 +1,119 @@
-<div class="insights-container animate-fade-in">
-  <div class="header">
-    <h1 class="page-title">🤖 Reportes y Analítica IA</h1>
-    <p class="page-subtitle">Análisis predictivo de cuellos de botella y reporte ejecutivo de consultoría asistido por Gemini.</p>
-  </div>
+<div class="analytics-container">
+  <!-- Header con Estilo -->
+  <header class="dashboard-header">
+    <div class="header-content">
+      <h1><i class="fas fa-microchip"></i> Inteligencia Operativa BPM</h1>
+      <p>Análisis de carga en tiempo real y consultoría estratégica asistida por IA.</p>
+    </div>
+    <nav class="tabs-nav">
+      <button class="tab-btn" [class.active]="activeTab === 'analisis'" (click)="switchTab('analisis')">
+        <i class="fas fa-chart-line"></i> Diagnóstico y Métricas
+      </button>
+      <button class="tab-btn" [class.active]="activeTab === 'ejecucion'" (click)="switchTab('ejecucion')">
+        <i class="fas fa-cogs"></i> Consola de Reestructuración
+      </button>
+    </nav>
+  </header>
 
-  <div class="dashboard-grid">
-    <!-- Panel de Métricas Reales -->
-    <div class="grid-card monolith-surface shadow-ambient stats-panel">
-      <h3>📊 Carga Departamental Real-Time</h3>
-      <div *ngIf="loading" class="loading-state">Calculando métricas...</div>
-      
-      <div class="metrics-list" *ngIf="!loading">
-        <div *ngFor="let m of metrics" class="metric-row">
-          <div class="metric-info">
-            <span class="dept-name">{{ m.nombreDepartamento }}</span>
-            <div class="progress-container">
-              <div class="progress-bar" [style.width.%]="(m.cantidadTramites / 20) * 100" [class.overloaded]="m.cantidadTramites > 10"></div>
+  <main class="dashboard-body">
+    <!-- Pestaña 1: Análisis -->
+    <section class="tab-pane" *ngIf="activeTab === 'analisis'">
+      <div class="grid-layout">
+        <!-- Tarjeta de Gráfico -->
+        <div class="glass-card chart-card">
+          <div class="card-header">
+            <h3><i class="fas fa-project-diagram"></i> Estado de Carga por Departamento</h3>
+            <button class="btn-refresh" (click)="cargarMetricas()" [class.spinning]="loadingMetrics">
+              <i class="fas fa-sync-alt"></i>
+            </button>
+          </div>
+          <div class="chart-container">
+            <canvas baseChart 
+                    [data]="barChartData" 
+                    [options]="barChartOptions" 
+                    [type]="barChartType">
+            </canvas>
+          </div>
+        </div>
+
+        <!-- Tarjeta de IA -->
+        <div class="glass-card ai-report-card">
+          <div class="card-header">
+            <h3><i class="fas fa-robot"></i> Reporte Ejecutivo de Consultoría</h3>
+            <button class="btn-ia-action" (click)="solicitarAnalisisIA()" [disabled]="analyzingIA">
+              {{ analyzingIA ? 'Procesando...' : 'Generar Análisis' }}
+            </button>
+          </div>
+          <div class="report-content">
+            <div *ngIf="!aiReport && !analyzingIA" class="empty-state">
+              <i class="fas fa-brain"></i>
+              <p>Pulse el botón para iniciar el análisis predictivo de carga.</p>
+            </div>
+            
+            <div *ngIf="analyzingIA" class="loading-state">
+              <div class="pulse-loader"></div>
+              <p>Gemini está analizando los cuellos de botella...</p>
+            </div>
+
+            <div *ngIf="aiReport" class="report-text animate-fade-in">
+              {{ aiReport }}
             </div>
           </div>
-          <div class="metric-values">
-            <span class="val">🕒 {{ m.tiempoPromedioHoras | number:'1.1-1' }}h</span>
-            <span class="val">📦 {{ m.cantidadTramites }} tram.</span>
-            <span class="val">👤 {{ m.capacidadPersonal }} pers.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Pestaña 2: Ejecución -->
+    <section class="tab-pane" *ngIf="activeTab === 'ejecucion'">
+      <div class="glass-card execution-card">
+        <div class="card-header">
+          <h3><i class="fas fa-exchange-alt"></i> Transferencia Masiva de Funcionarios</h3>
+        </div>
+        
+        <div class="execution-grid">
+          <!-- Origen -->
+          <div class="form-group">
+            <label>Departamento Origen</label>
+            <select [(ngModel)]="reassignForm.idOrigen" (change)="onOrigenChange()" class="premium-select">
+              <option value="">-- Seleccione Origen --</option>
+              <option *ngFor="let m of metrics" [value]="m.departamentoId">{{ m.nombreDepartamento }}</option>
+            </select>
+          </div>
+
+          <!-- Selección de Usuarios -->
+          <div class="users-selection-area">
+            <label>Seleccionar Funcionarios ({{ selectedUserIds.length }})</label>
+            <div class="users-list-scroll">
+              <div *ngFor="let u of usuariosOrigen" class="user-check-item">
+                <input type="checkbox" [id]="u.id" (change)="toggleUser(u.id)">
+                <label [for]="u.id">
+                  <i class="fas fa-user-tie"></i> {{ u.nombre }} - {{ u.cargo }}
+                </label>
+              </div>
+              <div *ngIf="!usuariosOrigen.length" class="empty-users">
+                Seleccione un departamento de origen para ver personal disponible.
+              </div>
+            </div>
+          </div>
+
+          <!-- Destino -->
+          <div class="form-group">
+            <label>Departamento Destino</label>
+            <select [(ngModel)]="reassignForm.idDestino" class="premium-select">
+              <option value="">-- Seleccione Destino --</option>
+              <option *ngFor="let m of metrics" [value]="m.departamentoId">{{ m.nombreDepartamento }}</option>
+            </select>
+          </div>
+
+          <div class="form-footer">
+            <button class="btn-execute" 
+                    [disabled]="!reassignForm.idDestino || selectedUserIds.length === 0 || executingAction"
+                    (click)="ejecutarTransferencia()">
+              {{ executingAction ? 'Ejecutando...' : 'Aplicar Transferencia' }}
+            </button>
           </div>
         </div>
       </div>
-
-      <div class="actions-group mt-2">
-        <button class="btn-premium btn-premium-primary" (click)="solicitarAnalisisIA()" [disabled]="analyzing">
-          {{ analyzing ? '🧠 Analizando...' : '✨ Informe IA' }}
-        </button>
-        <button class="btn-premium btn-premium-secondary" (click)="descargarReporte()">
-          📥 Excel
-        </button>
-      </div>
-    </div>
-
-    <!-- Informe de IA -->
-    <div class="grid-card glass-premium ai-report-panel shadow-ambient">
-      <div class="panel-header">
-        <h3>📄 Reporte de Consultoría IA</h3>
-        <div class="header-tools">
-          <span class="ai-badge" *ngIf="aiReport">Gemini 1.5 Pro</span>
-          <button *ngIf="aiReport" class="btn-icon-tiny ml-1" (click)="descargarPDF()" title="Descargar PDF">
-            📥 PDF
-          </button>
-        </div>
-      </div>
-      
-      <div class="report-content" *ngIf="aiReport">
-        <pre class="formatted-report">{{ aiReport }}</pre>
-      </div>
-
-      <div class="empty-report" *ngIf="!aiReport && !analyzing">
-        <p>Haga clic en el botón para que la IA escanee el sistema en busca de ineficiencias.</p>
-      </div>
-
-      <div class="skeleton-loader" *ngIf="analyzing">
-        <div class="skeleton-line"></div>
-        <div class="skeleton-line"></div>
-        <div class="skeleton-line"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Consola de Acción (Reasignación sugerida) -->
-  <div class="action-console grid-card monolith-surface shadow-ambient mt-2" *ngIf="aiReport">
-    <h3>🛠️ Consola de Reestructuración Operativa</h3>
-    <p class="text-sm mb-1">Tras la recomendación de la IA, puede ejecutar la reasignación de personal aquí:</p>
-    
-    <div class="action-form">
-      <div class="form-group">
-        <label>De Departamento:</label>
-        <select [(ngModel)]="reassignForm.idOrigen" (change)="onOrigenChange()" class="form-control">
-          <option value="">-- Seleccione Origen --</option>
-          <option *ngFor="let m of metrics" [value]="m.departamentoId">{{ m.nombreDepartamento }}</option>
-        </select>
-      </div>
-      
-      <!-- Lista de Funcionarios Transferibles -->
-      <div class="form-group" *ngIf="usuariosOrigen.length > 0">
-        <label>Funcionarios a Reasignar:</label>
-        <div class="users-checkbox-list">
-          <label *ngFor="let user of usuariosOrigen" class="user-checkbox">
-            <input type="checkbox" [value]="user.id" (change)="toggleUserSelection(user.id, $event)">
-            <span class="user-name">👤 {{ user.nombre }} {{ user.apellidos }}</span>
-            <span class="user-role">{{ user.rol?.nombre || 'Funcionario' }}</span>
-          </label>
-        </div>
-        <small class="text-sm" style="color: var(--primary);">Seleccionados: {{ selectedUserIds.length }}</small>
-      </div>
-
-      <div class="form-group mt-2">
-        <label>A Departamento (Destino):</label>
-        <select [(ngModel)]="reassignForm.idDestino" class="form-control">
-          <option value="">-- Seleccione Destino --</option>
-          <option *ngFor="let m of metrics" [value]="m.departamentoId" [disabled]="m.departamentoId === reassignForm.idOrigen">{{ m.nombreDepartamento }}</option>
-        </select>
-      </div>
-      <button class="btn btn-warning mt-2 w-full" (click)="ejecutarOptimizacion()" [disabled]="applying || selectedUserIds.length === 0 || !reassignForm.idDestino">
-        {{ applying ? 'Ejecutando Transferencia...' : 'Aplicar Reasignación de Personal' }}
-      </button>
-    </div>
-  </div>
+    </section>
+  </main>
 </div>

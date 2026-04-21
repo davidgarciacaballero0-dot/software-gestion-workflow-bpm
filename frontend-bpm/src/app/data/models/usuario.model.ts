@@ -1,10 +1,13 @@
 export interface Usuario {
-  id?: string;
-  idOrganizacion: string; // Tenant al que pertenece
+  id: string;
+  idOrganizacion: string;
   idDepartamento: string;
   idRol: string;
   nombre: string;
   email: string;
-  password?: string; // IMPORTANTE: Sólo se debe usar en peticiones POST. Viene undefined en GET por seguridad del backend.
+  password?: string;
   createdAt?: string;
 }
+
+// Alias para mantener consistencia con los DTOs del Backend
+export type UsuarioResponseDTO = Usuario;

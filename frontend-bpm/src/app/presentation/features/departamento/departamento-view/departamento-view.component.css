@@ -174,3 +174,53 @@ label {
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+/* Reassign Panel Styles */
+.reassign-panel {
+  background: var(--surface-container-low);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.user-selection-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.user-selection-list::-webkit-scrollbar-thumb {
+  background: var(--primary);
+  border-radius: 10px;
+}
+
+.btn-close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: color 0.3s;
+}
+
+.btn-close:hover {
+  color: var(--primary);
+}
+
+.status-msg {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--primary-container);
+}
+
+.animate-slide-in {
+  animation: slideIn 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.mt-1 { margin-top: 1rem; }
+.mt-cmd { margin-top: 2.5rem; }
+.text-sm { font-size: 0.75rem; }
+.w-full { width: 100%; }
