@@ -30,12 +30,12 @@
         <div class="event-body">
           <div class="detail-row">
             <span class="label">👤 Ejecutado por:</span>
-            <span class="value">{{ evento.ejecutadoPorUsuarioId || 'Sistema' }}</span>
+            <span class="value">{{ evento.ejecutadoPorNombre || evento.ejecutadoPorUsuarioId || 'Sistema' }}</span>
           </div>
 
           <div class="detail-row" *ngIf="evento.nodoDestinoId">
             <span class="label">📍 Ubicación:</span>
-            <span class="value">{{ evento.nodoDestinoId }}</span>
+            <span class="value">{{ evento.nodoDestinoNombre || evento.nodoDestinoId }}</span>
           </div>
 
           <div class="motivo-box" *ngIf="evento.motivo">

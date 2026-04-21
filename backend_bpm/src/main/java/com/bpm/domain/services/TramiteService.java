@@ -390,7 +390,30 @@ public class TramiteService {
     // ========================================================================================
 
     public List<EventoHistorial> listarHistorial(String idTramite) {
-        return historialRepository.findByIdTramite(idTramite);
+        List<EventoHistorial> eventos = historialRepository.findByIdTramite(idTramite);
+        
+        // Parche legacy: Si falta el nombre (registros antiguos), intentar resolverlo ahora
+        for (EventoHistorial evento : eventos) {
+            if (evento.getEjecutadoPorNombre() == null && evento.getEjecutadoPorUsuarioId() != null) {
+                usuarioRepository.findById(evento.getEjecutadoPorUsuarioId())
+                        .ifPresent(u -> evento.setEjecutadoPorNombre(u.getNombre() + " " + (u.getApellidos() != null ? u.getApellidos() : "")));
+            }
+            
+            if (evento.getNodoDestinoNombre() == null && evento.getNodoDestinoId() != null) {
+                // Buscamos en la política del trámite
+                tramiteRepository.findById(idTramite).ifPresent(t -> {
+                    politicaRepository.findById(t.getIdPolitica()).ifPresent(p -> {
+                        if (p.getNodes() != null) {
+                            p.getNodes().stream()
+                                .filter(n -> n.getId().equals(evento.getNodoDestinoId()))
+                                .findFirst()
+                                .ifPresent(n -> evento.setNodoDestinoNombre(n.getName()));
+                        }
+                    });
+                });
+            }
+        }
+        return eventos;
     }
 
     // ========================================================================================
@@ -400,11 +423,33 @@ public class TramiteService {
     private void registrarEvento(TramiteInstancia tramite, String nodoOrigen, String nodoDestino,
                                   String usuarioId, TipoEvento tipo, String motivo,
                                   Map<String, Object> snapshot) {
+        
+        String usuarioNombre = "Sistema";
+        if (usuarioId != null) {
+            usuarioNombre = usuarioRepository.findById(usuarioId)
+                    .map(u -> u.getNombre() + " " + (u.getApellidos() != null ? u.getApellidos() : ""))
+                    .orElse(usuarioId);
+        }
+
+        String nodoNombre = nodoDestino;
+        if (nodoDestino != null) {
+            final String nId = nodoDestino;
+            nodoNombre = politicaRepository.findById(tramite.getIdPolitica())
+                    .map(p -> p.getNodes().stream()
+                            .filter(n -> n.getId().equals(nId))
+                            .map(n -> n.getName())
+                            .findFirst()
+                            .orElse(nId))
+                    .orElse(nodoDestino);
+        }
+
         EventoHistorial evento = EventoHistorial.builder()
                 .idTramite(tramite.getId())
                 .nodoOrigenId(nodoOrigen)
                 .nodoDestinoId(nodoDestino)
+                .nodoDestinoNombre(nodoNombre)
                 .ejecutadoPorUsuarioId(usuarioId)
+                .ejecutadoPorNombre(usuarioNombre)
                 .tipoEvento(tipo)
                 .motivo(motivo)
                 .snapshotDatos(snapshot)

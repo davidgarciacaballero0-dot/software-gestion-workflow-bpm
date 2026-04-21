@@ -25,7 +25,9 @@ public class EventoHistorial {
     private String idTramite; // Referencia <Ref> a TramiteInstancia
     private String nodoOrigenId;  // Nodo desde donde se generó el evento
     private String nodoDestinoId; // Nodo al que llegó el trámite
+    private String nodoDestinoNombre; // Nombre legible (departamento/etapa)
     private String ejecutadoPorUsuarioId; // Referencia <Ref>
+    private String ejecutadoPorNombre; // Nombre legible del usuario
     private String motivo; // Opcional: descripción de intervención o rechazo
     
     private Integer tiempoSLAConsumidoMinutos; 

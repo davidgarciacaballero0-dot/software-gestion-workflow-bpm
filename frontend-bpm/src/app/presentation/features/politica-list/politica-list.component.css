@@ -219,7 +219,7 @@
   font-size: 1.1rem;
   font-weight: 600;
   margin: 0.25rem 0 0.5rem 0;
-  color: #fff;
+  color: #1a1c1e; /* Color oscuro para contraste alto */
 }
 
 .t-location {
@@ -231,9 +231,9 @@
 .loc-tag, .step-tag {
   font-size: 0.75rem;
   padding: 0.2rem 0.6rem;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(0, 0, 0, 0.05); /* Fondo más oscuro para contraste */
   border-radius: 0.5rem;
-  color: var(--text-muted);
+  color: #44474e; /* Texto gris oscuro legible */
 }
 
 .btn-goto {
