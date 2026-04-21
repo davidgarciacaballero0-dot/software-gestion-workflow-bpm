@@ -72,22 +72,34 @@
     <div class="action-form">
       <div class="form-group">
         <label>De Departamento:</label>
-        <select [(ngModel)]="reassignForm.idOrigen" class="form-control">
+        <select [(ngModel)]="reassignForm.idOrigen" (change)="onOrigenChange()" class="form-control">
+          <option value="">-- Seleccione Origen --</option>
           <option *ngFor="let m of metrics" [value]="m.departamentoId">{{ m.nombreDepartamento }}</option>
         </select>
       </div>
-      <div class="form-group">
-        <label>A Departamento:</label>
+      
+      <!-- Lista de Funcionarios Transferibles -->
+      <div class="form-group" *ngIf="usuariosOrigen.length > 0">
+        <label>Funcionarios a Reasignar:</label>
+        <div class="users-checkbox-list">
+          <label *ngFor="let user of usuariosOrigen" class="user-checkbox">
+            <input type="checkbox" [value]="user.id" (change)="toggleUserSelection(user.id, $event)">
+            <span class="user-name">👤 {{ user.nombre }} {{ user.apellidos }}</span>
+            <span class="user-role">{{ user.rol?.nombre || 'Funcionario' }}</span>
+          </label>
+        </div>
+        <small class="text-sm" style="color: var(--primary);">Seleccionados: {{ selectedUserIds.length }}</small>
+      </div>
+
+      <div class="form-group mt-2">
+        <label>A Departamento (Destino):</label>
         <select [(ngModel)]="reassignForm.idDestino" class="form-control">
-          <option *ngFor="let m of metrics" [value]="m.departamentoId">{{ m.nombreDepartamento }}</option>
+          <option value="">-- Seleccione Destino --</option>
+          <option *ngFor="let m of metrics" [value]="m.departamentoId" [disabled]="m.departamentoId === reassignForm.idOrigen">{{ m.nombreDepartamento }}</option>
         </select>
       </div>
-      <div class="form-group">
-        <label>Cantidad:</label>
-        <input type="number" [(ngModel)]="reassignForm.cantidad" class="form-control" min="1" max="10">
-      </div>
-      <button class="btn btn-warning" (click)="ejecutarOptimizacion()" [disabled]="applying">
-        {{ applying ? 'Ejecutando...' : 'Aplicar Reasignación' }}
+      <button class="btn btn-warning mt-2 w-full" (click)="ejecutarOptimizacion()" [disabled]="applying || selectedUserIds.length === 0 || !reassignForm.idDestino">
+        {{ applying ? 'Ejecutando Transferencia...' : 'Aplicar Reasignación de Personal' }}
       </button>
     </div>
   </div>

@@ -45,14 +45,12 @@ public class AnaliticaService {
         }).collect(Collectors.toList());
     }
 
-    public void reasignarPersonal(String idOrigen, String idDestino, int cantidad) {
-        List<Usuario> personalOrigen = usuarioRepository.findByIdDepartamento(idOrigen);
-        int aMover = Math.min(cantidad, personalOrigen.size());
-
-        for (int i = 0; i < aMover; i++) {
-            Usuario u = personalOrigen.get(i);
-            u.setIdDepartamento(idDestino);
-            usuarioRepository.save(u);
+    public void reasignarPersonal(String idDestino, List<String> userIds) {
+        for (String id : userIds) {
+            usuarioRepository.findById(id).ifPresent(u -> {
+                u.setIdDepartamento(idDestino);
+                usuarioRepository.save(u);
+            });
         }
     }
 

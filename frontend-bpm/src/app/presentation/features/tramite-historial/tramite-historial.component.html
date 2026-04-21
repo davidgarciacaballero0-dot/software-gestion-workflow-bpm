@@ -28,9 +28,9 @@
         </div>
 
         <div class="event-body">
-          <div class="detail-row">
+          <div class="detail-row" *ngIf="evento.ejecutadoPorNombre && evento.ejecutadoPorNombre !== 'Funcionario de Departamento'">
             <span class="label">👤 Ejecutado por:</span>
-            <span class="value">{{ evento.ejecutadoPorNombre || evento.ejecutadoPorUsuarioId || 'Sistema' }}</span>
+            <span class="value">{{ evento.ejecutadoPorNombre }}</span>
           </div>
 
           <div class="detail-row" *ngIf="evento.nodoDestinoId">

@@ -60,12 +60,8 @@ public class OptimizacionController {
     }
 
     @PostMapping("/reassign")
-    public ResponseEntity<Map<String, String>> reassignStaff(
-            @RequestParam String idOrigen,
-            @RequestParam String idDestino,
-            @RequestParam int cantidad) {
-        
-        analiticaService.reasignarPersonal(idOrigen, idDestino, cantidad);
+    public ResponseEntity<Map<String, String>> reassignStaff(@RequestBody ReassignRequest request) {
+        analiticaService.reasignarPersonal(request.getIdDestino(), request.getUserIds());
         Map<String, String> res = new HashMap<>();
         res.put("message", "Reasignación ejecutada exitosamente.");
         return ResponseEntity.ok(res);
@@ -111,5 +107,12 @@ public class OptimizacionController {
             error.put("error", "Error al conectar con el asistente virtual.");
             return ResponseEntity.status(503).body(error);
         }
+    }
+
+    @lombok.Data
+    public static class ReassignRequest {
+        private String idOrigen;
+        private String idDestino;
+        private List<String> userIds;
     }
 }

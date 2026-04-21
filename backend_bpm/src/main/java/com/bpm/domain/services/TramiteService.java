@@ -394,9 +394,19 @@ public class TramiteService {
         
         // Parche legacy: Si falta el nombre (registros antiguos), intentar resolverlo ahora
         for (EventoHistorial evento : eventos) {
-            if (evento.getEjecutadoPorNombre() == null && evento.getEjecutadoPorUsuarioId() != null) {
-                usuarioRepository.findById(evento.getEjecutadoPorUsuarioId())
-                        .ifPresent(u -> evento.setEjecutadoPorNombre(u.getNombre() + " " + (u.getApellidos() != null ? u.getApellidos() : "")));
+            final String evUsId = evento.getEjecutadoPorUsuarioId();
+            if (evento.getEjecutadoPorNombre() == null && evUsId != null) {
+                usuarioRepository.findById(evUsId)
+                        .ifPresent(u -> {
+                            // Si es el cliente que inició el trámite, mostramos su nombre
+                            tramiteRepository.findById(idTramite).ifPresent(t -> {
+                                if (evUsId.equals(t.getIdUsuarioSolicitante())) {
+                                    evento.setEjecutadoPorNombre(u.getNombre() + " " + (u.getApellidos() != null ? u.getApellidos() : ""));
+                                } else {
+                                    evento.setEjecutadoPorNombre("Funcionario de Departamento");
+                                }
+                            });
+                        });
             }
             
             if (evento.getNodoDestinoNombre() == null && evento.getNodoDestinoId() != null) {
@@ -426,9 +436,17 @@ public class TramiteService {
         
         String usuarioNombre = "Sistema";
         if (usuarioId != null) {
+            final String uId = usuarioId;
             usuarioNombre = usuarioRepository.findById(usuarioId)
-                    .map(u -> u.getNombre() + " " + (u.getApellidos() != null ? u.getApellidos() : ""))
-                    .orElse(usuarioId);
+                    .map(u -> {
+                        // Si es el cliente que inició el trámite, mostramos su nombre
+                        if (uId.equals(tramite.getIdUsuarioSolicitante())) {
+                            return u.getNombre() + " " + (u.getApellidos() != null ? u.getApellidos() : "");
+                        }
+                        // Si es un funcionario, solo mostramos el rol o un texto genérico
+                        return "Funcionario de Departamento";
+                    })
+                    .orElse("Usuario");
         }
 
         String nodoNombre = nodoDestino;

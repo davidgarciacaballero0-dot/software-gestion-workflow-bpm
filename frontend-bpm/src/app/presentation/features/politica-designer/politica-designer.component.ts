@@ -24,6 +24,7 @@ export class PoliticaDesignerComponent implements OnInit {
 
   selectedNode: WorkflowNode | null = null;
   selectedEdge: string | null = null;
+  connectingSourceNode: WorkflowNode | null = null;
 
   // CU-14: IA Generativa
   aiPrompt: string = '';
@@ -183,6 +184,22 @@ export class PoliticaDesignerComponent implements OnInit {
     return `M ${startX} ${startY} C ${controlX} ${startY}, ${controlX} ${endY}, ${endX} ${endY}`;
   }
 
+  getEdgeLabelPosition(edge: WorkflowEdge): { x: number, y: number } {
+    const source = this.nodes.find(n => n.id === edge.sourceNodeId);
+    const target = this.nodes.find(n => n.id === edge.targetNodeId);
+    if (!source || !target) return { x: 0, y: 0 };
+
+    const startX = source.uiPosition.x + 180;
+    const startY = source.uiPosition.y + 35;
+    const endX = target.uiPosition.x;
+    const endY = target.uiPosition.y + 35;
+
+    return {
+      x: startX + (endX - startX) / 2,
+      y: startY + (endY - startY) / 2 - 10
+    };
+  }
+
   // --- CU-14: IA Generativa ---
 
   solicitarGeneracionIA(): void {
@@ -236,7 +253,7 @@ export class PoliticaDesignerComponent implements OnInit {
 
   onPublish(): void {
     if (!this.currentPolicy.id) {
-      alert('Debes guardar la política antes de publicarla.');
+      alert('Debes guardar la política al menos una vez antes de publicarla.');
       return;
     }
 
@@ -248,10 +265,20 @@ export class PoliticaDesignerComponent implements OnInit {
 
     if (!confirm('¿Estás seguro de que deseas publicar esta política? Se volverá de solo lectura.')) return;
 
-    this.workflowService.publicar(this.currentPolicy.id).subscribe({
-      next: (res: PoliticaWorkflow) => {
-        this.currentPolicy = res;
-        alert('🚀 ¡Política publicada con éxito!');
+    // Auto-guardado antes de publicar para asegurar la consistencia del "flujo definido"
+    this.currentPolicy.nodes = this.nodes;
+    this.currentPolicy.edges = this.edges;
+    
+    this.workflowService.guardar(this.currentPolicy).subscribe({
+      next: (savedRes) => {
+         // Una vez guardado con éxito, solicitamos la publicación
+         this.workflowService.publicar(this.currentPolicy.id!).subscribe({
+           next: (res: PoliticaWorkflow) => {
+             this.currentPolicy = res;
+             alert('🚀 ¡Política publicada con éxito!');
+           },
+           error: (err: any) => this.handleError(err)
+         });
       },
       error: (err: any) => this.handleError(err)
     });
@@ -282,10 +309,15 @@ export class PoliticaDesignerComponent implements OnInit {
     if (!hasStart) return { valido: false, error: 'Falta el nodo de Inicio (START).' };
     if (!hasEnd) return { valido: false, error: 'Falta el nodo de Fin (END).' };
 
-    // Validar que las USER_TASK tengan departamento asignado
+    // Validar que las USER_TASK tengan departamento asignado y SLA > 0
     for (const node of nodes) {
-      if (node.type === NodeType.USER_TASK && !node.departmentId) {
-        return { valido: false, error: `El paso "${node.name}" no tiene un departamento asignado.` };
+      if (node.type === NodeType.USER_TASK) {
+        if (!node.departmentId) {
+          return { valido: false, error: `El paso "${node.name}" no tiene un departamento asignado.` };
+        }
+        if (!node.slaHours || node.slaHours <= 0) {
+          return { valido: false, error: `El paso "${node.name}" debe tener un tiempo SLA mayor a 0 horas.` };
+        }
       }
     }
 
@@ -309,10 +341,55 @@ export class PoliticaDesignerComponent implements OnInit {
     alert('❌ Error:\n' + message);
   }
 
-  // Lógica simplificada para crear una conexión entre nodos
+  // Lógica interactiva para crear conexiones entre nodos (2 clics)
   startConnecting(source: WorkflowNode, event: MouseEvent): void {
-    // En una implementación real, aquí manejaríamos el modo "hilo"
-    // temporalmente crearemos una conexión automática al siguiente nodo creado
+    event.stopPropagation();
+    if (!this.canEdit()) return;
+    this.connectingSourceNode = source;
+    // Opcional: mostrar un mensaje temporal
     console.log('Iniciando conexión desde:', source.id);
   }
+
+  isConnecting(): boolean {
+    return this.connectingSourceNode !== null;
+  }
+
+  finishConnecting(target: WorkflowNode, event: MouseEvent): void {
+    event.stopPropagation();
+    if (!this.canEdit() || !this.connectingSourceNode) return;
+    if (this.connectingSourceNode.id === target.id) {
+       this.connectingSourceNode = null;
+       return; // No conectar a sí mismo
+    }
+
+    const newEdge: WorkflowEdge = {
+       id: `edge_${Date.now()}`,
+       sourceNodeId: this.connectingSourceNode.id,
+       targetNodeId: target.id
+    };
+
+    // Si el origen es un Gateway Exclusivo, pedimos la condición (TRUE o FALSE)
+    if (this.connectingSourceNode.type === NodeType.EXCLUSIVE_GATEWAY) {
+       const resp = prompt('Esta es una bifurcación condicional. ¿Esta ruta es para cuando la condición es verdadera (true) o falsa (false)? Escriba "true" o "false":');
+       if (resp !== null) {
+          const val = resp.trim().toLowerCase() === 'true' ? 'true' : 'false';
+          newEdge.condition = {
+             variable: 'decision', // Valor genérico, puede mejorarse
+             operator: 'EQUALS',
+             value: val
+          } as any;
+       }
+    }
+
+    this.edges.push(newEdge);
+    this.connectingSourceNode = null; // Reiniciar
+  }
+
+  // Permite arrancar la conexión haciendo click derecho o escape
+  cancelConnecting(event?: MouseEvent): void {
+    if (this.connectingSourceNode) {
+       this.connectingSourceNode = null;
+    }
+  }
 }
+

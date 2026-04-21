@@ -20,9 +20,11 @@ export class InsightsIAComponent implements OnInit {
   // Form for manual reassignment based on IA suggestion
   reassignForm = {
     idOrigen: '',
-    idDestino: '',
-    cantidad: 1
+    idDestino: ''
   };
+
+  usuariosOrigen: any[] = [];
+  selectedUserIds: string[] = [];
 
   constructor(private http: HttpClient) { }
 
@@ -87,19 +89,50 @@ export class InsightsIAComponent implements OnInit {
       });
   }
 
+  onOrigenChange(): void {
+    this.selectedUserIds = [];
+    this.usuariosOrigen = [];
+    if (!this.reassignForm.idOrigen) return;
+
+    this.http.get<any[]>('/api/v1/usuarios/departamento/' + this.reassignForm.idOrigen).subscribe({
+      next: (users) => {
+        this.usuariosOrigen = users;
+      },
+      error: (err) => {
+        console.error('Error fetching users:', err);
+      }
+    });
+  }
+
+  toggleUserSelection(userId: string, event: any): void {
+    if (event.target.checked) {
+      this.selectedUserIds.push(userId);
+    } else {
+      this.selectedUserIds = this.selectedUserIds.filter(id => id !== userId);
+    }
+  }
+
   ejecutarOptimizacion(): void {
-    if (!this.reassignForm.idOrigen || !this.reassignForm.idDestino) {
-      this.aiReport = '⚠️ Error: Debe especificar origen y destino para la reasignación.';
+    if (!this.reassignForm.idOrigen || !this.reassignForm.idDestino || this.selectedUserIds.length === 0) {
+      this.aiReport = '⚠️ Error: Debe especificar origen, destino y seleccionar al menos un funcionario.';
       return;
     }
 
     this.applying = true;
-    const url = `/api/v1/optimization/reassign?idOrigen=${this.reassignForm.idOrigen}&idDestino=${this.reassignForm.idDestino}&cantidad=${this.reassignForm.cantidad}`;
+    const body = {
+      idOrigen: this.reassignForm.idOrigen,
+      idDestino: this.reassignForm.idDestino,
+      userIds: this.selectedUserIds
+    };
 
-    this.http.post(url, {}).subscribe({
+    this.http.post('/api/v1/optimization/reassign', body).subscribe({
       next: (res: any) => {
-        this.aiReport = '🚀 ¡Optimización ejecutada exitosamente! El personal ha sido reubicado.';
+        this.aiReport = '🚀 ¡Optimización ejecutada exitosamente! El personal ha sido reubicado y el sistema estabilizado en BD.';
         this.applying = false;
+        this.reassignForm.idOrigen = '';
+        this.reassignForm.idDestino = '';
+        this.usuariosOrigen = [];
+        this.selectedUserIds = [];
         this.fetchMetrics();
       },
       error: (err) => {

@@ -67,12 +67,36 @@
             <span class="node-count">🧩 {{ p.nodes?.length }} pasos</span>
           </div>
 
-          <button 
-            class="btn-premium btn-premium-primary start-btn" 
-            (click)="iniciarTramite(p)"
-            [disabled]="p.status !== 'PUBLISHED'">
-            {{ p.status === 'PUBLISHED' ? '🚀 Iniciar Trámite' : 'Borrador' }}
-          </button>
+          <!-- Botones de Acción (Clientes vs Admins) -->
+          <div class="card-actions mt-3">
+            <button *ngIf="isClient"
+              class="btn-premium btn-premium-primary start-btn w-full" 
+              (click)="iniciarTramite(p)"
+              [disabled]="p.status !== 'PUBLISHED'">
+              {{ p.status === 'PUBLISHED' ? '🚀 Iniciar Trámite' : 'Borrador (No Disponible)' }}
+            </button>
+
+            <!-- Botones Admin -->
+            <ng-container *ngIf="!isClient">
+              <button *ngIf="p.status === 'PUBLISHED'" 
+                class="btn-premium btn-premium-primary start-btn w-full" 
+                (click)="iniciarTramite(p)">
+                🚀 Iniciar Trámite Personalizado
+              </button>
+              
+              <button *ngIf="p.status === 'DRAFT'" 
+                class="btn-premium start-btn w-full" style="background: var(--surface-container-high); color: var(--text-main);"
+                [routerLink]="['/app/politica/designer', p.id]">
+                ✏️ Continuar Diseño
+              </button>
+              
+              <button *ngIf="p.status === 'PUBLISHED' || p.status === 'ARCHIVED'"
+                class="btn-premium start-btn w-full mt-2" style="background: transparent; border: 1px solid var(--primary); color: var(--primary);"
+                [routerLink]="['/app/politica/designer', p.id]">
+                👁️ Ver Política (Solo Lectura)
+              </button>
+            </ng-container>
+          </div>
         </div>
       </div>
 

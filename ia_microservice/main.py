@@ -86,15 +86,29 @@ def read_root():
     return {"status": "online", "key_configured": bool(api_key)}
 
 @app.post("/ia/generar-flujo")
+@retry(
+    wait=wait_exponential(multiplier=1, min=2, max=10),
+    stop=stop_after_attempt(3),
+    retry=retry_if_exception(is_quota_error),
+    reraise=True
+)
 async def generar_flujo(req: FlowRequest):
     prompt = f"Genera un flujo de trabajo para: {req.descripcion}. Devuelve solo JSON."
     try:
         response = model_creative.generate_content(prompt)
         return extract_json(response.text)
     except Exception as e:
+        if is_quota_error(e):
+             raise HTTPException(status_code=429, detail="La cuota de la IA se ha agotado. Por favor, espera unos segundos.")
         raise HTTPException(status_code=500, detail=f"IA Error: {str(e)}")
 
 @app.post("/ia/analizar-rendimiento")
+@retry(
+    wait=wait_exponential(multiplier=1, min=2, max=10),
+    stop=stop_after_attempt(3),
+    retry=retry_if_exception(is_quota_error),
+    reraise=True
+)
 async def analizar_rendimiento(req: AnalysisRequest):
     data_str = json.dumps([m.dict() for m in req.metricas])
     prompt = f"Analiza y genera recomendaciones para estas métricas: {data_str}"
@@ -102,6 +116,8 @@ async def analizar_rendimiento(req: AnalysisRequest):
         response = model_logic.generate_content(prompt)
         return {"reporte": response.text}
     except Exception as e:
+        if is_quota_error(e):
+             raise HTTPException(status_code=429, detail="La cuota de la IA se ha agotado. Por favor, espera unos segundos.")
         raise HTTPException(status_code=500, detail=f"IA Analysis Error: {str(e)}")
 
 def is_quota_error(exception):
