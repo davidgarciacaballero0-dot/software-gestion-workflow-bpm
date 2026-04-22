@@ -91,4 +91,14 @@ export class NotificationService {
       });
     }
   }
+
+  // Notificación local manual (Fix compilación)
+  notify(mensaje: string, titulo: string = 'SISTEMA'): void {
+    const notification: Notification = {
+      titulo: titulo,
+      mensaje: mensaje,
+      createdAt: new Date().toISOString()
+    };
+    this.notificationSubject.next(notification);
+  }
 }

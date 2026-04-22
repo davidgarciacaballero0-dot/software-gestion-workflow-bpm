@@ -18,7 +18,7 @@ public class OptimizacionController {
 
     private final AnaliticaService analiticaService;
     private final RestTemplate restTemplate = new RestTemplate();
-    private final String IA_URL = "http://localhost:8000/ia";
+    private final String IA_URL = "http://ia-service:8000/ia";
 
     @GetMapping("/metrics")
     public ResponseEntity<List<AnaliticaService.MetricDataDTO>> getMetrics() {

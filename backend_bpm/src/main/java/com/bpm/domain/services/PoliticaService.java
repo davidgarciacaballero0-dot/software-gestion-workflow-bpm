@@ -37,13 +37,11 @@ public class PoliticaService {
             politica = politicaRepository.findById(dto.getId())
                     .orElseThrow(() -> new ResourceNotFoundException("Política no encontrada: " + dto.getId()));
             
-            // Si la política ya está publicada, no se puede editar directamente (se debe crear versión)
-            if (PolicyStatus.PUBLISHED.equals(politica.getStatus()) && PolicyStatus.PUBLISHED.equals(dto.getStatus())) {
-                 // Permitimos "actualizar" si el estado entrante es el mismo, 
-                 // pero usualmente una publicada es inmutable.
-                 // Para este caso, si el usuario quiere "editar", permitimos si es DRAFT.
+            // Si el nombre cambia, verificar duplicados
+            if (!politica.getNombre().equals(dto.getNombre())) {
+                validarNombreUnico(dto.getIdOrganizacion(), dto.getNombre());
             }
-            
+
             politica.setNombre(dto.getNombre());
             politica.setDescription(dto.getDescription());
             politica.setVersion(dto.getVersion() != null ? dto.getVersion() : politica.getVersion());
@@ -52,6 +50,9 @@ public class PoliticaService {
             politica.setEdges(dto.getEdges());
             politica.setUpdatedAt(LocalDateTime.now());
         } else {
+            // Verificar nombre único en creación
+            validarNombreUnico(dto.getIdOrganizacion(), dto.getNombre());
+
             politica = PoliticaWorkflow.builder()
                     .idOrganizacion(dto.getIdOrganizacion())
                     .nombre(dto.getNombre())
@@ -137,6 +138,13 @@ public class PoliticaService {
 
         PoliticaWorkflow guardada = politicaRepository.save(nuevaPolitica);
         return mapearDTO(guardada);
+    }
+
+    private void validarNombreUnico(String idOrg, String nombre) {
+        List<PoliticaWorkflow> existentes = politicaRepository.findByIdOrganizacionAndNombre(idOrg, nombre);
+        if (!existentes.isEmpty()) {
+            throw new WorkflowValidationException("Ya existe una política con el nombre '" + nombre + "' en esta organización.");
+        }
     }
 
     private void validarSlas(List<WorkflowNode> nodos) {

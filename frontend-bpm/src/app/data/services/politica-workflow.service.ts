@@ -12,8 +12,9 @@ export class PoliticaWorkflowService {
   constructor(private http: HttpClient) {}
 
   guardar(politica: PoliticaWorkflow): Observable<PoliticaWorkflow> {
-    if (politica.id) {
-      return this.http.put<PoliticaWorkflow>(`${this.apiUrl}/${politica.id}`, politica);
+    const id = politica.id || politica._id;
+    if (id) {
+      return this.http.put<PoliticaWorkflow>(`${this.apiUrl}/${id}`, politica);
     }
     return this.http.post<PoliticaWorkflow>(this.apiUrl, politica);
   }

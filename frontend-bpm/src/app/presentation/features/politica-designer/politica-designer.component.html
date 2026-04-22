@@ -68,27 +68,38 @@
     </aside>
 
     <!-- Lienzo Central -->
-    <main class="canvas-area" id="canvas">
+    <main class="canvas-area" id="canvas" *ngIf="isLoaded">
       <!-- Capa SVG para Aristas -->
       <svg class="connections-svg" (click)="cancelConnecting($event)">
-        <!-- Despliegue de Líneas -->
-        <g *ngFor="let edge of edges">
-          <path [attr.d]="calculatePath(edge)" 
-                class="connector-line"
-                [class.active]="selectedEdge === edge.id" />
-          
-          <!-- Etiqueta de Condición (TRUE/FALSE) para bifurcaciones -->
-          <text *ngIf="edge.condition?.value"
-                [attr.x]="getEdgeLabelPosition(edge).x"
-                [attr.y]="getEdgeLabelPosition(edge).y"
-                class="edge-label"
-                text-anchor="middle"
-                fill="var(--primary)"
-                font-size="12"
-                font-weight="bold">
-            {{ edge.condition?.value | uppercase }}
-          </text>
-        </g>
+        <defs>
+          <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="var(--outline-variant)" />
+          </marker>
+          <marker id="arrowhead-active" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="var(--primary)" />
+          </marker>
+        </defs>
+
+        <!-- Conectores Ortogonales 90° -->
+        <path *ngFor="let edge of edges" 
+              class="connector-line"
+              [class.active]="selectedEdge === edge.id"
+              [attr.d]="calculatePath(edge)"
+              marker-end="url(#arrowhead)"
+              (click)="selectEdge(edge.id, $event)">
+        </path>
+        
+        <!-- Etiqueta de Condición (TRUE/FALSE) para bifurcaciones -->
+        <text *ngFor="let edge of edges"
+              [attr.x]="getEdgeLabelPosition(edge).x"
+              [attr.y]="getEdgeLabelPosition(edge).y"
+              class="edge-label"
+              text-anchor="middle"
+              fill="var(--primary)"
+              font-size="12"
+              font-weight="bold">
+          {{ edge.condition?.value | uppercase }}
+        </text>
       </svg>
 
       <!-- Capa de Nodos Con Arrastre del CDK -->
@@ -96,22 +107,31 @@
            class="node-item"
            [class.selected]="selectedNode?.id === node.id"
            [class]="node.type"
-           [style.left.px]="node.uiPosition.x"
-           [style.top.px]="node.uiPosition.y"
+           [cdkDragFreeDragPosition]="node.uiPosition"
            cdkDrag
            [cdkDragDisabled]="!canEdit()"
            (cdkDragEnded)="onNodeMoved($event, node)"
            (click)="selectNode(node)">
         
-        <div class="node-header">
-          <div class="icon-box">{{ getNodeIcon(node.type) }}</div>
-          {{ node.name }}
-        </div>
-        <div class="node-sub">
-          {{ node.departmentId ? 'Asignado a Dept.' : 'Sin configurar' }}
-          <span *ngIf="node.type === 'USER_TASK' && node.slaHours" class="sla-badge">
-            ⏱ {{ node.slaHours }}h
-          </span>
+        <div class="node-content-wrapper">
+          <div class="node-header">
+            <div class="icon-box">{{ getNodeIcon(node.type) }}</div>
+            <span>{{ node.name }}</span>
+          </div>
+          <div class="node-sub">
+            <ng-container [ngSwitch]="node.type">
+              <span *ngSwitchCase="'START'">INICIO</span>
+              <span *ngSwitchCase="'END'">FIN</span>
+              <span *ngSwitchCase="'EXCLUSIVE_GATEWAY'">?</span>
+              <span *ngSwitchCase="'PARALLEL_GATEWAY'">II</span>
+              <span *ngSwitchDefault>
+                {{ node.departmentId ? 'ASIGNADO' : 'PENDIENTE' }}
+              </span>
+            </ng-container>
+            <span *ngIf="node.type === 'USER_TASK' && node.slaHours" class="sla-badge">
+              ⏱ {{ node.slaHours }}h
+            </span>
+          </div>
         </div>
 
         <!-- Puntos de Conexión (Visuales e Interactivos) -->

@@ -1,119 +1,175 @@
-<div class="analytics-container">
-  <!-- Header con Estilo -->
-  <header class="dashboard-header">
-    <div class="header-content">
-      <h1><i class="fas fa-microchip"></i> Inteligencia Operativa BPM</h1>
-      <p>Análisis de carga en tiempo real y consultoría estratégica asistida por IA.</p>
+<div class="insights-container">
+  <!-- Header -->
+  <header class="insights-header">
+    <div class="header-left">
+      <div class="header-icon">🛡️</div>
+      <div>
+        <h1>Reportes y Analítica IA</h1>
+        <p>Análisis predictivo de cuellos de botella y reporte ejecutivo de consultoría asistido por Gemini.</p>
+      </div>
     </div>
-    <nav class="tabs-nav">
-      <button class="tab-btn" [class.active]="activeTab === 'analisis'" (click)="switchTab('analisis')">
-        <i class="fas fa-chart-line"></i> Diagnóstico y Métricas
-      </button>
-      <button class="tab-btn" [class.active]="activeTab === 'ejecucion'" (click)="switchTab('ejecucion')">
-        <i class="fas fa-cogs"></i> Consola de Reestructuración
-      </button>
-    </nav>
   </header>
 
-  <main class="dashboard-body">
-    <!-- Pestaña 1: Análisis -->
-    <section class="tab-pane" *ngIf="activeTab === 'analisis'">
-      <div class="grid-layout">
-        <!-- Tarjeta de Gráfico -->
-        <div class="glass-card chart-card">
-          <div class="card-header">
-            <h3><i class="fas fa-project-diagram"></i> Estado de Carga por Departamento</h3>
-            <button class="btn-refresh" (click)="cargarMetricas()" [class.spinning]="loadingMetrics">
-              <i class="fas fa-sync-alt"></i>
-            </button>
-          </div>
-          <div class="chart-container">
-            <canvas baseChart 
-                    [data]="barChartData" 
-                    [options]="barChartOptions" 
-                    [type]="barChartType">
-            </canvas>
+  <!-- Main Grid: 2 columnas -->
+  <div class="insights-grid">
+
+    <!-- ===== COLUMNA IZQUIERDA ===== -->
+    <div class="left-column">
+
+      <!-- Card: Carga Departamental Real-Time -->
+      <div class="insight-card">
+        <div class="card-title">
+          <span class="card-icon">📊</span>
+          <h3>Carga Departamental Real-Time</h3>
+          <button class="btn-icon-refresh" (click)="cargarMetricas()" [class.spinning]="loadingMetrics" title="Refrescar">
+            ⟳
+          </button>
+        </div>
+
+        <div *ngIf="loadingMetrics" class="loading-bar-area">
+          <div class="skeleton-bar" *ngFor="let i of [1,2,3,4,5]"></div>
+        </div>
+
+        <div *ngIf="!loadingMetrics && metrics.length" class="dept-bars">
+          <div class="dept-row" *ngFor="let m of metrics">
+            <div class="dept-name">{{ m.nombreDepartamento }}</div>
+            <div class="dept-progress-track">
+              <div class="dept-progress-fill"
+                   [style.width.%]="getLoadPercent(m)"
+                   [class.critical]="getLoadPercent(m) > 80"
+                   [class.warning]="getLoadPercent(m) > 50 && getLoadPercent(m) <= 80"
+                   [class.ok]="getLoadPercent(m) <= 50">
+              </div>
+            </div>
+            <div class="dept-stats">
+              <span>⏱ {{ m.tiempoPromedioHoras | number:'1.0-1' }}h</span>
+              <span>⚙ {{ m.cantidadTramites }} trám.</span>
+              <span>👥 {{ m.capacidadPersonal }} pers.</span>
+            </div>
           </div>
         </div>
 
-        <!-- Tarjeta de IA -->
-        <div class="glass-card ai-report-card">
-          <div class="card-header">
-            <h3><i class="fas fa-robot"></i> Reporte Ejecutivo de Consultoría</h3>
-            <button class="btn-ia-action" (click)="solicitarAnalisisIA()" [disabled]="analyzingIA">
-              {{ analyzingIA ? 'Procesando...' : 'Generar Análisis' }}
-            </button>
-          </div>
-          <div class="report-content">
-            <div *ngIf="!aiReport && !analyzingIA" class="empty-state">
-              <i class="fas fa-brain"></i>
-              <p>Pulse el botón para iniciar el análisis predictivo de carga.</p>
-            </div>
-            
-            <div *ngIf="analyzingIA" class="loading-state">
-              <div class="pulse-loader"></div>
-              <p>Gemini está analizando los cuellos de botella...</p>
-            </div>
+        <div *ngIf="!loadingMetrics && !metrics.length" class="empty-state-small">
+          No hay datos departamentales disponibles.
+        </div>
 
-            <div *ngIf="aiReport" class="report-text animate-fade-in">
-              {{ aiReport }}
-            </div>
-          </div>
+        <!-- Botones de Acción -->
+        <div class="action-buttons">
+          <button class="btn-action btn-analyze" (click)="solicitarAnalisisIA()" [disabled]="analyzingIA || !metrics.length">
+            <span *ngIf="!analyzingIA">🤖 Analizar...</span>
+            <span *ngIf="analyzingIA">⏳ Procesando...</span>
+          </button>
+          <button class="btn-action btn-excel" (click)="exportarExcel()" [disabled]="!metrics.length">
+            📗 Excel
+          </button>
+          <button class="btn-action btn-pdf" (click)="exportarPDF()" [disabled]="!aiReport">
+            📕 PDF
+          </button>
         </div>
       </div>
-    </section>
 
-    <!-- Pestaña 2: Ejecución -->
-    <section class="tab-pane" *ngIf="activeTab === 'ejecucion'">
-      <div class="glass-card execution-card">
-        <div class="card-header">
-          <h3><i class="fas fa-exchange-alt"></i> Transferencia Masiva de Funcionarios</h3>
+      <!-- Card: Gráfico de Barras -->
+      <div class="insight-card">
+        <div class="card-title">
+          <span class="card-icon">📈</span>
+          <h3>Tendencia de Carga Global</h3>
+          <button class="btn-toggle-chart" (click)="toggleChartType()">
+            {{ barChartType === 'bar' ? 'BAR CHART' : 'LINE CHART' }}
+          </button>
         </div>
-        
-        <div class="execution-grid">
-          <!-- Origen -->
-          <div class="form-group">
+        <div class="chart-wrapper">
+          <canvas baseChart
+                  [data]="barChartData"
+                  [options]="barChartOptions"
+                  [type]="barChartType">
+          </canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== COLUMNA DERECHA ===== -->
+    <div class="right-column">
+
+      <!-- Card: Reporte de Consultoría IA -->
+      <div class="insight-card report-card">
+        <div class="card-title">
+          <span class="card-icon">📋</span>
+          <h3>Reporte de Consultoría IA</h3>
+        </div>
+
+        <!-- Estado Vacío -->
+        <div *ngIf="!aiReport && !analyzingIA && !isListening" class="report-empty-state">
+          <div class="mic-icon-large" (click)="startVoice()">🎙️</div>
+          <h4>Esperando instrucción</h4>
+          <p>Presiona el botón de micrófono o el botón "Analizar" para solicitar un reporte a la IA.</p>
+        </div>
+
+        <!-- Escuchando Voz -->
+        <div *ngIf="isListening" class="report-listening-state">
+          <div class="pulse-mic">🎙️</div>
+          <h4>Escuchando...</h4>
+          <p class="voice-transcript">{{ voiceTranscript || 'Hable ahora...' }}</p>
+          <button class="btn-action btn-stop" (click)="stopVoice()">⏹ Detener</button>
+        </div>
+
+        <!-- Procesando IA -->
+        <div *ngIf="analyzingIA" class="report-loading-state">
+          <div class="loader-ring"></div>
+          <p>Gemini está analizando los cuellos de botella...</p>
+        </div>
+
+        <!-- Resultado del Reporte -->
+        <div *ngIf="aiReport && !analyzingIA" class="report-result">
+          <div class="report-text-content" [innerHTML]="formattedReport"></div>
+        </div>
+      </div>
+
+      <!-- Card: Consola de Reestructuración -->
+      <div class="insight-card">
+        <div class="card-title">
+          <span class="card-icon">🔄</span>
+          <h3>Consola de Reestructuración</h3>
+        </div>
+
+        <div class="restructure-form">
+          <div class="form-row">
             <label>Departamento Origen</label>
-            <select [(ngModel)]="reassignForm.idOrigen" (change)="onOrigenChange()" class="premium-select">
+            <select [(ngModel)]="reassignForm.idOrigen" (change)="onOrigenChange()" class="select-premium">
               <option value="">-- Seleccione Origen --</option>
               <option *ngFor="let m of metrics" [value]="m.departamentoId">{{ m.nombreDepartamento }}</option>
             </select>
           </div>
 
-          <!-- Selección de Usuarios -->
-          <div class="users-selection-area">
-            <label>Seleccionar Funcionarios ({{ selectedUserIds.length }})</label>
-            <div class="users-list-scroll">
-              <div *ngFor="let u of usuariosOrigen" class="user-check-item">
-                <input type="checkbox" [id]="u.id" (change)="toggleUser(u.id)">
-                <label [for]="u.id">
-                  <i class="fas fa-user-tie"></i> {{ u.nombre }} - {{ u.cargo }}
-                </label>
-              </div>
-              <div *ngIf="!usuariosOrigen.length" class="empty-users">
-                Seleccione un departamento de origen para ver personal disponible.
+          <div class="users-box" *ngIf="usuariosOrigen.length">
+            <label>Funcionarios ({{ selectedUserIds.length }} seleccionados)</label>
+            <div class="users-scroll">
+              <div *ngFor="let u of usuariosOrigen" class="user-item" [class.selected]="selectedUserIds.includes(u.id)" (click)="toggleUser(u.id)">
+                <span class="check-icon">{{ selectedUserIds.includes(u.id) ? '☑' : '☐' }}</span>
+                <span>{{ u.nombre }} — {{ u.cargo }}</span>
               </div>
             </div>
           </div>
 
-          <!-- Destino -->
-          <div class="form-group">
+          <div class="form-row">
             <label>Departamento Destino</label>
-            <select [(ngModel)]="reassignForm.idDestino" class="premium-select">
+            <select [(ngModel)]="reassignForm.idDestino" class="select-premium">
               <option value="">-- Seleccione Destino --</option>
               <option *ngFor="let m of metrics" [value]="m.departamentoId">{{ m.nombreDepartamento }}</option>
             </select>
           </div>
 
-          <div class="form-footer">
-            <button class="btn-execute" 
-                    [disabled]="!reassignForm.idDestino || selectedUserIds.length === 0 || executingAction"
-                    (click)="ejecutarTransferencia()">
-              {{ executingAction ? 'Ejecutando...' : 'Aplicar Transferencia' }}
-            </button>
-          </div>
+          <button class="btn-action btn-execute-transfer"
+                  [disabled]="!reassignForm.idDestino || selectedUserIds.length === 0 || executingAction"
+                  (click)="ejecutarTransferencia()">
+            {{ executingAction ? '⏳ Ejecutando...' : '🚀 Aplicar Transferencia' }}
+          </button>
         </div>
       </div>
-    </section>
-  </main>
+    </div>
+  </div>
+
+  <!-- Botón Flotante Micrófono -->
+  <button class="fab-mic" [class.listening]="isListening" (click)="isListening ? stopVoice() : startVoice()" title="Comando de voz">
+    {{ isListening ? '⏹' : '🎙️' }}
+  </button>
 </div>

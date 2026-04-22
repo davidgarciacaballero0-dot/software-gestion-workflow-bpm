@@ -60,6 +60,7 @@ export interface WorkflowEdge {
 
 export interface PoliticaWorkflow {
   id?: string;
+  _id?: string; // Soporte para ID nativo de MongoDB
   idOrganizacion: string;
   nombre: string;
   description?: string;

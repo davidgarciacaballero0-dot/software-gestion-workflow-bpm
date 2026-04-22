@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef, NgZone } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -29,6 +29,7 @@ export class PoliticaDesignerComponent implements OnInit {
   // CU-14: IA Generativa
   aiPrompt: string = '';
   generatingIA: boolean = false;
+  isLoaded: boolean = false; // Flag to force DOM recreation
 
   // CU-18 State
   currentPolicy: PoliticaWorkflow = {
@@ -45,6 +46,8 @@ export class PoliticaDesignerComponent implements OnInit {
   private depService = inject(DepartamentoService);
   private authService = inject(AuthService);
   private notificationService = inject(NotificationService);
+  private cd = inject(ChangeDetectorRef);
+  private zone = inject(NgZone);
 
   constructor() {}
 
@@ -52,6 +55,14 @@ export class PoliticaDesignerComponent implements OnInit {
     const user = this.authService.currentUser();
     const orgId = user?.idOrganizacion || '';
     this.currentPolicy.idOrganizacion = orgId;
+
+    // CAPTURAR ID DESDE LA URL (REQ-18 Fix)
+    const id = this.route.snapshot.paramMap.get('id');
+    if (id && id !== 'new') {
+      this.loadPolicy(id);
+    } else {
+      this.isLoaded = true; // Si es nuevo, mostrar lienzo de inmediato
+    }
 
     // Cargar departamentos para las USER_TASKS
     this.depService.listarPorOrganizacion(orgId).subscribe({
@@ -67,6 +78,37 @@ export class PoliticaDesignerComponent implements OnInit {
       
       console.log('Sync Event Received:', event);
       this.handleSyncEvent(event);
+    });
+  }
+
+  private loadPolicy(id: string): void {
+    this.workflowService.obtenerPorId(id).subscribe({
+      next: (policy: PoliticaWorkflow) => {
+        this.zone.run(() => {
+          this.currentPolicy = policy;
+          
+          // Asegurar que cada nodo tenga un objeto uiPosition válido
+          const rawNodes = policy.nodes || [];
+          rawNodes.forEach(n => {
+            if (!n.uiPosition) n.uiPosition = { x: 100, y: 100 };
+          });
+
+          this.nodes = JSON.parse(JSON.stringify(rawNodes));
+          this.edges = JSON.parse(JSON.stringify(policy.edges || []));
+          
+          // Forzar redistribución si hay solapamiento (en cualquier parte del lienzo)
+          this.reorganizeNodesIfCrowded();
+
+          console.log('Política cargada:', id, 'Nodos:', this.nodes.length);
+          
+          // Mostrar lienzo
+          this.isLoaded = true;
+        });
+      },
+      error: (err: any) => {
+        this.notificationService.notify('Error al cargar la política', 'ERROR');
+        console.error(err);
+      }
     });
   }
 
@@ -157,7 +199,38 @@ export class PoliticaDesignerComponent implements OnInit {
     }
   }
 
-  // --- Helper Icons ---
+  private reorganizeNodesIfCrowded(): void {
+    if (this.nodes.length < 2) return;
+
+    let isCrowded = false;
+    // Verificar si algún par de nodos choca en un área de 200x150
+    for (let i = 0; i < this.nodes.length; i++) {
+      for (let j = i + 1; j < this.nodes.length; j++) {
+        const dx = Math.abs(this.nodes[i].uiPosition.x - this.nodes[j].uiPosition.x);
+        const dy = Math.abs(this.nodes[i].uiPosition.y - this.nodes[j].uiPosition.y);
+        
+        // Cajas de colisión amplias (200px ancho x 160px alto)
+        if (dx < 200 && dy < 160) {
+          isCrowded = true;
+          break;
+        }
+      }
+      if (isCrowded) break;
+    }
+    
+    if (isCrowded) {
+      console.log('Detectado amontonamiento de nodos. Auto-distribuyendo...');
+      this.nodes.forEach((node, index) => {
+        // Asignar una posición en cascada vertical limpia
+        node.uiPosition = { 
+          x: 200, 
+          y: 60 + (index * 220) // 220px de espacio vertical
+        };
+      });
+    }
+  }
+
+  // --- Operaciones del Lienzo ---
   
   getNodeIcon(type: NodeType): string {
     switch (type) {
@@ -169,31 +242,43 @@ export class PoliticaDesignerComponent implements OnInit {
     }
   }
 
-  // Lógica de dibujo de conexiones (Bezier dinámico)
+  /**
+   * Calcula el punto exacto de conexión según el tipo y forma del nodo
+   */
+  getConnectionPoint(nodeId: string, side: 'left' | 'right'): { x: number, y: number } {
+    const node = this.nodes.find(n => n.id === nodeId);
+    if (!node) return { x: 0, y: 0 };
+
+    let width = 180;
+    let height = 80;
+
+    // Ajustar dimensiones según el estándar visual definido en CSS
+    if (node.type === NodeType.START || node.type === NodeType.END) {
+      width = 110;
+      height = 110;
+    } else if (node.type === NodeType.EXCLUSIVE_GATEWAY) {
+      width = 100;
+      height = 100;
+    }
+
+    const x = side === 'left' ? node.uiPosition.x : node.uiPosition.x + width;
+    const y = node.uiPosition.y + (height / 2);
+
+    return { x, y };
+  }
+
+  // Lógica de dibujo de conexiones (Ortogonal 90°)
   calculatePath(edge: WorkflowEdge): string {
-    const source = this.nodes.find(n => n.id === edge.sourceNodeId);
-    const target = this.nodes.find(n => n.id === edge.targetNodeId);
+    const source = this.getConnectionPoint(edge.sourceNodeId, 'right');
+    const target = this.getConnectionPoint(edge.targetNodeId, 'left');
+
     if (!source || !target) return '';
 
-    const isBackwards = target.uiPosition.x < source.uiPosition.x;
+    // Punto de quiebre en el medio del eje X para lograr ángulos de 90 grados
+    const midX = source.x + (target.x - source.x) / 2;
 
-    // Puntos de anclaje (ajustados a los círculos visuales)
-    const startX = source.uiPosition.x + 180; // Derecha
-    const startY = source.uiPosition.y + 40;
-    const endX = target.uiPosition.x;         // Izquierda
-    const endY = target.uiPosition.y + 40;
-
-    if (isBackwards) {
-      // Loopback: curva amplia hacia arriba o abajo para evitar solapamiento
-      const midY = Math.min(startY, endY) - 60;
-      const cp1X = startX + 50;
-      const cp2X = endX - 50;
-      return `M ${startX} ${startY} C ${cp1X} ${midY}, ${cp2X} ${midY}, ${endX} ${endY}`;
-    } else {
-      // Flujo normal: Bezier horizontal
-      const controlX = startX + (endX - startX) / 2;
-      return `M ${startX} ${startY} C ${controlX} ${startY}, ${controlX} ${endY}, ${endX} ${endY}`;
-    }
+    // Retorna una ruta ortogonal: Inicio -> Mitad Horizontal -> Vertical -> Destino
+    return `M ${source.x} ${source.y} L ${midX} ${source.y} L ${midX} ${target.y} L ${target.x} ${target.y}`;
   }
 
   getEdgeLabelPosition(edge: WorkflowEdge): { x: number, y: number } {
@@ -257,6 +342,9 @@ export class PoliticaDesignerComponent implements OnInit {
     this.workflowService.guardar(this.currentPolicy).subscribe({
       next: (res: PoliticaWorkflow) => {
         this.currentPolicy = res;
+        this.nodes = [...(res.nodes || [])];
+        this.edges = [...(res.edges || [])];
+        this.cd.detectChanges();
         alert('Política guardada exitosamente (v' + res.version + ')');
       },
       error: (err: any) => this.handleError(err)
@@ -402,6 +490,11 @@ export class PoliticaDesignerComponent implements OnInit {
     if (this.connectingSourceNode) {
        this.connectingSourceNode = null;
     }
+  }
+
+  selectEdge(edgeId: string, event: MouseEvent): void {
+    event.stopPropagation();
+    this.selectedEdge = edgeId;
   }
 }
 

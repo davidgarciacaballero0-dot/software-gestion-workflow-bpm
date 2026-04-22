@@ -8,6 +8,11 @@
     <p class="page-subtitle" *ngIf="isClient">
       Eche un vistazo al estado de sus solicitudes vigentes.
     </p>
+    <div class="header-actions" *ngIf="!isClient">
+      <button class="btn-premium btn-premium-primary" (click)="abrirNuevoModal()">
+        ➕ Nueva Política BPM
+      </button>
+    </div>
   </div>
 
   <!-- Widget de Trámites Activos (Solo Clientes) -->
@@ -64,7 +69,7 @@
           
           <div class="policy-meta">
             <span class="version-pill">v{{ p.version }}</span>
-            <span class="node-count">🧩 {{ p.nodes?.length }} pasos</span>
+            <span class="node-count">🧩 {{ p.nodes.length }} pasos</span>
           </div>
 
           <!-- Botones de Acción (Clientes vs Admins) -->
@@ -86,13 +91,13 @@
               
               <button *ngIf="p.status === 'DRAFT'" 
                 class="btn-premium start-btn w-full" style="background: var(--surface-container-high); color: var(--text-main);"
-                [routerLink]="['/app/politica/designer', p.id]">
+                [routerLink]="['/app/politica/designer', p.id || p._id]">
                 ✏️ Continuar Diseño
               </button>
               
               <button *ngIf="p.status === 'PUBLISHED' || p.status === 'ARCHIVED'"
                 class="btn-premium start-btn w-full mt-2" style="background: transparent; border: 1px solid var(--primary); color: var(--primary);"
-                [routerLink]="['/app/politica/designer', p.id]">
+                [routerLink]="['/app/politica/designer', p.id || p._id]">
                 👁️ Ver Política (Solo Lectura)
               </button>
             </ng-container>
@@ -109,7 +114,7 @@
   </div>
 </div>
 
-<!-- Confirm Dialog -->
+<!-- Confirm Dialog (Iniciar Trámite) -->
 <div class="modal-overlay" *ngIf="showConfirmDialog">
   <div class="modal-content glass-premium animate-pop" style="max-width: 450px; padding: 2rem; text-align: center;">
     <h3 style="margin-bottom: 1rem; color: var(--primary);">Confirmar Inicio de Trámite</h3>
@@ -117,6 +122,39 @@
     <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 1.5rem;">
       <button class="btn btn-secondary" (click)="cancelarInicio()">Cancelar</button>
       <button class="btn btn-primary" (click)="confirmarInicio()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Nueva Política -->
+<div class="modal-overlay" *ngIf="showNewModal">
+  <div class="modal-content glass-premium animate-pop" style="max-width: 500px; padding: 2rem;">
+    <h3 style="margin-bottom: 1.5rem; color: var(--primary); text-align: center;">Configurar Nueva Política</h3>
+    
+    <div class="form-group mb-3">
+      <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Nombre de la Política</label>
+      <input type="text" class="form-control" [(ngModel)]="newPolicy.nombre" placeholder="Ej: Crédito Hipotecario Sostenible">
+    </div>
+
+    <div class="form-group mb-3">
+      <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Descripción</label>
+      <textarea class="form-control" [(ngModel)]="newPolicy.description" rows="3" placeholder="Breve descripción del flujo..."></textarea>
+    </div>
+
+    <div class="form-group mb-4">
+      <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Versión Inicial</label>
+      <input type="text" class="form-control" [(ngModel)]="newPolicy.version">
+    </div>
+
+    <div *ngIf="errorMessage" class="error-msg mb-3" style="color: #ff4d4d; font-size: 0.9rem; text-align: center;">
+      ⚠️ {{ errorMessage }}
+    </div>
+
+    <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem;">
+      <button class="btn btn-secondary" (click)="cerrarNuevoModal()">Cancelar</button>
+      <button class="btn btn-primary" (click)="crearPolitica()" [disabled]="loading">
+        {{ loading ? 'Creando...' : 'Iniciar Diseñador' }}
+      </button>
     </div>
   </div>
 </div>

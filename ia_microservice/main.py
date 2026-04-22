@@ -70,8 +70,8 @@ REGLAS DE OPERACIÓN:
    - FORMATO REQUERIDO: [RESUMEN], [MÉTRICAS_CRÍTICAS], [RECOMENDACIÓN], [JUSTIFICACIÓN], [DATA_PROJECTION].
 """
 
-model_logic = genai.GenerativeModel(model_name="gemini-1.5-flash", system_instruction=SYSTEM_INSTRUCTION)
-model_creative = genai.GenerativeModel(model_name="gemini-1.5-flash", system_instruction=SYSTEM_INSTRUCTION)
+model_logic = genai.GenerativeModel(model_name="models/gemini-1.5-flash", system_instruction=SYSTEM_INSTRUCTION)
+model_creative = genai.GenerativeModel(model_name="models/gemini-1.5-flash", system_instruction=SYSTEM_INSTRUCTION)
 
 def extract_json(text: str) -> dict:
     """Intenta extraer un objeto JSON de un texto sucio (con markdown o texto extra)."""
@@ -125,6 +125,84 @@ async def asistente_virtual(req: FlowRequest):
     response = model_logic.generate_content(prompt)
     return {"respuesta": response.text}
 
+# ============================================================
+# ENDPOINT RAG: Reporte por Comando de Voz (CU-15 + CU-16)
+# ============================================================
+
+@app.post("/ia/generar-reporte")
+@retry(
+    wait=wait_exponential(multiplier=1, min=2, max=15),
+    stop=stop_after_attempt(5),
+    retry=retry_if_exception(is_quota_error),
+    reraise=True
+)
+async def generar_reporte_voz(req: FlowRequest):
+    """
+    Patrón RAG: Recupera datos reales de MongoDB, los empaqueta con la
+    consulta de voz del usuario y genera un reporte analítico con Gemini.
+    """
+    # 1. Obtener datos crudos de MongoDB
+    datos_crudos = obtener_estadisticas_db()
+
+    # 2. Construir el prompt RAG con contexto real
+    prompt = f"""
+    El usuario ha solicitado (posiblemente por voz): '{req.prompt}'.
+
+    A continuación tienes los datos estadísticos REALES extraídos de la base de datos MongoDB del sistema BPM:
+    {json.dumps(datos_crudos, ensure_ascii=False, default=str)}
+
+    Con base en estos datos reales, genera un reporte analítico que incluya:
+    1. [RESUMEN]: Un resumen ejecutivo de la situación actual.
+    2. [MÉTRICAS_CRÍTICAS]: Los departamentos con mayor carga y riesgo de cuello de botella.
+    3. [RECOMENDACIÓN]: Acciones concretas de optimización con justificación estadística.
+    4. [PROYECCIÓN]: Qué mejoras se esperarían si se aplican las recomendaciones.
+
+    Sé preciso, usa los datos reales proporcionados, no inventes cifras.
+    """
+
+    response = model_logic.generate_content(prompt)
+    return {"reporte": response.text}
+
+
+def obtener_estadisticas_db() -> dict:
+    """Conecta directamente a MongoDB y extrae estadísticas crudas."""
+    mongo_uri = os.getenv("MONGO_URI", "mongodb://localhost:27017/bpm_workflow")
+    try:
+        from pymongo import MongoClient
+        client = MongoClient(mongo_uri, serverSelectionTimeoutMS=3000)
+        db = client.get_default_database() if "/" in mongo_uri.split("://")[-1] else client["bpm_workflow"]
+
+        # Estadísticas de departamentos
+        departamentos = list(db.departamentos.find({}, {"_id": 0, "nombre": 1}))
+
+        # Estadísticas de políticas/workflows
+        politicas = list(db.politicas_workflow.find({}, {"_id": 0, "nombre": 1, "status": 1, "version": 1}))
+        total_politicas = len(politicas)
+
+        # Estadísticas de trámites
+        tramites = list(db.tramite_instancias.find({}, {"_id": 0, "estado": 1, "departamentoActualId": 1}))
+        total_tramites = len(tramites)
+        tramites_activos = sum(1 for t in tramites if t.get("estado") in ["EN_PROGRESO", "PENDIENTE"])
+
+        # Estadísticas de usuarios
+        total_usuarios = db.usuarios.count_documents({})
+
+        client.close()
+
+        return {
+            "total_departamentos": len(departamentos),
+            "departamentos": departamentos[:20],
+            "total_politicas": total_politicas,
+            "politicas": politicas[:10],
+            "total_tramites": total_tramites,
+            "tramites_activos": tramites_activos,
+            "total_usuarios": total_usuarios,
+        }
+    except Exception as e:
+        return {"error_db": str(e), "nota": "No se pudo conectar a MongoDB. Datos no disponibles."}
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+

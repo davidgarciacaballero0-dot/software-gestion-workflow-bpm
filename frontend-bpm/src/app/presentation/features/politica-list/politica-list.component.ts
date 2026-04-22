@@ -1,6 +1,7 @@
 import { Component, OnInit, ChangeDetectorRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { RouterLink, Router } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { PoliticaWorkflowService } from '../../../data/services/politica-workflow.service';
 import { TramiteService } from '../../../data/services/tramite.service';
 import { OrganizacionService } from '../../../data/services/organizacion.service';
@@ -12,7 +13,7 @@ import { forkJoin, of } from 'rxjs';
 @Component({
   selector: 'app-politica-list',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, FormsModule],
   templateUrl: './politica-list.component.html',
   styleUrls: ['./politica-list.component.css']
 })
@@ -27,6 +28,15 @@ export class PoliticaListComponent implements OnInit {
   resultIsError = false;
   welcomeMessage = '';
   tramitesActivos: TramiteResponseDTO[] = [];
+  
+  // Modal de Nueva Política
+  showNewModal = false;
+  newPolicy = {
+    nombre: '',
+    description: '',
+    version: '1.0'
+  };
+  errorMessage: string | null = null;
 
   constructor(
     private politicaService: PoliticaWorkflowService,
@@ -34,7 +44,8 @@ export class PoliticaListComponent implements OnInit {
     private orgService: OrganizacionService,
     private authService: AuthService,
     private cd: ChangeDetectorRef,
-    private zone: NgZone
+    private zone: NgZone,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -95,7 +106,8 @@ export class PoliticaListComponent implements OnInit {
   }
 
   iniciarTramite(politica: PoliticaWorkflow): void {
-    if (!politica.id || politica.status !== PolicyStatus.PUBLISHED) return;
+    const id = politica.id || politica._id;
+    if (!id || politica.status !== PolicyStatus.PUBLISHED) return;
     // Show confirm dialog instead of blocking confirm()
     this.pendingPolitica = politica;
     this.showConfirmDialog = true;
@@ -150,5 +162,44 @@ export class PoliticaListComponent implements OnInit {
 
   getStatusBadgeClass(status: string): string {
     return status.toLowerCase();
+  }
+
+  abrirNuevoModal(): void {
+    this.showNewModal = true;
+    this.newPolicy = { nombre: '', description: '', version: '1.0' };
+    this.errorMessage = null;
+  }
+
+  cerrarNuevoModal(): void {
+    this.showNewModal = false;
+  }
+
+  crearPolitica(): void {
+    if (!this.newPolicy.nombre) {
+      this.errorMessage = 'El nombre es obligatorio.';
+      return;
+    }
+
+    const user = this.authService.currentUser();
+    const payload: Partial<PoliticaWorkflow> = {
+      ...this.newPolicy,
+      idOrganizacion: user?.idOrganizacion || '',
+      status: PolicyStatus.DRAFT,
+      nodes: [],
+      edges: []
+    };
+
+    this.loading = true;
+    this.politicaService.guardar(payload as PoliticaWorkflow).subscribe({
+      next: (res) => {
+        this.cerrarNuevoModal();
+        this.router.navigate(['/app/politica/designer', res.id || res._id]);
+      },
+      error: (err) => {
+        this.loading = false;
+        this.errorMessage = err.error?.message || 'Error al crear la política. Posible nombre duplicado.';
+        this.cd.detectChanges();
+      }
+    });
   }
 }
