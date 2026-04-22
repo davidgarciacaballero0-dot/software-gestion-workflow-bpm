@@ -1,0 +1,49 @@
+name: workflow_app
+description: "App B2C de Gestión de Trámites BPM — Exclusiva para el Cliente Final."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.9.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # ── Estado ──────────────────────────────────────────────────────────────────
+  flutter_riverpod: ^2.6.1           # Gestor de estado reactivo
+  riverpod_annotation: ^2.3.5
+
+  # ── Red / API ────────────────────────────────────────────────────────────────
+  dio: ^5.7.0                        # Cliente HTTP con interceptores JWT
+  pretty_dio_logger: ^1.4.0          # Logs de requests en consola (dev)
+
+  # ── Almacenamiento Seguro ────────────────────────────────────────────────────
+  flutter_secure_storage: ^9.2.2     # Guardar JWT de forma cifrada en el dispositivo
+
+  # ── Navegación ───────────────────────────────────────────────────────────────
+  go_router: ^14.6.3                 # Enrutamiento declarativo type-safe
+
+  # ── UI / Tipografía ──────────────────────────────────────────────────────────
+  google_fonts: ^6.2.1               # Fuentes premium (Inter, Outfit)
+  cupertino_icons: ^1.0.8
+
+  # ── Utilidades ───────────────────────────────────────────────────────────────
+  intl: ^0.19.0                      # Formateo de fechas y hora
+  freezed_annotation: ^2.4.4        # Modelos inmutables
+  json_annotation: ^4.9.0           # Serialización JSON
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  build_runner: ^2.4.13
+  freezed: ^2.5.7
+  json_serializable: ^6.8.0
+  riverpod_generator: ^2.4.3
+  custom_lint: ^0.7.3
+  riverpod_lint: ^2.6.3
+
+flutter:
+  uses-material-design: true

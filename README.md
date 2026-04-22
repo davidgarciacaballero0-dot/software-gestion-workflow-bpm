@@ -1,6 +1,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Spring%20Boot-4.0.5-6DB33F?style=for-the-badge&logo=spring-boot" />
   <img src="https://img.shields.io/badge/Angular-20-DD0031?style=for-the-badge&logo=angular" />
+  <img src="https://img.shields.io/badge/Flutter-3.35.7-02569B?style=for-the-badge&logo=flutter" />
   <img src="https://img.shields.io/badge/MongoDB-8.0-47A248?style=for-the-badge&logo=mongodb" />
   <img src="https://img.shields.io/badge/FastAPI-Python-009688?style=for-the-badge&logo=fastapi" />
   <img src="https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker" />
@@ -14,20 +15,26 @@ Sistema empresarial de automatización de flujos de trabajo (BPM) con inteligenc
 
 ```text
 /bpm-workflow-system
-├── /backend_bpm        # Spring Boot 4.0.5 REST API
-│   ├── /app            # 🔵 Capa Aplicación (Controllers, DTOs, Security, Config)
+├── /backend_bpm        # Spring Boot 4.0.5 REST API (JWT + Security)
+│   ├── /app            # 🔵 Capa Aplicación (Controllers, DTOs, Security)
 │   ├── /domain         # 🟢 Capa Dominio (Services, Lógica, Validaciones)
 │   └── /data           # 🔴 Capa Datos (Entities, MongoDB Repositories)
 │
-├── /frontend-bpm       # Angular 20 SPA
+├── /frontend-bpm       # Angular 20 SPA (Portal Administrativo)
 │   └── /src/app
-│       ├── /presentation # 🔵 Capa Presentación (Componentes UI por modulo)
-│       └── /data         # 🟡 Capa Datos Frontend (Services HTTP, Models)
+│       ├── /presentation # 🔵 Capa Presentación (Componentes UI)
+│       └── /data         # 🟡 Capa Datos Frontend (Services, Models)
+│
+├── /Movil_bpm          # Flutter B2C App (Portal del Cliente)
+│   └── /lib
+│       ├── /core       # ⚙️ Red, Router, Tema Global
+│       ├── /features   # 📦 Módulos: Auth, Tramites, Perfil
+│       └── /shared     # 🧱 Widgets Reutilizables
 │
 ├── /ia_microservice    # 🤖 FastAPI / IA
 │   └── main.py         # Endpoints de IA (Python)
 │
-└── docker-compose.yml  # Configuración MongoDB
+└── docker-compose.yml  # Infraestructura (MongoDB)
 ```
 
 ## 🔄 Metodología PUDS (Proceso Unificado de Desarrollo de Software)
@@ -48,50 +55,17 @@ graph LR
 
 | Fase PUDS | Ciclo del Proyecto | Estado |
 |---|---|---|
-| **Inicio + Elaboración** | Ciclo 1: Cimientos y Seguridad | ✅ Completado |
-| **Elaboración + Construcción** | Ciclo 2: Motor Core y Builders | ⚠️ Pendiente |
-| **Construcción** | Ciclo 3: Operación y Tiempo Real | ⚠️ Pendiente |
-| **Transición** | Ciclo 4: IA y Optimización | ⚠️ Pendiente |
+| **Inicio + Elaboración** | Ciclo 1: Cimientos, Seguridad y Multiplataforma | ✅ Completado |
+| **Elaboración + Construcción** | Ciclo 2: Motor Core, Builders y Dashboard Móvil | 🚧 En Progreso |
+| **Construcción** | Ciclo 3: Operación, Tracking y Tiempo Real | ⚠️ Pendiente |
+| **Transición** | Ciclo 4: IA, Optimización y Lanzamiento | ⚠️ Pendiente |
 
 ### Artefactos PUDS Generados
 
 - 📋 [Plan Operativo de Desarrollo](./PLAN_OPERATIVO_DE_DESARROLLO.md) — Roadmap completo de casos de uso
 - 🧪 [Plan de Pruebas](./PLAN_PRUEBAS.md) — Pruebas unitarias, integración y verificación full-stack
 - 📐 [Plan de Desarrollo Central](./PLAN_DESARROLLO_CENTRAL.md) — Visión arquitectónica del sistema
-
----
-
-## 📁 Estructura del Monorepo
-
-```
-bpm-workflow-system/
-│
-├── 📂 backend_bpm/              ← Spring Boot 4.0.5 (API REST + Seguridad)
-│   ├── src/main/java/com/bpm/
-│   │   ├── app/                 ← Capa de Aplicación
-│   │   ├── domain/              ← Capa de Dominio
-│   │   └── data/                ← Capa de Datos
-│   ├── src/test/                ← Tests unitarios (JUnit 6 + Mockito)
-│   └── README.md                ← Guía del backend
-│
-├── 📂 frontend-bpm/             ← Angular 20 (SPA)
-│   ├── src/app/
-│   │   ├── presentation/        ← Capa de Presentación (Componentes UI)
-│   │   └── data/                ← Servicios, Modelos, Interceptors
-│   └── README.md                ← Guía del frontend
-│
-├── 📂 ia_microservice/          ← FastAPI (Python) — Microservicio IA
-│   ├── main.py
-│   └── requirements.txt
-│
-├── 📂 MOBILE/                   ← Flutter (Futuro)
-│
-├── 🐳 docker-compose.yml       ← MongoDB containerizado
-├── 📋 PLAN_OPERATIVO_DE_DESARROLLO.md
-├── 🧪 PLAN_PRUEBAS.md
-├── 📐 PLAN_DESARROLLO_CENTRAL.md
-└── 📖 README.md                 ← (Este archivo)
-```
+- 📱 [Instrucciones Móvil](./Movil_bpm/INSTRUCCIONES_MOVIL.md) — Roadmap específico de la App Flutter
 
 ---
 
@@ -103,53 +77,48 @@ bpm-workflow-system/
 |---|---|
 | Java JDK | 17+ |
 | Node.js | 20+ |
+| Flutter SDK | 3.24+ |
 | Docker + Docker Compose | 24+ |
 | Python | 3.11+ |
-| Angular CLI | 20+ |
 
 ### 1. Levantar la Base de Datos
 
 ```bash
 docker compose up -d
 ```
-> Esto inicia MongoDB en `localhost:27017` con la base `bpm_workflow`.
 
-### 2. Levantar el Backend
+### 2. Levantar el Backend (Spring Boot)
 
 ```bash
 cd backend_bpm
 ./mvnw spring-boot:run
 ```
-> API disponible en `http://localhost:8080`
 
-### 3. Levantar el Frontend
+### 3. Levantar el Frontend (Angular)
 
 ```bash
 cd frontend-bpm
-npm install
-ng serve
+npm install && ng serve
 ```
-> Aplicación disponible en `http://localhost:4200`
 
-### 4. Levantar el Microservicio IA (Opcional)
+### 4. Levantar la App Móvil (Flutter)
 
 ```bash
-cd ia_microservice
-pip install -r requirements.txt
-uvicorn main:app --reload --port 8000
+cd Movil_bpm
+flutter pub get
+flutter run
 ```
 
 ---
 
-## 🔐 Seguridad del Sistema
+## 🔐 Seguridad Multiplataforma
 
-El sistema implementa un esquema de seguridad basado en **JWT (JSON Web Tokens)** con las siguientes características:
+El sistema utiliza un esquema de seguridad unificado basado en **JWT**:
 
-- **Autenticación Stateless** — Sin sesiones del lado del servidor
-- **Encriptación BCrypt** — Passwords almacenados como hash irreversible
-- **Interceptor Angular** — Token JWT inyectado automáticamente en cada petición
-- **Protección Anti Cross-Tenant** — Validación de integridad multitenant
-- **Auditoría AOP** — Registro automático de toda operación de negocio
+- **Backend:** Centraliza la lógica de roles (ADMIN, FUNCIONARIO, CLIENTE).
+- **Web:** Interceptors para inyección automática de tokens en el dashboard.
+- **Móvil:** Almacenamiento cifrado con `flutter_secure_storage` y guards de navegación en `GoRouter`.
+- **Registro:** Endpoint público para auto-registro de clientes externos.
 
 ---
 
@@ -157,11 +126,11 @@ El sistema implementa un esquema de seguridad basado en **JWT (JSON Web Tokens)*
 
 | Módulo | Descripción | Enlace |
 |---|---|---|
-| 🖥️ **Backend** | API REST con Spring Boot, JWT y MongoDB | [→ Ver README del Backend](./backend_bpm/README.md) |
-| 🌐 **Frontend** | Aplicación Angular con módulos por feature | [→ Ver README del Frontend](./frontend-bpm/README.md) |
-| 🤖 **Microservicio IA** | Motor de NLP y analítica con FastAPI | [→ Ver carpeta IA](./ia_microservice/) |
-| 📋 **Plan Operativo** | Roadmap completo de desarrollo | [→ Ver Plan](./PLAN_OPERATIVO_DE_DESARROLLO.md) |
-| 🧪 **Plan de Pruebas** | Cobertura de testing por ciclo | [→ Ver Pruebas](./PLAN_PRUEBAS.md) |
+| 🖥️ **Backend** | API REST, Seguridad JWT y Auditoría | [→ Ver Backend](./backend_bpm/README.md) |
+| 🌐 **Frontend Web** | Dashboard administrativo Angular | [→ Ver Frontend](./frontend-bpm/README.md) |
+| 📱 **App Móvil** | Aplicación B2C Flutter para clientes | [→ Ver Móvil](./Movil_bpm/README.md) |
+| 🤖 **Microservicio IA** | Motor de NLP y analítica FastAPI | [→ Ver carpeta IA](./ia_microservice/) |
+| 📋 **Roadmap Móvil** | Progreso detallado de la App | [→ Ver Instrucciones](./Movil_bpm/INSTRUCCIONES_MOVIL.md) |
 
 ---
 
