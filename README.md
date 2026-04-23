@@ -56,8 +56,8 @@ graph LR
 | Fase PUDS | Ciclo del Proyecto | Estado |
 |---|---|---|
 | **Inicio + Elaboración** | Ciclo 1: Cimientos, Seguridad y Multiplataforma | ✅ Completado |
-| **Elaboración + Construcción** | Ciclo 2: Motor Core, Builders y Dashboard Móvil | 🚧 En Progreso |
-| **Construcción** | Ciclo 3: Operación, Tracking y Tiempo Real | ⚠️ Pendiente |
+| **Elaboración + Construcción** | Ciclo 2: Motor Core, Builders y Dashboard Móvil B2C | ✅ Completado |
+| **Construcción** | Ciclo 3: Formularios Dinámicos, Subida de Archivos y Trámites | 🚧 En Progreso |
 | **Transición** | Ciclo 4: IA, Optimización y Lanzamiento | ⚠️ Pendiente |
 
 ### Artefactos PUDS Generados

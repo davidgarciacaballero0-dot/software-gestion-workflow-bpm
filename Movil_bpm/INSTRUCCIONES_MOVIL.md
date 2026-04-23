@@ -25,13 +25,13 @@ Para asegurar un desarrollo ordenado y escalable, el proyecto se dividirá en la
 - **Tarea 1.3:** Registro de nuevo cliente. *(Nota Backend: Actualmente falta el endpoint de Registro público en `AuthController`, se debe crear).* ✅
 - **Tarea 1.4:** Pantalla de Perfil básica (Mis datos). ✅
 
-#### FASE 2: Navegación y Home (Core Básico) 🚧
-- **Tarea 2.1:** Implementación del Bottom Navigation Bar o Menú Principal. 🚧
-- **Tarea 2.2:** Home / Dashboard con resumen visual rápido (ej. "Tienes 2 trámites en proceso").
-- **Tarea 2.3:** Integración de la vista rápida de "Mis Trámites Activos" en el Dashboard.
+#### FASE 2: Navegación y Home (Core Básico) ✅
+- **Tarea 2.1:** Implementación del Bottom Navigation Bar o Menú Principal. ✅
+- **Tarea 2.2:** Home / Dashboard con resumen visual rápido (ej. "Tienes 2 trámites en proceso"). ✅
+- **Tarea 2.3:** Integración de la vista rápida de "Mis Trámites Activos" en el Dashboard. ✅
 
-#### FASE 3: Catálogo e Inicio de Trámites (Intermedio)
-- **Tarea 3.1:** Pantalla del "Catálogo de Trámites" disponibles para el público.
+#### FASE 3: Catálogo e Inicio de Trámites (Intermedio) 🚧
+- **Tarea 3.1:** Pantalla del "Catálogo de Trámites" disponibles para el público. 🚧
 - **Tarea 3.2:** Renderizado del formulario dinámico inicial al seleccionar un trámite para llenado de datos.
 - **Tarea 3.3:** Módulo para subir fotos de requisitos desde la cámara o galería (File Uploader conectado a GridFS).
 - **Tarea 3.4:** Conexión con el endpoint de inicio de trámite (`Submission`).

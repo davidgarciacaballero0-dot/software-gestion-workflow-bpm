@@ -11,6 +11,10 @@ import 'package:workflow_app/features/auth/presentation/screens/login_screen.dar
 import 'package:workflow_app/features/auth/presentation/screens/profile_screen.dart';
 import 'package:workflow_app/features/auth/presentation/screens/register_screen.dart';
 import 'package:workflow_app/features/home/presentation/screens/home_screen.dart';
+import 'package:workflow_app/shared/widgets/main_scaffold.dart';
+import 'package:workflow_app/features/catalog/presentation/screens/catalog_screen.dart';
+import 'package:workflow_app/features/catalog/presentation/screens/start_procedure_screen.dart';
+import 'package:workflow_app/features/catalog/domain/models/policy_model.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   // Listenable que notifica a GoRouter cuando la sesión cambia
@@ -34,10 +38,50 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
-      GoRoute(path: '/login',    builder: (_, __) => const LoginScreen()),
+      GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
       GoRoute(path: '/register', builder: (_, __) => const RegisterScreen()),
-      GoRoute(path: '/home',     builder: (_, __) => const HomeScreen()),
-      GoRoute(path: '/profile',  builder: (_, __) => const ProfileScreen()),
+      
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) {
+          return MainScaffold(navigationShell: navigationShell);
+        },
+        branches: [
+          // Branch 0: Home
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/home',
+                builder: (context, state) => const HomeScreen(),
+              ),
+            ],
+          ),
+          // Branch 1: Catálogo (Placeholder Fase 3)
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/catalog',
+                builder: (context, state) => const CatalogScreen(),
+              ),
+            ],
+          ),
+          // Branch 2: Perfil
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/profile',
+                builder: (context, state) => const ProfileScreen(),
+              ),
+            ],
+          ),
+        ],
+      ),
+      GoRoute(
+        path: '/start-procedure',
+        builder: (context, state) {
+          final policy = state.extra as PolicyModel;
+          return StartProcedureScreen(policy: policy);
+        },
+      ),
     ],
     errorBuilder: (context, state) => Scaffold(
       body: Center(child: Text('Ruta no encontrada: ${state.uri}')),
