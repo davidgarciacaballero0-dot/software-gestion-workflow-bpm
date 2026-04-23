@@ -587,3 +587,28 @@
     justify-content: center;
   }
 }
+/* --- Animations --- */
+.animate-fade-in {
+  animation: fadeIn 0.6s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.glass-premium {
+  background: rgba(255, 255, 255, 0.7) !important;
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07) !important;
+}
+
+.filters-bar {
+  transition: all 0.3s ease;
+}
+
+.filters-bar:hover {
+  background: rgba(255, 255, 255, 0.8) !important;
+  box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.1) !important;
+}

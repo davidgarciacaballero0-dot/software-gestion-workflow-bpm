@@ -31,6 +31,8 @@ public class EventoHistorial {
     private String motivo; // Opcional: descripción de intervención o rechazo
 
     private Integer tiempoSLAConsumidoMinutos;
+    private Boolean excedioSLA;
+    private LocalDateTime slaVencimientoEsperado;
 
     // Congela un snapshot del formulario JSON en este preciso instante de la
     // historia

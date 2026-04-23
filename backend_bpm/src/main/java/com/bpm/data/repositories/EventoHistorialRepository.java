@@ -9,4 +9,6 @@ import java.util.List;
 @Repository
 public interface EventoHistorialRepository extends MongoRepository<EventoHistorial, String> {
     List<EventoHistorial> findByIdTramite(String idTramite);
+    List<EventoHistorial> findByCreatedAtAfter(java.time.LocalDateTime date);
+    List<EventoHistorial> findByExcedioSLATrueAndCreatedAtAfter(java.time.LocalDateTime date);
 }

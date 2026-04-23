@@ -21,7 +21,14 @@ public class OptimizacionController {
     private final String IA_URL = "http://ia-service:8000/ia";
 
     @GetMapping("/metrics")
-    public ResponseEntity<List<AnaliticaService.MetricDataDTO>> getMetrics() {
+    public ResponseEntity<List<AnaliticaService.MetricDataDTO>> getMetrics(
+            @RequestParam(required = false) Integer meses,
+            @RequestParam(required = false) String idDepartamento,
+            @RequestParam(required = false) String idPolitica) {
+        
+        if (meses != null && meses > 0) {
+            return ResponseEntity.ok(analiticaService.calcularMetricasHistoricas(meses, idDepartamento, idPolitica));
+        }
         return ResponseEntity.ok(analiticaService.calcularMetricasDepartamentales());
     }
 

@@ -30,6 +30,7 @@ export class PoliticaDesignerComponent implements OnInit {
   aiPrompt: string = '';
   generatingIA: boolean = false;
   isLoaded: boolean = false; // Flag to force DOM recreation
+  draggingPositions: Record<string, { x: number, y: number }> = {};
 
   // CU-18 State
   currentPolicy: PoliticaWorkflow = {
@@ -154,19 +155,32 @@ export class PoliticaDesignerComponent implements OnInit {
     this.broadcastChange('NODE_ADDED', newNode);
   }
 
+  onNodeDragStarted(node: WorkflowNode): void {
+    if (!this.canEdit()) return;
+    this.draggingPositions[node.id] = { ...node.uiPosition };
+  }
+
+  onNodeDragMoved(event: any, node: WorkflowNode): void {
+    if (!this.canEdit()) return;
+    
+    // El CDK ya nos da la posición libre si la solicitamos
+    const pos = event.source.getFreeDragPosition();
+    this.draggingPositions[node.id] = { x: pos.x, y: pos.y };
+    
+    // Forzamos detección de cambios local para redibujar el SVG a 60fps
+    // Usamos detectChanges para que sea inmediato sin esperar al ciclo global
+    this.cd.detectChanges();
+  }
+
   onNodeMoved(event: CdkDragEnd, node: WorkflowNode): void {
-    const element = event.source.element.nativeElement;
-    const canvas = element.closest('.canvas-area') as HTMLElement;
-    if (!canvas) return;
-
-    const canvasRect = canvas.getBoundingClientRect();
-    const elRect = element.getBoundingClientRect();
-
-    node.uiPosition = {
-      x: elRect.left - canvasRect.left + canvas.scrollLeft,
-      y: elRect.top - canvasRect.top + canvas.scrollTop
-    };
+    if (!this.canEdit()) return;
+    
+    const pos = event.source.getFreeDragPosition();
+    node.uiPosition = { x: pos.x, y: pos.y };
+    
+    delete this.draggingPositions[node.id];
     this.broadcastChange('NODE_MOVED', node);
+    this.cd.detectChanges();
   }
 
   selectNode(node: WorkflowNode): void {
@@ -256,47 +270,56 @@ export class PoliticaDesignerComponent implements OnInit {
     const node = this.nodes.find(n => n.id === nodeId);
     if (!node) return { x: 0, y: 0 };
 
+    // PRIORIDAD: Si el nodo se está arrastrando, usamos la posición temporal
+    const pos = this.draggingPositions[nodeId] || node.uiPosition;
+
     let width = 180;
     let height = 80;
 
     // Ajustar dimensiones según el estándar visual definido en CSS
     if (node.type === NodeType.START || node.type === NodeType.END) {
-      width = 110;
-      height = 110;
+      width = 120;
+      height = 120;
     } else if (node.type === NodeType.EXCLUSIVE_GATEWAY) {
-      width = 100;
+      width = 180;
       height = 100;
     }
 
-    const x = side === 'left' ? node.uiPosition.x : node.uiPosition.x + width;
-    const y = node.uiPosition.y + (height / 2);
+    const x = side === 'left' ? pos.x : pos.x + width;
+    const y = pos.y + (height / 2);
 
     return { x, y };
   }
 
-  // Lógica de dibujo de conexiones (Ortogonal 90°)
+  // Lógica de dibujo de conexiones (Curvas Bezier Suaves)
   calculatePath(edge: WorkflowEdge): string {
     const source = this.getConnectionPoint(edge.sourceNodeId, 'right');
     const target = this.getConnectionPoint(edge.targetNodeId, 'left');
 
     if (!source || !target) return '';
 
-    // Punto de quiebre en el medio del eje X para lograr ángulos de 90 grados
-    const midX = source.x + (target.x - source.x) / 2;
+    // Calculamos los puntos de control para la curva Bezier (C)
+    // Desplazamos los controles horizontalmente para suavizar la entrada/salida
+    const cp1x = source.x + (target.x - source.x) / 3;
+    const cp2x = source.x + (target.x - source.x) * 2 / 3;
 
-    // Retorna una ruta ortogonal: Inicio -> Mitad Horizontal -> Vertical -> Destino
-    return `M ${source.x} ${source.y} L ${midX} ${source.y} L ${midX} ${target.y} L ${target.x} ${target.y}`;
+    return `M ${source.x} ${source.y} C ${cp1x} ${source.y}, ${cp2x} ${target.y}, ${target.x} ${target.y}`;
   }
 
   getEdgeLabelPosition(edge: WorkflowEdge): { x: number, y: number } {
-    const source = this.nodes.find(n => n.id === edge.sourceNodeId);
-    const target = this.nodes.find(n => n.id === edge.targetNodeId);
-    if (!source || !target) return { x: 0, y: 0 };
+    const sourceNode = this.nodes.find(n => n.id === edge.sourceNodeId);
+    const targetNode = this.nodes.find(n => n.id === edge.targetNodeId);
+    if (!sourceNode || !targetNode) return { x: 0, y: 0 };
 
-    const startX = source.uiPosition.x + 180;
-    const startY = source.uiPosition.y + 35;
-    const endX = target.uiPosition.x;
-    const endY = target.uiPosition.y + 35;
+    // Usar posiciones en tiempo real si se están arrastrando
+    const sPos = this.draggingPositions[sourceNode.id] || sourceNode.uiPosition;
+    const tPos = this.draggingPositions[targetNode.id] || targetNode.uiPosition;
+
+    // Calcular el centro de la curva Bezier (aproximado al punto medio)
+    const startX = sPos.x + 180;
+    const startY = sPos.y + 40;
+    const endX = tPos.x;
+    const endY = tPos.y + 40;
 
     return {
       x: startX + (endX - startX) / 2,

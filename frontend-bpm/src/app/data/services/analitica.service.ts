@@ -8,6 +8,7 @@ export interface MetricData {
   tiempoPromedioHoras: number;
   cantidadTramites: number;
   capacidadPersonal: number;
+  retrasosSla?: number;
 }
 
 export interface ReassignMassRequest {
@@ -25,8 +26,13 @@ export class AnaliticaService {
 
   constructor(private http: HttpClient) {}
 
-  getMetrics(): Observable<MetricData[]> {
-    return this.http.get<MetricData[]>(`${this.apiUrl}/metrics`);
+  getMetrics(meses?: number, idDept?: string): Observable<MetricData[]> {
+    let url = `${this.apiUrl}/metrics`;
+    const params: string[] = [];
+    if (meses !== undefined && meses !== null) params.push(`meses=${meses}`);
+    if (idDept) params.push(`idDepartamento=${idDept}`);
+    if (params.length) url += `?${params.join('&')}`;
+    return this.http.get<MetricData[]>(url);
   }
 
   downloadExcel(): Observable<Blob> {

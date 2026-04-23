@@ -39,6 +39,9 @@ public class TramiteInstancia {
     // Todos los campos dinámicos acumulados en el formulario en tiempo real
     private Map<String, Object> datosAcumuladosFormulario;
 
+    private LocalDateTime fechaInicioNodoActual;
+    private LocalDateTime fechaVencimientoSla;
+
     @CreatedDate
     private LocalDateTime createdAt;
     @LastModifiedDate

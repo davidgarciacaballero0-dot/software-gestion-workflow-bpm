@@ -29,6 +29,9 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
   formattedReport: SafeHtml = '';
   errorMsg: string = '';
 
+  // --- Filtros ---
+  filtros = { meses: 0, idDepartamento: '', idPolitica: '' };
+
   // --- Voz ---
   isListening = false;
   voiceTranscript = '';
@@ -79,6 +82,14 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
         borderColor: 'rgba(99, 102, 241, 0.4)',
         borderWidth: 1,
         borderRadius: 6
+      },
+      {
+        data: [],
+        label: 'Retrasos (Brecha SLA)',
+        backgroundColor: 'rgba(239, 68, 68, 0.7)',
+        borderColor: '#ef4444',
+        borderWidth: 1,
+        borderRadius: 6
       }
     ]
   };
@@ -112,7 +123,7 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
   cargarMetricas() {
     this.loadingMetrics = true;
     this.errorMsg = '';
-    this.analiticaService.getMetrics().subscribe({
+    this.analiticaService.getMetrics(this.filtros.meses, this.filtros.idDepartamento).subscribe({
       next: (data) => {
         this.metrics = data;
         this.updateChartData();
@@ -136,6 +147,10 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
     return Math.min(ratio, 100);
   }
 
+  aplicarFiltros() {
+    this.cargarMetricas();
+  }
+
   // ========================================
   //  CHART
   // ========================================
@@ -153,6 +168,10 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
         {
           ...this.barChartData.datasets[1],
           data: this.metrics.map(m => m.capacidadPersonal)
+        },
+        {
+          ...this.barChartData.datasets[2],
+          data: this.metrics.map(m => m.retrasosSla || 0)
         }
       ]
     };

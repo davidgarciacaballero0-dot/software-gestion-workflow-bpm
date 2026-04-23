@@ -92,8 +92,11 @@
 
       <!-- Capa de Nodos Con Arrastre del CDK -->
       <div *ngFor="let node of nodes" class="node-item" [class.selected]="selectedNode?.id === node.id"
-        [class]="node.type" [style.left.px]="node.uiPosition.x" [style.top.px]="node.uiPosition.y" cdkDrag
-        [cdkDragDisabled]="!canEdit()" (cdkDragEnded)="onNodeMoved($event, node)" (click)="selectNode(node)">
+        [class]="node.type" [cdkDragFreeDragPosition]="node.uiPosition" cdkDrag
+        [cdkDragDisabled]="!canEdit()" 
+        (cdkDragStarted)="onNodeDragStarted(node)"
+        (cdkDragMoved)="onNodeDragMoved($event, node)"
+        (cdkDragEnded)="onNodeMoved($event, node)" (click)="selectNode(node)">
 
         <div class="node-content-wrapper">
           <div class="node-header">

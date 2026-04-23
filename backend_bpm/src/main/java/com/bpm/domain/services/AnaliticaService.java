@@ -5,6 +5,7 @@ import com.bpm.data.entities.TramiteInstancia;
 import com.bpm.data.repositories.DepartamentoRepository;
 import com.bpm.data.repositories.UsuarioRepository;
 import com.bpm.data.repositories.TramiteInstanciaRepository;
+import com.bpm.data.repositories.EventoHistorialRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -20,6 +21,7 @@ public class AnaliticaService {
     private final TramiteInstanciaRepository tramiteRepository;
     private final DepartamentoRepository departamentoRepository;
     private final UsuarioRepository usuarioRepository;
+    private final EventoHistorialRepository historialRepository;
 
     public List<MetricDataDTO> calcularMetricasDepartamentales() {
         return departamentoRepository.findAll().stream().map(dept -> {
@@ -41,8 +43,38 @@ public class AnaliticaService {
                     .tiempoPromedioHoras(tiempoPromedio)
                     .cantidadTramites(tramites.size())
                     .capacidadPersonal(personal.size())
+                    .retrasosSla(0) // Tiempo real no calcula históricos
                     .build();
         }).collect(Collectors.toList());
+    }
+
+    public List<MetricDataDTO> calcularMetricasHistoricas(int meses, String departamentoId, String politicaId) {
+        LocalDateTime desde = LocalDateTime.now().minusMonths(meses);
+
+        return departamentoRepository.findAll().stream()
+            .filter(d -> departamentoId == null || d.getId().equals(departamentoId))
+            .map(dept -> {
+                // Cantidad de trámites creados en el periodo
+                long total = tramiteRepository.findAll().stream()
+                    .filter(t -> t.getDepartamentoActualId() != null && t.getDepartamentoActualId().equals(dept.getId()))
+                    .filter(t -> t.getCreatedAt() != null && t.getCreatedAt().isAfter(desde))
+                    .count();
+
+                // Cantidad de retrasos detectados en el historial
+                long retrasos = historialRepository.findByExcedioSLATrueAndCreatedAtAfter(desde).stream()
+                    .filter(e -> dept.getNombre().equals(e.getNodoDestinoNombre()))
+                    .count();
+
+                List<Usuario> personal = usuarioRepository.findByIdDepartamento(dept.getId());
+
+                return MetricDataDTO.builder()
+                    .departamentoId(dept.getId())
+                    .nombreDepartamento(dept.getNombre())
+                    .cantidadTramites((int) total)
+                    .retrasosSla((int) retrasos)
+                    .capacidadPersonal(personal.size())
+                    .build();
+            }).collect(Collectors.toList());
     }
 
     public void reasignarPersonal(String idDestino, List<String> userIds) {
@@ -130,5 +162,14 @@ public class AnaliticaService {
         private double tiempoPromedioHoras;
         private int cantidadTramites;
         private int capacidadPersonal;
+        private int retrasosSla;
+        private List<TrendPointDTO> trend;
+    }
+
+    @lombok.Data
+    @lombok.Builder
+    public static class TrendPointDTO {
+        private String label; // Mes o Semana
+        private int valor;
     }
 }

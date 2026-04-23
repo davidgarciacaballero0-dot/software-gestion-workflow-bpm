@@ -139,6 +139,8 @@ public class TramiteService {
                 .prioridad(request.getPrioridad() != null ? request.getPrioridad() : 2)
                 .datosAcumuladosFormulario(
                         request.getDatosIniciales() != null ? request.getDatosIniciales() : new HashMap<>())
+                .fechaInicioNodoActual(LocalDateTime.now())
+                .fechaVencimientoSla(firstOpNode.getSlaHours() != null ? LocalDateTime.now().plusHours(firstOpNode.getSlaHours()) : null)
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();
@@ -148,7 +150,7 @@ public class TramiteService {
         // CU-10: Registrar evento de creación en la Bitácora
         registrarEvento(guardado, null, firstOpNode.getId(),
                 request.getIdUsuarioSolicitante(), TipoEvento.CREACION, null,
-                guardado.getDatosAcumuladosFormulario());
+                guardado.getDatosAcumuladosFormulario(), false, null);
 
         notificationService.notificarDepartamento(
                 guardado.getDepartamentoActualId(),
@@ -228,15 +230,24 @@ public class TramiteService {
         WorkflowNode nextStopNode = resolverSiguienteNodoDeParada(
                 politica, nodoActual, instancia.getDatosAcumuladosFormulario());
 
+        // SLA Check: ¿Se pasó de la fecha límite?
+        boolean excedioSla = false;
+        if (instancia.getFechaVencimientoSla() != null) {
+            excedioSla = LocalDateTime.now().isAfter(instancia.getFechaVencimientoSla());
+        }
+        LocalDateTime oldSlaVencimiento = instancia.getFechaVencimientoSla();
+
         // 4. Actualizar la instancia según el nodo destino
         if (nextStopNode.getType() == NodeType.END) {
             instancia.setEstadoActual("FINALIZADO");
             instancia.setNodoActualId(nextStopNode.getId());
-            // Se elimina la asignación de departamento a null para preservar el histórico
-            // en base de datos.
+            instancia.setFechaVencimientoSla(null);
         } else {
             instancia.setNodoActualId(nextStopNode.getId());
             instancia.setDepartamentoActualId(nextStopNode.getDepartmentId());
+            instancia.setFechaInicioNodoActual(LocalDateTime.now());
+            instancia.setFechaVencimientoSla(nextStopNode.getSlaHours() != null ? 
+                LocalDateTime.now().plusHours(nextStopNode.getSlaHours()) : null);
         }
 
         instancia.setUpdatedAt(LocalDateTime.now());
@@ -246,7 +257,7 @@ public class TramiteService {
         TipoEvento tipo = nextStopNode.getType() == NodeType.END ? TipoEvento.FINALIZACION : TipoEvento.AVANCE;
         registrarEvento(guardado, nodoActual.getId(), nextStopNode.getId(),
                 request.getIdUsuarioAccion(), tipo, null,
-                instancia.getDatosAcumuladosFormulario());
+                instancia.getDatosAcumuladosFormulario(), excedioSla, oldSlaVencimiento);
 
         // 5. Notificar en tiempo real
         if (nextStopNode.getType() == NodeType.USER_TASK && nextStopNode.getDepartmentId() != null) {
@@ -447,7 +458,7 @@ public class TramiteService {
 
         // Registrar evento de intervención en la Bitácora
         registrarEvento(guardado, nodoAnterior, request.getNuevoNodoId(),
-                request.getUsuarioInterventorId(), TipoEvento.INTERVENCION, request.getMotivo(), null);
+                request.getUsuarioInterventorId(), TipoEvento.INTERVENCION, request.getMotivo(), null, false, null);
 
         // Notificar al nuevo departamento
         if (request.getNuevoDepartamentoId() != null) {
@@ -513,7 +524,7 @@ public class TramiteService {
 
     private void registrarEvento(TramiteInstancia tramite, String nodoOrigen, String nodoDestino,
             String usuarioId, TipoEvento tipo, String motivo,
-            Map<String, Object> snapshot) {
+            Map<String, Object> snapshot, boolean excedioSla, LocalDateTime slaVencimiento) {
 
         String usuarioNombre = "Sistema";
         if (usuarioId != null) {
@@ -552,6 +563,8 @@ public class TramiteService {
                 .tipoEvento(tipo)
                 .motivo(motivo)
                 .snapshotDatos(snapshot)
+                .excedioSLA(excedioSla)
+                .slaVencimientoEsperado(slaVencimiento)
                 .build();
         historialRepository.save(evento);
     }

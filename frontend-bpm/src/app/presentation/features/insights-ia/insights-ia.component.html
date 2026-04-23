@@ -10,6 +10,26 @@
     </div>
   </header>
 
+  <!-- BARRA DE FILTROS SUPERIOR -->
+  <div class="filters-bar glass-premium animate-fade-in" style="display: flex; gap: 2rem; padding: 1.5rem; margin-bottom: 1.5rem; border-radius: 16px; align-items: flex-end; background: rgba(255,255,255,0.6); backdrop-filter: blur(10px);">
+    <div class="filter-item" style="flex: 1;">
+      <label style="display: block; font-size: 0.85rem; color: #64748b; margin-bottom: 0.5rem; font-weight: 600;">🕒 Período de Análisis</label>
+      <select [(ngModel)]="filtros.meses" (change)="aplicarFiltros()" class="select-premium" style="width: 100%; padding: 0.75rem; border-radius: 10px; border: 1px solid rgba(0,0,0,0.1); background: white; cursor: pointer; outline: none;">
+        <option [value]="0">Tiempo Real</option>
+        <option [value]="3">Últimos 3 Meses</option>
+        <option [value]="6">Últimos 6 Meses</option>
+        <option [value]="12">Último Año</option>
+      </select>
+    </div>
+    <div class="filter-item" style="flex: 2;">
+      <label style="display: block; font-size: 0.85rem; color: #64748b; margin-bottom: 0.5rem; font-weight: 600;">📍 Departamento</label>
+      <select [(ngModel)]="filtros.idDepartamento" (change)="aplicarFiltros()" class="select-premium" style="width: 100%; padding: 0.75rem; border-radius: 10px; border: 1px solid rgba(0,0,0,0.1); background: white; cursor: pointer; outline: none;">
+        <option [value]="''">Todos los Departamentos</option>
+        <option *ngFor="let m of metrics" [value]="m.departamentoId">{{ m.nombreDepartamento }}</option>
+      </select>
+    </div>
+  </div>
+
   <!-- Main Grid: 2 columnas -->
   <div class="insights-grid">
 

@@ -43,6 +43,7 @@ class MetricData(BaseModel):
     tiempoPromedioHoras: float
     cantidadTramites: int
     capacidadPersonal: int
+    retrasosSla: Optional[int] = 0
 
 class AnalysisRequest(BaseModel):
     metricas: List[MetricData]
@@ -51,7 +52,7 @@ class AnalysisRequest(BaseModel):
 
 SYSTEM_INSTRUCTION = """
 Tu objetivo es actuar como el cerebro analítico de un sistema de gestión de flujos de trabajo (BPM).
-Eres un Consultor Senior de BPM y Especialista en Optimización Operativa.
+Eres un Consultor Senior de BPM y Especialista en Optimización Operativa con enfoque en SLA (Service Level Agreements).
 
 REGLAS DE OPERACIÓN:
 
@@ -61,13 +62,13 @@ REGLAS DE OPERACIÓN:
    - Responde ÚNICAMENTE con el objeto JSON.
 
 2. ANÁLISIS DE CUELLOS DE BOTELLA Y REOPTIMIZACIÓN:
-   - Recibirás una lista de métricas por departamento.
-   - Identifica el departamento con mayor latencia (tiempo promedio alto) y alta carga (muchos trámites).
-   - Genera una RECOMENDACIÓN de reasignación de personal cuantificable.
+   - Recibirás una lista de métricas por departamento, incluyendo brechas de SLA (retrasos).
+   - Identifica el departamento con mayor cantidad de retrasos de SLA en los últimos periodos.
+   - Genera una RECOMENDACIÓN PRESCRIPTIVA: No solo describas el problema, indica qué hacer AHORA (ej: mover personal, simplificar pasos, automatizar validación).
    - **IMPORTANTE**: Al final del texto, incluye una sección llamada [DATA_PROJECTION] con un JSON que contenga:
-     `{"departamentos": ["NombreA", "NombreB"], "mejora_tiempo": [20, 15], "carga_final": [10, 12]}`.
-   - Proporciona una JUSTIFICACIÓN ESTADÍSTICA detallada.
-   - FORMATO REQUERIDO: [RESUMEN], [MÉTRICAS_CRÍTICAS], [RECOMENDACIÓN], [JUSTIFICACIÓN], [DATA_PROJECTION].
+     `{"departamentos": ["NombreA", "NombreB"], "mejora_tiempo": [20, 15], "carga_final": [10, 12], "reduccion_sla_breach": [80, 75]}`.
+   - Proporciona una JUSTIFICACIÓN ESTADÍSTICA basada en la tendencia de retrasos.
+   - FORMATO REQUERIDO: [RESUMEN], [MÉTRICAS_SLA_CRÍTICAS], [RECOMENDACIÓN_AHORA], [JUSTIFICACIÓN], [DATA_PROJECTION].
 """
 
 model_logic = genai.GenerativeModel(model_name="models/gemini-1.5-flash", system_instruction=SYSTEM_INSTRUCTION)
@@ -184,6 +185,10 @@ def obtener_estadisticas_db() -> dict:
         total_tramites = len(tramites)
         tramites_activos = sum(1 for t in tramites if t.get("estado") in ["EN_PROGRESO", "PENDIENTE"])
 
+        # Estadísticas de SLA (Cuellos de botella históricos)
+        sla_breaches = list(db.evento_historial.find({"excedioSLA": True}, {"_id": 0, "nodoDestinoNombre": 1, "createdAt": 1}))
+        total_sla_breaches = len(sla_breaches)
+
         # Estadísticas de usuarios
         total_usuarios = db.usuarios.count_documents({})
 
@@ -196,6 +201,8 @@ def obtener_estadisticas_db() -> dict:
             "politicas": politicas[:10],
             "total_tramites": total_tramites,
             "tramites_activos": tramites_activos,
+            "total_sla_breaches": total_sla_breaches,
+            "sla_breaches_por_nodo": sla_breaches[:50],
             "total_usuarios": total_usuarios,
         }
     except Exception as e:
