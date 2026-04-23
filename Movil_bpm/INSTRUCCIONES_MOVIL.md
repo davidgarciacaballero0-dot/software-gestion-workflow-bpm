@@ -30,14 +30,14 @@ Para asegurar un desarrollo ordenado y escalable, el proyecto se dividirá en la
 - **Tarea 2.2:** Home / Dashboard con resumen visual rápido (ej. "Tienes 2 trámites en proceso"). ✅
 - **Tarea 2.3:** Integración de la vista rápida de "Mis Trámites Activos" en el Dashboard. ✅
 
-#### FASE 3: Catálogo e Inicio de Trámites (Intermedio) 🚧
-- **Tarea 3.1:** Pantalla del "Catálogo de Trámites" disponibles para el público. 🚧
-- **Tarea 3.2:** Renderizado del formulario dinámico inicial al seleccionar un trámite para llenado de datos.
-- **Tarea 3.3:** Módulo para subir fotos de requisitos desde la cámara o galería (File Uploader conectado a GridFS).
-- **Tarea 3.4:** Conexión con el endpoint de inicio de trámite (`Submission`).
+#### FASE 3: Catálogo e Inicio de Trámites (Intermedio) ✅
+- **Tarea 3.1:** Pantalla del "Catálogo de Trámites" disponibles para el público. ✅
+- **Tarea 3.2:** Renderizado del formulario dinámico inicial al seleccionar un trámite para llenado de datos. ✅
+- **Tarea 3.3:** Módulo para subir fotos de requisitos desde la cámara o galería (File Uploader conectado a GridFS). ✅
+- **Tarea 3.4:** Conexión con el endpoint de inicio de trámite (`Submission`). ✅
 
-#### FASE 4: Seguimiento y Timeline (Complejo - Núcleo de Valor)
-- **Tarea 4.1:** Pantalla de lista detallada "Mis Trámites" (Pendientes, En Proceso, Finalizados).
+#### FASE 4: Seguimiento y Timeline (Complejo - Núcleo de Valor) 🚧
+- **Tarea 4.1:** Pantalla de lista detallada "Mis Trámites" (Pendientes, En Proceso, Finalizados). 🚧
 - **Tarea 4.2:** **(CRÍTICO)** Pantalla de "Rastreo" (Tracking) de solo lectura.
 - **Tarea 4.3:** Componente visual tipo "Stepper" vertical o "Línea de Tiempo" (Timeline). Debe mostrar:
    - Departamento en el que se encuentra actualmente el trámite.
