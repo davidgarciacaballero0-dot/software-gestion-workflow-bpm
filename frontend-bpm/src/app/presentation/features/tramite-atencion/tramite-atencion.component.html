@@ -12,8 +12,8 @@
   </div>
 
   <div class="atencion-layout">
-    <!-- Formulario Dinámico -->
-    <div class="form-section grid-card monolith-surface shadow-ambient">
+    <!-- Formulario de Acción (Solo si no está FINALIZADO) -->
+    <div class="form-section grid-card monolith-surface shadow-ambient" *ngIf="tramite?.estadoActual !== 'FINALIZADO'; else finalizadoMessage">
       <div class="section-title">
         <h3>📄 Formulario de Acción</h3>
         <p>Complete la información requerida para avanzar al siguiente estado del proceso.</p>
@@ -55,7 +55,7 @@
               [(ngModel)]="formData[field.fieldId]" 
               class="form-control">
 
-            <!-- Booleanos (Select Sí/No para enviar string 'true'/'false') -->
+            <!-- Booleanos -->
             <select 
               *ngSwitchCase="'BOOLEAN'" 
               [id]="field.fieldId"
@@ -67,7 +67,7 @@
               <option value="false">❌ No</option>
             </select>
 
-            <!-- Archivos (Integración con FileUploader) -->
+            <!-- Archivos -->
             <div *ngSwitchCase="'FILE'" class="uploader-wrapper">
               <app-file-uploader 
                 (onUploadSuccess)="onFileUpload(field.fieldId, $event)">
@@ -98,6 +98,21 @@
         </div>
       </div>
     </div>
+
+    <!-- Template para Trámite Finalizado -->
+    <ng-template #finalizadoMessage>
+      <div class="form-section grid-card glass-premium shadow-ambient text-center animate-fade-in">
+        <div class="status-icon" style="font-size: 4rem; margin-bottom: 1.5rem;">📁</div>
+        <h2 class="text-gradient">Trámite Finalizado</h2>
+        <p class="mt-1 text-secondary">
+          Este trámite ha completado su ciclo de vida y se encuentra en estado de <strong>Archivo Histórico</strong>.
+          Ya no admite más acciones de procesamiento.
+        </p>
+        <div class="actions-footer mt-2">
+          <button class="btn btn-secondary" (click)="volver()">Volver a la Bandeja</button>
+        </div>
+      </div>
+    </ng-template>
 
     <!-- Panel de Información Lateral -->
     <div class="info-sidebar">

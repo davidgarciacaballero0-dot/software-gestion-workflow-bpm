@@ -68,7 +68,7 @@
           </div>
 
           <div class="tramite-actions">
-            <button class="btn btn-primary btn-sm" (click)="atenderTramite(t.id)">🛠️ Atender</button>
+            <button *ngIf="t.estadoActual !== 'FINALIZADO'" class="btn btn-primary btn-sm" (click)="atenderTramite(t.id)">🛠️ Atender</button>
             <button class="btn btn-secondary btn-sm" (click)="verHistorial(t.id)">📜 Historial</button>
           </div>
         </div>
