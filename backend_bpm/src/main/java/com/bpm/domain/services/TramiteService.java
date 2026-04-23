@@ -48,14 +48,14 @@ public class TramiteService {
 
     @Autowired
     public TramiteService(TramiteInstanciaRepository tramiteRepository,
-                          PoliticaWorkflowRepository politicaRepository,
-                          DepartamentoRepository departamentoRepository,
-                          SequenceGeneratorService sequenceGenerator,
-                          NotificationService notificationService,
-                          EventoHistorialRepository historialRepository,
-                          UsuarioRepository usuarioRepository,
-                          RolRepository rolRepository,
-                          PasswordEncoder passwordEncoder) {
+            PoliticaWorkflowRepository politicaRepository,
+            DepartamentoRepository departamentoRepository,
+            SequenceGeneratorService sequenceGenerator,
+            NotificationService notificationService,
+            EventoHistorialRepository historialRepository,
+            UsuarioRepository usuarioRepository,
+            RolRepository rolRepository,
+            PasswordEncoder passwordEncoder) {
         this.tramiteRepository = tramiteRepository;
         this.politicaRepository = politicaRepository;
         this.departamentoRepository = departamentoRepository;
@@ -69,7 +69,8 @@ public class TramiteService {
 
     public TramiteResponseDTO iniciarTramite(StartProcedureRequestDTO request) {
         PoliticaWorkflow politica = politicaRepository.findById(request.getIdPolitica())
-                .orElseThrow(() -> new WorkflowValidationException("Política no encontrada con ID: " + request.getIdPolitica()));
+                .orElseThrow(() -> new WorkflowValidationException(
+                        "Política no encontrada con ID: " + request.getIdPolitica()));
 
         if (politica.getStatus() != PolicyStatus.PUBLISHED) {
             throw new WorkflowValidationException("Solo se pueden iniciar trámites de políticas en estado PUBLISHED.");
@@ -91,7 +92,8 @@ public class TramiteService {
                 .orElseThrow(() -> new WorkflowValidationException("El primer nodo operativo no pudo ser encontrado."));
 
         if (firstOpNode.getType() != NodeType.USER_TASK) {
-            throw new WorkflowValidationException("El primer nodo después del INICIO debe ser una USER_TASK para ser instanciado.");
+            throw new WorkflowValidationException(
+                    "El primer nodo después del INICIO debe ser una USER_TASK para ser instanciado.");
         }
 
         long seqNum = sequenceGenerator.generateSequence("tramite_seq");
@@ -107,11 +109,12 @@ public class TramiteService {
         // Si no se encuentra por ID, intentar por CI en los datos iniciales
         if (solicitante == null && request.getDatosIniciales() != null) {
             String ciReq = (String) request.getDatosIniciales().get("f_ci");
-            if (ciReq == null) ciReq = (String) request.getDatosIniciales().get("ci");
+            if (ciReq == null)
+                ciReq = (String) request.getDatosIniciales().get("ci");
 
             if (ciReq != null) {
                 solicitante = usuarioRepository.findByCi(ciReq).orElse(null);
-                
+
                 // Si aún no existe, proceder a la CREACIÓN AUTOMÁTICA
                 if (solicitante == null) {
                     solicitante = autoRegistrarUsuario(request.getDatosIniciales(), ciReq);
@@ -120,7 +123,8 @@ public class TramiteService {
         }
 
         String ci = (solicitante != null) ? solicitante.getCi() : "";
-        String nombreCompleto = (solicitante != null) ? (solicitante.getNombre() + " " + solicitante.getApellidos()) : "Cliente Externo";
+        String nombreCompleto = (solicitante != null) ? (solicitante.getNombre() + " " + solicitante.getApellidos())
+                : "Cliente Externo";
         String idSolicitante = (solicitante != null) ? solicitante.getId() : request.getIdUsuarioSolicitante();
 
         TramiteInstancia instancia = TramiteInstancia.builder()
@@ -133,7 +137,8 @@ public class TramiteService {
                 .nodoActualId(firstOpNode.getId())
                 .departamentoActualId(firstOpNode.getDepartmentId())
                 .prioridad(request.getPrioridad() != null ? request.getPrioridad() : 2)
-                .datosAcumuladosFormulario(request.getDatosIniciales() != null ? request.getDatosIniciales() : new HashMap<>())
+                .datosAcumuladosFormulario(
+                        request.getDatosIniciales() != null ? request.getDatosIniciales() : new HashMap<>())
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();
@@ -148,8 +153,7 @@ public class TramiteService {
         notificationService.notificarDepartamento(
                 guardado.getDepartamentoActualId(),
                 "Nuevo Trámite Asignado",
-                "Se ha recibido el trámite " + guardado.getCodigoTramite() + " para su revisión."
-        );
+                "Se ha recibido el trámite " + guardado.getCodigoTramite() + " para su revisión.");
 
         return mapearADTO(guardado, politica.getNombre());
     }
@@ -222,14 +226,14 @@ public class TramiteService {
 
         // 3. Resolver el siguiente nodo de parada (USER_TASK o END)
         WorkflowNode nextStopNode = resolverSiguienteNodoDeParada(
-                politica, nodoActual, instancia.getDatosAcumuladosFormulario()
-        );
+                politica, nodoActual, instancia.getDatosAcumuladosFormulario());
 
         // 4. Actualizar la instancia según el nodo destino
         if (nextStopNode.getType() == NodeType.END) {
             instancia.setEstadoActual("FINALIZADO");
             instancia.setNodoActualId(nextStopNode.getId());
-            // Se elimina la asignación de departamento a null para preservar el histórico en base de datos.
+            // Se elimina la asignación de departamento a null para preservar el histórico
+            // en base de datos.
         } else {
             instancia.setNodoActualId(nextStopNode.getId());
             instancia.setDepartamentoActualId(nextStopNode.getDepartmentId());
@@ -249,19 +253,19 @@ public class TramiteService {
             notificationService.notificarDepartamento(
                     nextStopNode.getDepartmentId(),
                     "Trámite en Tránsito",
-                    "El trámite " + guardado.getCodigoTramite() + " ha avanzado a: " + nextStopNode.getName()
-            );
+                    "El trámite " + guardado.getCodigoTramite() + " ha avanzado a: " + nextStopNode.getName());
         }
 
         return mapearADTO(guardado, politica.getNombre());
     }
 
     // ========================================================================================
-    // MOTOR DE NAVEGACIÓN: Resuelve gateways recursivamente hasta un punto de parada
+    // MOTOR DE NAVEGACIÓN: Resuelve gateways recursivamente hasta un punto de
+    // parada
     // ========================================================================================
 
     private WorkflowNode resolverSiguienteNodoDeParada(PoliticaWorkflow politica, WorkflowNode nodoActual,
-                                                        Map<String, Object> datosAcumulados) {
+            Map<String, Object> datosAcumulados) {
         // Encontrar edges salientes del nodo actual
         List<WorkflowEdge> edgesSalientes = politica.getEdges().stream()
                 .filter(e -> e.getSourceNodeId().equals(nodoActual.getId()))
@@ -282,7 +286,8 @@ public class TramiteService {
                     .filter(e -> e.getCondition() != null && evaluarCondicion(e.getCondition(), datosAcumulados))
                     .findFirst()
                     .orElseThrow(() -> new WorkflowValidationException(
-                            "Ninguna condición del Gateway '" + nodoActual.getName() + "' se cumplió con los datos proporcionados."));
+                            "Ninguna condición del Gateway '" + nodoActual.getName()
+                                    + "' se cumplió con los datos proporcionados."));
         }
 
         // Resolver el nodo destino
@@ -307,7 +312,8 @@ public class TramiteService {
 
     private boolean evaluarCondicion(Condition condition, Map<String, Object> datos) {
         Object valorVariable = datos.get(condition.getVariable());
-        if (valorVariable == null) return false;
+        if (valorVariable == null)
+            return false;
 
         String valorActual = String.valueOf(valorVariable);
         String valorEsperado = condition.getValue();
@@ -316,12 +322,18 @@ public class TramiteService {
             case EQUALS -> valorActual.equalsIgnoreCase(valorEsperado);
             case NOT_EQUALS -> !valorActual.equalsIgnoreCase(valorEsperado);
             case GREATER_THAN -> {
-                try { yield Double.parseDouble(valorActual) > Double.parseDouble(valorEsperado); }
-                catch (NumberFormatException e) { yield false; }
+                try {
+                    yield Double.parseDouble(valorActual) > Double.parseDouble(valorEsperado);
+                } catch (NumberFormatException e) {
+                    yield false;
+                }
             }
             case LESS_THAN -> {
-                try { yield Double.parseDouble(valorActual) < Double.parseDouble(valorEsperado); }
-                catch (NumberFormatException e) { yield false; }
+                try {
+                    yield Double.parseDouble(valorActual) < Double.parseDouble(valorEsperado);
+                } catch (NumberFormatException e) {
+                    yield false;
+                }
             }
         };
     }
@@ -345,8 +357,10 @@ public class TramiteService {
 
         // Lógica de Password: iniciales + "." + CI
         String iniciales = "";
-        if (nombre.length() > 0) iniciales += nombre.substring(0, 1).toLowerCase();
-        if (apellidos.length() > 0) iniciales += apellidos.substring(0, 1).toLowerCase();
+        if (nombre.length() > 0)
+            iniciales += nombre.substring(0, 1).toLowerCase();
+        if (apellidos.length() > 0)
+            iniciales += apellidos.substring(0, 1).toLowerCase();
         String rawPassword = iniciales + "." + ci;
 
         // Buscar Rol CLIENTE
@@ -440,8 +454,8 @@ public class TramiteService {
             notificationService.notificarDepartamento(
                     request.getNuevoDepartamentoId(),
                     "Trámite Reasignado (Intervención)",
-                    "El trámite " + guardado.getCodigoTramite() + " ha sido reasignado a su departamento por administración."
-            );
+                    "El trámite " + guardado.getCodigoTramite()
+                            + " ha sido reasignado a su departamento por administración.");
         }
 
         PoliticaWorkflow politica = politicaRepository.findById(guardado.getIdPolitica())
@@ -456,8 +470,9 @@ public class TramiteService {
 
     public List<EventoHistorial> listarHistorial(String idTramite) {
         List<EventoHistorial> eventos = historialRepository.findByIdTramite(idTramite);
-        
-        // Parche legacy: Si falta el nombre (registros antiguos), intentar resolverlo ahora
+
+        // Parche legacy: Si falta el nombre (registros antiguos), intentar resolverlo
+        // ahora
         for (EventoHistorial evento : eventos) {
             final String evUsId = evento.getEjecutadoPorUsuarioId();
             if (evento.getEjecutadoPorNombre() == null && evUsId != null) {
@@ -466,23 +481,24 @@ public class TramiteService {
                             // Si es el cliente que inició el trámite, mostramos su nombre
                             tramiteRepository.findById(idTramite).ifPresent(t -> {
                                 if (evUsId.equals(t.getIdUsuarioSolicitante())) {
-                                    evento.setEjecutadoPorNombre(u.getNombre() + " " + (u.getApellidos() != null ? u.getApellidos() : ""));
+                                    evento.setEjecutadoPorNombre(
+                                            u.getNombre() + " " + (u.getApellidos() != null ? u.getApellidos() : ""));
                                 } else {
                                     evento.setEjecutadoPorNombre("Funcionario de Departamento");
                                 }
                             });
                         });
             }
-            
+
             if (evento.getNodoDestinoNombre() == null && evento.getNodoDestinoId() != null) {
                 // Buscamos en la política del trámite
                 tramiteRepository.findById(idTramite).ifPresent(t -> {
                     politicaRepository.findById(t.getIdPolitica()).ifPresent(p -> {
                         if (p.getNodes() != null) {
                             p.getNodes().stream()
-                                .filter(n -> n.getId().equals(evento.getNodoDestinoId()))
-                                .findFirst()
-                                .ifPresent(n -> evento.setNodoDestinoNombre(n.getName()));
+                                    .filter(n -> n.getId().equals(evento.getNodoDestinoId()))
+                                    .findFirst()
+                                    .ifPresent(n -> evento.setNodoDestinoNombre(n.getName()));
                         }
                     });
                 });
@@ -496,9 +512,9 @@ public class TramiteService {
     // ========================================================================================
 
     private void registrarEvento(TramiteInstancia tramite, String nodoOrigen, String nodoDestino,
-                                  String usuarioId, TipoEvento tipo, String motivo,
-                                  Map<String, Object> snapshot) {
-        
+            String usuarioId, TipoEvento tipo, String motivo,
+            Map<String, Object> snapshot) {
+
         String usuarioNombre = "Sistema";
         if (usuarioId != null) {
             final String uId = usuarioId;
