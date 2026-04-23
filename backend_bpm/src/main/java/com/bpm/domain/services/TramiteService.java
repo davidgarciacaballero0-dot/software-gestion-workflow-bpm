@@ -314,6 +314,12 @@ public class TramiteService {
                 .orElseThrow(() -> new WorkflowValidationException("Trámite no encontrado: " + id));
     }
 
+    public String obtenerNombrePolitica(String idPolitica) {
+        return politicaRepository.findById(idPolitica)
+                .map(PoliticaWorkflow::getNombre)
+                .orElse("Sin definir");
+    }
+
     public List<TramiteResponseDTO> listarBandejaDepartamento(String departamentoId) {
         return tramiteRepository.findByDepartamentoActualId(departamentoId).stream()
                 .map(this::transformarADTO)

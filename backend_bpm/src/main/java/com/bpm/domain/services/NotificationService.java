@@ -34,7 +34,10 @@ public class NotificationService {
                 .createdAt(LocalDateTime.now())
                 .build();
 
-        // Enviamos por WebSocket
+        // 1. Persistimos la notificación en BD
+        notificacionRepository.save(notification);
+
+        // 2. Enviamos por WebSocket
         messagingTemplate.convertAndSend(topic, notification);
     }
 

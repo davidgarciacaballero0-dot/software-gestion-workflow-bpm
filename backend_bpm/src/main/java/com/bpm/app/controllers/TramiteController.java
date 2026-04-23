@@ -40,7 +40,8 @@ public class TramiteController {
     @GetMapping("/{tramiteId}")
     public ResponseEntity<TramiteResponseDTO> obtenerTramite(@PathVariable String tramiteId) {
         TramiteInstancia tramite = tramiteService.obtenerTramitePorId(tramiteId);
-        return ResponseEntity.ok(tramiteService.mapearADTO(tramite, null)); // El service buscará la política si es null
+        return ResponseEntity.ok(tramiteService.mapearADTO(tramite, 
+            tramiteService.obtenerNombrePolitica(tramite.getIdPolitica())));
     }
 
     // CU-10: Historial de Trazabilidad

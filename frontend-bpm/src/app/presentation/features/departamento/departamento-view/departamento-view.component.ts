@@ -1,4 +1,4 @@
-import { Component, OnInit, Input } from '@angular/core';
+import { Component, OnInit, Input, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
@@ -41,7 +41,8 @@ export class DepartamentoViewComponent implements OnInit {
     private orgService: OrganizacionService,
     private authService: AuthService,
     private analiticaService: AnaliticaService,
-    private http: HttpClient
+    private http: HttpClient,
+    private cd: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -69,6 +70,7 @@ export class DepartamentoViewComponent implements OnInit {
     this.orgService.listarTodas().subscribe({
       next: (data) => {
         this.organizaciones = data;
+        this.cd.detectChanges();
       },
       error: (err) => {
         console.error('Error al cargar organizaciones', err);
@@ -94,10 +96,12 @@ export class DepartamentoViewComponent implements OnInit {
       next: (data) => {
         this.departamentos = data;
         this.loading = false;
+        this.cd.detectChanges();
       },
       error: (err) => {
         console.error('API Error (Departamento Fetching)', err);
         this.loading = false;
+        this.cd.detectChanges();
       }
     });
   }

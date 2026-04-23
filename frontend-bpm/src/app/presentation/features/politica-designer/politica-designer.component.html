@@ -7,7 +7,8 @@
       <span class="version-tag">v{{ currentPolicy.version }}</span>
     </div>
     <div class="header-actions">
-      <button *ngIf="currentPolicy.status === 'PUBLISHED'" class="btn-premium btn-premium-primary ghost-border" (click)="onNewVersion()">
+      <button *ngIf="currentPolicy.status === 'PUBLISHED'" class="btn-premium btn-premium-primary ghost-border"
+        (click)="onNewVersion()">
         + Nueva Versión
       </button>
       <button *ngIf="currentPolicy.status === 'DRAFT'" class="btn-premium btn-premium-primary" (click)="onPublish()">
@@ -46,14 +47,10 @@
       <div class="tool-section ai-section mt-1" *ngIf="canEdit()">
         <h4>✨ Generar con IA (Gemini)</h4>
         <div class="ai-prompt-box">
-          <textarea 
-            [(ngModel)]="aiPrompt" 
+          <textarea [(ngModel)]="aiPrompt"
             placeholder="Ej: Proceso de préstamo con pasos en Crédito, Riesgos y Contabilidad..."
-            class="form-control ai-textarea"
-            rows="4"></textarea>
-          <button 
-            class="btn-premium btn-premium-primary w-full mt-1" 
-            (click)="solicitarGeneracionIA()"
+            class="form-control ai-textarea" rows="4"></textarea>
+          <button class="btn-premium btn-premium-primary w-full mt-1" (click)="solicitarGeneracionIA()"
             [disabled]="generatingIA || !aiPrompt">
             {{ generatingIA ? '🚀 Generando...' : 'Dibujar Flujo' }}
           </button>
@@ -70,7 +67,7 @@
     <!-- Lienzo Central -->
     <main class="canvas-area" id="canvas" *ngIf="isLoaded">
       <!-- Capa SVG para Aristas -->
-      <svg class="connections-svg" (click)="cancelConnecting($event)">
+      <svg class="connections-svg">
         <defs>
           <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
             <polygon points="0 0, 10 3.5, 0 7" fill="var(--outline-variant)" />
@@ -81,38 +78,23 @@
         </defs>
 
         <!-- Conectores Ortogonales 90° -->
-        <path *ngFor="let edge of edges" 
-              class="connector-line"
-              [class.active]="selectedEdge === edge.id"
-              [attr.d]="calculatePath(edge)"
-              marker-end="url(#arrowhead)"
-              (click)="selectEdge(edge.id, $event)">
+        <path *ngFor="let edge of edges" class="connector-line" [class.active]="selectedEdge === edge.id"
+          [attr.d]="calculatePath(edge)" marker-end="url(#arrowhead)" (click)="selectEdge(edge.id, $event)"
+          style="pointer-events: stroke;">
         </path>
-        
+
         <!-- Etiqueta de Condición (TRUE/FALSE) para bifurcaciones -->
-        <text *ngFor="let edge of edges"
-              [attr.x]="getEdgeLabelPosition(edge).x"
-              [attr.y]="getEdgeLabelPosition(edge).y"
-              class="edge-label"
-              text-anchor="middle"
-              fill="var(--primary)"
-              font-size="12"
-              font-weight="bold">
+        <text *ngFor="let edge of edges" [attr.x]="getEdgeLabelPosition(edge).x" [attr.y]="getEdgeLabelPosition(edge).y"
+          class="edge-label" text-anchor="middle" fill="var(--primary)" font-size="12" font-weight="bold">
           {{ edge.condition?.value | uppercase }}
         </text>
       </svg>
 
       <!-- Capa de Nodos Con Arrastre del CDK -->
-      <div *ngFor="let node of nodes" 
-           class="node-item"
-           [class.selected]="selectedNode?.id === node.id"
-           [class]="node.type"
-           [cdkDragFreeDragPosition]="node.uiPosition"
-           cdkDrag
-           [cdkDragDisabled]="!canEdit()"
-           (cdkDragEnded)="onNodeMoved($event, node)"
-           (click)="selectNode(node)">
-        
+      <div *ngFor="let node of nodes" class="node-item" [class.selected]="selectedNode?.id === node.id"
+        [class]="node.type" [style.left.px]="node.uiPosition.x" [style.top.px]="node.uiPosition.y" cdkDrag
+        [cdkDragDisabled]="!canEdit()" (cdkDragEnded)="onNodeMoved($event, node)" (click)="selectNode(node)">
+
         <div class="node-content-wrapper">
           <div class="node-header">
             <div class="icon-box">{{ getNodeIcon(node.type) }}</div>
@@ -135,12 +117,10 @@
         </div>
 
         <!-- Puntos de Conexión (Visuales e Interactivos) -->
-        <div class="anchor-point left" 
-             [class.highlight]="isConnecting() && connectingSourceNode?.id !== node.id" 
-             (click)="finishConnecting(node, $event)"></div>
-        <div class="anchor-point right" 
-             [class.connecting-origin]="connectingSourceNode?.id === node.id"
-             (click)="startConnecting(node, $event)"></div>
+        <div class="anchor-point left" [class.highlight]="isConnecting() && connectingSourceNode?.id !== node.id"
+          (click)="finishConnecting(node, $event)"></div>
+        <div class="anchor-point right" [class.connecting-origin]="connectingSourceNode?.id === node.id"
+          (click)="startConnecting(node, $event)"></div>
       </div>
     </main>
 
@@ -149,7 +129,7 @@
       <div *ngIf="selectedNode">
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h3>Propiedades</h3>
-          <button *ngIf="canEdit()" class="btn-remove-tiny" (click)="removeNode(selectedNode)">×</button>
+          <button class="btn-remove-tiny" (click)="selectedNode = null" style="margin-left:auto;">✕</button>
         </div>
 
         <fieldset [disabled]="!canEdit()" class="border-0 p-0 m-0">
@@ -157,7 +137,7 @@
             <label>Nombre del Paso</label>
             <input type="text" [(ngModel)]="selectedNode.name" class="form-control">
           </div>
-          
+
           <div *ngIf="selectedNode.type === 'USER_TASK'">
             <div class="form-group">
               <label>Departamento Responsable</label>
@@ -167,7 +147,8 @@
             </div>
             <div class="form-group">
               <label>Tiempo Límite (SLA Horas)</label>
-              <input type="number" [(ngModel)]="selectedNode.slaHours" class="form-control" placeholder="Ej: 48">
+              <input type="number" [(ngModel)]="selectedNode.slaHours" class="form-control" placeholder="Ej: 48"
+                min="0">
               <small class="text-error" *ngIf="!selectedNode.slaHours">⚠️ Requerido para publicar</small>
             </div>
 
@@ -179,7 +160,8 @@
               </div>
 
               <div class="field-list">
-                <div *ngFor="let field of selectedNode.formDefinition; let i = index" class="field-card monolith-surface">
+                <div *ngFor="let field of selectedNode.formDefinition; let i = index"
+                  class="field-card monolith-surface">
                   <div class="field-row">
                     <input type="text" [(ngModel)]="field.label" class="field-input" placeholder="Etiqueta">
                     <button *ngIf="canEdit()" class="btn-remove-tiny" (click)="removeField(i)">×</button>
@@ -201,6 +183,14 @@
             </div>
           </div>
         </fieldset>
+
+        <div *ngIf="canEdit()"
+          style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid rgba(200,197,208,0.2);">
+          <button class="btn-remove-tiny" (click)="removeNode(selectedNode)"
+            style="width: 100%; display:flex; align-items:center; justify-content:center; gap:0.5rem; padding:0.6rem; border-radius:0.5rem; font-size:0.8rem;">
+            🗑️ Eliminar Nodo
+          </button>
+        </div>
       </div>
     </aside>
   </div>

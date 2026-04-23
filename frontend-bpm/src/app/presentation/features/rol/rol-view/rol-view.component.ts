@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RolService } from '../../../../data/services/rol.service';
@@ -89,7 +89,7 @@ export class RolViewComponent implements OnInit {
   nuevoRol: { nombre: string } = { nombre: '' };
   permisosInput = '';
 
-  constructor(private rolService: RolService) {}
+  constructor(private rolService: RolService, private cd: ChangeDetectorRef) {}
 
   ngOnInit() {
     this.cargarRoles();
@@ -98,6 +98,7 @@ export class RolViewComponent implements OnInit {
   cargarRoles() {
     this.rolService.listarRoles().subscribe(data => {
       this.roles = data;
+      this.cd.detectChanges();
     });
   }
 

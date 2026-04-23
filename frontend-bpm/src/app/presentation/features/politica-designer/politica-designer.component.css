@@ -73,6 +73,7 @@
   display: flex;
   flex: 1;
   overflow: hidden;
+  position: relative;
 }
 
 .sidebar {
@@ -204,10 +205,15 @@
   width: 320px;
   background: var(--surface-container-lowest);
   padding: 2rem;
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 50;
   transform: translateX(100%);
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: -10px 0 30px rgba(7, 2, 53, 0.04);
-  /* Ambient shadow on edge */
+  box-shadow: -10px 0 30px rgba(7, 2, 53, 0.15);
+  overflow-y: auto;
 }
 
 .properties-panel.open {

@@ -35,6 +35,16 @@ export interface UserData {
   idDepartamento: string;
 }
 
+export interface RegisterRequest {
+  nombre: string;
+  apellidos: string;
+  ci: string;
+  celular: string;
+  email: string;
+  password: string;
+  fechaNacimiento: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -92,7 +102,36 @@ export class AuthService {
           localStorage.setItem(this.TOKEN_KEY, response.token);
           localStorage.setItem(this.USER_KEY, JSON.stringify(userData));
         }
-        
+
+        this._currentUser.set(userData);
+      })
+    );
+  }
+
+  register(data: RegisterRequest): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.apiUrl}/register`, data).pipe(
+      tap(response => {
+        const userData: UserData = {
+          id: response.id,
+          nombre: response.nombre,
+          apellidos: response.apellidos,
+          email: response.email,
+          ci: response.ci,
+          celular: response.celular,
+          fechaNacimiento: response.fechaNacimiento,
+          createdAt: response.createdAt,
+          idRol: response.idRol,
+          idOrganizacion: response.idOrganizacion,
+          esJefe: response.esJefe || false,
+          nombreRol: response.nombreRol || '',
+          idDepartamento: response.idDepartamento || ''
+        };
+
+        if (this.isBrowser()) {
+          localStorage.setItem(this.TOKEN_KEY, response.token);
+          localStorage.setItem(this.USER_KEY, JSON.stringify(userData));
+        }
+
         this._currentUser.set(userData);
       })
     );

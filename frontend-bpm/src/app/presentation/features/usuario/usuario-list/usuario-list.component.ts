@@ -67,6 +67,7 @@ export class UsuarioListComponent implements OnInit {
         roles.forEach((r: Rol) => {
           if (r.id) this.rolesMap.set(r.id, r.nombre);
         });
+        this.cdr.detectChanges();
 
         // Auto-seleccionar organización del usuario actual si existe
         const user = this.authService.currentUser();
@@ -95,6 +96,7 @@ export class UsuarioListComponent implements OnInit {
     this.depService.listarPorOrganizacion(this.selectedOrgId).subscribe({
       next: (data: Departamento[]) => {
         this.departamentos = data;
+        this.cdr.detectChanges();
       },
       error: (err: any) => console.error('Error cargando departamentos', err)
     });

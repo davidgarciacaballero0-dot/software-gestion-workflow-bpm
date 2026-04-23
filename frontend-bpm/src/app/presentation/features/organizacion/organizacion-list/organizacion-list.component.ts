@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { OrganizacionService } from '../../../../data/services/organizacion.service';
 import { Organizacion } from '../../../../data/models/organizacion.model';
@@ -16,7 +16,7 @@ export class OrganizacionListComponent implements OnInit {
   loading = true;
   showForm = false;
 
-  constructor(private orgService: OrganizacionService) {}
+  constructor(private orgService: OrganizacionService, private cd: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.cargarDatos();
@@ -28,10 +28,12 @@ export class OrganizacionListComponent implements OnInit {
       next: (data) => {
         this.organizaciones = data;
         this.loading = false;
+        this.cd.detectChanges();
       },
       error: (err) => {
         console.error('Error Carga UI', err);
         this.loading = false;
+        this.cd.detectChanges();
       }
     });
   }

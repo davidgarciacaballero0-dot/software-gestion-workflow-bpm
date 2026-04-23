@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuditoriaService } from '../../../../data/services/auditoria.service';
@@ -16,7 +16,7 @@ export class AuditoriaListComponent implements OnInit {
   loading = true;
   filtroUsuarioId = '';
 
-  constructor(private auditoriaService: AuditoriaService) {}
+  constructor(private auditoriaService: AuditoriaService, private cd: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.cargarEventos();
@@ -28,10 +28,12 @@ export class AuditoriaListComponent implements OnInit {
       next: (data) => {
         this.eventos = data;
         this.loading = false;
+        this.cd.detectChanges();
       },
       error: (err) => {
         console.error('Error de Recuperación de Bitácora', err);
         this.loading = false;
+        this.cd.detectChanges();
       }
     });
   }
@@ -47,11 +49,13 @@ export class AuditoriaListComponent implements OnInit {
       next: (data) => {
         this.eventos = data;
         this.loading = false;
+        this.cd.detectChanges();
       },
       error: (err) => {
         console.error('Error al filtrar bitácora por usuario', err);
         this.eventos = [];
         this.loading = false;
+        this.cd.detectChanges();
       }
     });
   }

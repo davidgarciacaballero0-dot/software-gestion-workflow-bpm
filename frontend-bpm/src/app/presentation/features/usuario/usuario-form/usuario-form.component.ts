@@ -46,6 +46,8 @@ export class UsuarioFormComponent implements OnInit {
       idDepartamento: [{value: '', disabled: true}, Validators.required], // Inicia bloqueado (CASCADA)
       idRol: ['', Validators.required],
       nombre: ['', [Validators.required, Validators.minLength(3)]],
+      ci: ['', [Validators.required, Validators.pattern('^[0-9]+$'), Validators.maxLength(10)]],
+      celular: ['', [Validators.required, Validators.pattern('^[0-9]+$'), Validators.maxLength(10)]],
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(6)]]
     });

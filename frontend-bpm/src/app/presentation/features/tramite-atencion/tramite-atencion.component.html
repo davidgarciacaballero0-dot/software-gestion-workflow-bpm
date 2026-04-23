@@ -44,7 +44,8 @@
               [name]="field.fieldId"
               type="number" 
               [(ngModel)]="formData[field.fieldId]" 
-              class="form-control">
+              class="form-control"
+              min="0">
 
             <input 
               *ngSwitchCase="'DATE'" 

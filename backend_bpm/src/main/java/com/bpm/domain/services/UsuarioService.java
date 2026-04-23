@@ -57,6 +57,8 @@ public class UsuarioService {
                 .idDepartamento(request.getIdDepartamento())
                 .idRol(request.getIdRol())
                 .nombre(request.getNombre())
+                .ci(request.getCi())
+                .celular(request.getCelular())
                 .email(request.getEmail())
                 .passwordHash(passwordEncoder.encode(request.getPassword())) // ENCRIPTACIÓN BCrypt en vuelo
                 .createdAt(LocalDateTime.now())
@@ -80,6 +82,8 @@ public class UsuarioService {
         dto.setIdDepartamento(u.getIdDepartamento());
         dto.setIdRol(u.getIdRol());
         dto.setNombre(u.getNombre());
+        dto.setCi(u.getCi());
+        dto.setCelular(u.getCelular());
         dto.setEmail(u.getEmail());
         dto.setCreatedAt(u.getCreatedAt());
         // EL HASH NO SE MAPEA AL DTO: Seguridad total de tráfico de redes

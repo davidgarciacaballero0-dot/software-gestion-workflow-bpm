@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { LoginComponent } from './presentation/features/auth/login/login.component';
+import { RegisterComponent } from './presentation/features/auth/register/register.component';
 import { MainLayoutComponent } from './presentation/layouts/main-layout/main-layout.component';
 import { PoliticaListComponent } from './presentation/features/politica-list/politica-list.component';
 import { PoliticaDesignerComponent } from './presentation/features/politica-designer/politica-designer.component';
@@ -17,6 +18,7 @@ import { authGuard, loginGuard } from './core/guards/auth.guard';
 export const routes: Routes = [
   { path: '', redirectTo: 'app', pathMatch: 'full' },
   { path: 'login', component: LoginComponent, canActivate: [loginGuard] },
+  { path: 'register', component: RegisterComponent, canActivate: [loginGuard] },
   {
     path: 'app',
     component: MainLayoutComponent,

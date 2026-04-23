@@ -1,0 +1,89 @@
+<div class="auth-page">
+  <div class="auth-box monolith-surface animate-fade-in shadow-ambient register-box">
+    <div class="auth-header">
+      <div class="auth-logo">BPM</div>
+      <h1>Registro de Cliente</h1>
+      <p>Crea tu cuenta para gestionar tus trámites</p>
+    </div>
+
+    <!-- Feedback Message -->
+    <div *ngIf="errorMessage" class="error-toast ghost-border">
+      <span class="icon">🚨</span>
+      <p>{{ errorMessage }}</p>
+    </div>
+
+    <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="auth-form">
+      <div class="form-grid">
+        <div class="input-field">
+          <label>Nombres</label>
+          <div class="input-wrapper">
+            <span class="icon">👤</span>
+            <input type="text" formControlName="nombre" placeholder="Juan">
+          </div>
+        </div>
+
+        <div class="input-field">
+          <label>Apellidos</label>
+          <div class="input-wrapper">
+            <span class="icon">👤</span>
+            <input type="text" formControlName="apellidos" placeholder="Pérez">
+          </div>
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <div class="input-field">
+          <label>Cédula de Identidad</label>
+          <div class="input-wrapper">
+            <span class="icon">🆔</span>
+            <input type="text" formControlName="ci" placeholder="1234567" maxlength="10" inputmode="numeric">
+          </div>
+          <small *ngIf="registerForm.get('ci')?.errors?.['pattern']" class="error-text">Solo se permiten números</small>
+        </div>
+
+        <div class="input-field">
+          <label>Celular</label>
+          <div class="input-wrapper">
+            <span class="icon">📱</span>
+            <input type="text" formControlName="celular" placeholder="70000000" maxlength="10" inputmode="numeric">
+          </div>
+          <small *ngIf="registerForm.get('celular')?.errors?.['pattern']" class="error-text">Solo se permiten números</small>
+        </div>
+      </div>
+
+      <div class="input-field">
+        <label>Correo Electrónico</label>
+        <div class="input-wrapper">
+          <span class="icon">📧</span>
+          <input type="email" formControlName="email" placeholder="juan.perez@email.com" autocomplete="email">
+        </div>
+      </div>
+
+      <div class="input-field">
+        <label>Fecha de Nacimiento</label>
+        <div class="input-wrapper">
+          <span class="icon">📅</span>
+          <input type="datetime-local" formControlName="fechaNacimiento">
+        </div>
+      </div>
+
+      <div class="input-field">
+        <label>Contraseña</label>
+        <div class="input-wrapper">
+          <span class="icon">🔑</span>
+          <input type="password" formControlName="password" placeholder="••••••••" autocomplete="new-password">
+        </div>
+      </div>
+
+      <button type="submit" class="btn-premium btn-premium-primary w-full" [disabled]="registerForm.invalid || isSubmitting">
+        <span *ngIf="isSubmitting" class="spinner"></span>
+        {{ isSubmitting ? 'Registrando...' : 'Crear Cuenta' }}
+      </button>
+    </form>
+
+    <footer class="auth-footer">
+      <p>¿Ya tienes cuenta? <a routerLink="/login" class="link-premium">Inicia sesión aquí</a></p>
+      <p class="mt-4">© 2026 Sistema BPM</p>
+    </footer>
+  </div>
+</div>

@@ -155,10 +155,17 @@ export class PoliticaDesignerComponent implements OnInit {
   }
 
   onNodeMoved(event: CdkDragEnd, node: WorkflowNode): void {
-    const transform = event.source.getFreeDragPosition();
-    node.uiPosition.x += transform.x;
-    node.uiPosition.y += transform.y;
-    event.source.reset();
+    const element = event.source.element.nativeElement;
+    const canvas = element.closest('.canvas-area') as HTMLElement;
+    if (!canvas) return;
+
+    const canvasRect = canvas.getBoundingClientRect();
+    const elRect = element.getBoundingClientRect();
+
+    node.uiPosition = {
+      x: elRect.left - canvasRect.left + canvas.scrollLeft,
+      y: elRect.top - canvasRect.top + canvas.scrollTop
+    };
     this.broadcastChange('NODE_MOVED', node);
   }
 
