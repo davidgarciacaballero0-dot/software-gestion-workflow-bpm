@@ -7,6 +7,7 @@ import 'package:workflow_app/core/providers/core_providers.dart';
 import 'package:workflow_app/features/auth/presentation/providers/auth_providers.dart';
 import 'package:workflow_app/features/tramites/data/repositories/tramite_repository_impl.dart';
 import 'package:workflow_app/features/tramites/domain/models/tramite_model.dart';
+import 'package:workflow_app/features/tramites/domain/models/event_history_model.dart';
 import 'package:workflow_app/features/tramites/domain/repositories/tramite_repository.dart';
 
 // Provider del Repositorio
@@ -17,13 +18,18 @@ final tramiteRepositoryProvider = Provider<TramiteRepository>((ref) {
 
 // Provider para la lista de "Mis Trámites Activos"
 final misTramitesProvider = FutureProvider<List<TramiteModel>>((ref) async {
-  final repository = ref.watch(tramiteRepositoryProvider);
-  final session = ref.watch(sessionProvider).valueOrNull;
+  final session = ref.watch(sessionProvider);
+  final user = session.valueOrNull;
 
-  if (session == null) {
+  if (user == null) {
     return [];
   }
 
-  // Se usa el id del usuario de la sesión actual
-  return repository.getMisTramites(session.id);
+  final repository = ref.watch(tramiteRepositoryProvider);
+  return repository.getMisTramites(user.id);
+});
+
+final historialTramiteProvider = FutureProvider.family<List<EventHistoryModel>, String>((ref, tramiteId) async {
+  final repository = ref.watch(tramiteRepositoryProvider);
+  return repository.getHistorialTramite(tramiteId);
 });

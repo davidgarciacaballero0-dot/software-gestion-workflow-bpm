@@ -15,6 +15,14 @@ import 'package:workflow_app/shared/widgets/main_scaffold.dart';
 import 'package:workflow_app/features/catalog/presentation/screens/catalog_screen.dart';
 import 'package:workflow_app/features/catalog/presentation/screens/start_procedure_screen.dart';
 import 'package:workflow_app/features/catalog/domain/models/policy_model.dart';
+import 'package:workflow_app/features/tramites/presentation/screens/my_procedures_screen.dart';
+import 'package:workflow_app/features/tramites/presentation/screens/tracking_screen.dart';
+import 'package:workflow_app/features/tramites/domain/models/tramite_model.dart';
+
+final _shellNavigatorHomeKey = GlobalKey<NavigatorState>(debugLabel: 'shellHome');
+final _shellNavigatorCatalogKey = GlobalKey<NavigatorState>(debugLabel: 'shellCatalog');
+final _shellNavigatorProceduresKey = GlobalKey<NavigatorState>(debugLabel: 'shellProcedures');
+final _shellNavigatorProfileKey = GlobalKey<NavigatorState>(debugLabel: 'shellProfile');
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   // Listenable que notifica a GoRouter cuando la sesión cambia
@@ -48,6 +56,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         branches: [
           // Branch 0: Home
           StatefulShellBranch(
+            navigatorKey: _shellNavigatorHomeKey,
             routes: [
               GoRoute(
                 path: '/home',
@@ -57,6 +66,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           ),
           // Branch 1: Catálogo (Placeholder Fase 3)
           StatefulShellBranch(
+            navigatorKey: _shellNavigatorCatalogKey,
             routes: [
               GoRoute(
                 path: '/catalog',
@@ -64,8 +74,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
-          // Branch 2: Perfil
+          // Branch Mis Trámites (Fase 4)
           StatefulShellBranch(
+            navigatorKey: _shellNavigatorProceduresKey,
+            routes: [
+              GoRoute(
+                path: '/my-procedures',
+                builder: (context, state) => const MyProceduresScreen(),
+              ),
+            ],
+          ),
+          // Branch Perfil
+          StatefulShellBranch(
+            navigatorKey: _shellNavigatorProfileKey,
             routes: [
               GoRoute(
                 path: '/profile',
@@ -75,11 +96,20 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           ),
         ],
       ),
+      // Ruta global para Iniciar Trámite (Full Screen)
       GoRoute(
         path: '/start-procedure',
         builder: (context, state) {
           final policy = state.extra as PolicyModel;
           return StartProcedureScreen(policy: policy);
+        },
+      ),
+      // Ruta global para Rastreo y Timeline (Full Screen)
+      GoRoute(
+        path: '/tracking',
+        builder: (context, state) {
+          final tramite = state.extra as TramiteModel;
+          return ProcedureTrackingScreen(tramite: tramite);
         },
       ),
     ],

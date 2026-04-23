@@ -14,31 +14,33 @@ class MainScaffold extends StatelessWidget {
     required this.navigationShell,
   });
 
-  void _onItemTapped(int index, BuildContext context) {
-    navigationShell.goBranch(
-      index,
-      // Un tap adicional en la tab actual hace un pop al root de esa branch
-      initialLocation: index == navigationShell.currentIndex,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: navigationShell,
       bottomNavigationBar: NavigationBar(
         selectedIndex: navigationShell.currentIndex,
-        onDestinationSelected: (index) => _onItemTapped(index, context),
+        onDestinationSelected: (index) {
+          navigationShell.goBranch(
+            index,
+            initialLocation: index == navigationShell.currentIndex,
+          );
+        },
         destinations: const [
           NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
+            icon: Icon(Icons.dashboard_outlined),
+            selectedIcon: Icon(Icons.dashboard),
             label: 'Home',
           ),
           NavigationDestination(
-            icon: Icon(Icons.post_add_outlined),
-            selectedIcon: Icon(Icons.post_add),
+            icon: Icon(Icons.list_alt_outlined),
+            selectedIcon: Icon(Icons.list_alt),
             label: 'Catálogo',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.history_outlined),
+            selectedIcon: Icon(Icons.history),
+            label: 'Trámites',
           ),
           NavigationDestination(
             icon: Icon(Icons.person_outline),

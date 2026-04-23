@@ -9,6 +9,7 @@ class TramiteModel {
   final String idPolitica;
   final String nombrePolitica;
   final String estadoActual;
+  final String? nodoActualId;
   final String nombreNodoActual;
   final String? nombreDepartamentoActual;
   final int prioridad;
@@ -20,6 +21,7 @@ class TramiteModel {
     required this.idPolitica,
     required this.nombrePolitica,
     required this.estadoActual,
+    this.nodoActualId,
     required this.nombreNodoActual,
     this.nombreDepartamentoActual,
     required this.prioridad,
@@ -33,6 +35,7 @@ class TramiteModel {
       idPolitica: json['idPolitica'] ?? '',
       nombrePolitica: json['nombrePolitica'] ?? 'Sin Nombre',
       estadoActual: json['estadoActual'] ?? 'PENDIENTE',
+      nodoActualId: json['nodoActualId'],
       nombreNodoActual: json['nombreNodoActual'] ?? '',
       nombreDepartamentoActual: json['nombreDepartamentoActual'],
       prioridad: json['prioridad'] ?? 0,

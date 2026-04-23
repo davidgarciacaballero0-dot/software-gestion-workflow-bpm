@@ -4,6 +4,7 @@
 // ─────────────────────────────────────────────────────────────
 import 'package:dio/dio.dart';
 import 'package:workflow_app/features/tramites/domain/models/tramite_model.dart';
+import 'package:workflow_app/features/tramites/domain/models/event_history_model.dart';
 import 'package:workflow_app/features/tramites/domain/repositories/tramite_repository.dart';
 
 class TramiteRepositoryImpl implements TramiteRepository {
@@ -41,6 +42,38 @@ class TramiteRepositoryImpl implements TramiteRepository {
       return TramiteModel.fromJson(response.data);
     } catch (e) {
       throw Exception('Error al iniciar el trámite: $e');
+    }
+  }
+
+  @override
+  Future<List<EventHistoryModel>> getHistorialTramite(String tramiteId) async {
+    try {
+      final response = await _dio.get('/tramites/$tramiteId/historial');
+      final data = response.data as List;
+      return data.map((json) => EventHistoryModel.fromJson(json)).toList();
+    } catch (e) {
+      throw Exception('Error al obtener el historial del trámite: $e');
+    }
+  }
+
+  @override
+  Future<TramiteModel> avanzarTramite({
+    required String idTramite,
+    required String idUsuarioAccion,
+    required Map<String, dynamic> datosFormulario,
+  }) async {
+    try {
+      final response = await _dio.post(
+        '/tramites/avanzar',
+        data: {
+          'idTramite': idTramite,
+          'idUsuarioAccion': idUsuarioAccion,
+          'datosFormulario': datosFormulario,
+        },
+      );
+      return TramiteModel.fromJson(response.data);
+    } catch (e) {
+      throw Exception('Error al avanzar el trámite: $e');
     }
   }
 }
