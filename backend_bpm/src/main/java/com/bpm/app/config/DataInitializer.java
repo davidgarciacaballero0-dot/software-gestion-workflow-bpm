@@ -153,6 +153,7 @@ public class DataInitializer implements CommandLineRunner {
         if (tramiteRepository.count() == 0) {
             seedTramitesVacaciones(polVacaciones, clientes, depRRHH.getId());
             seedTramitesFibra(polFibra, clientes, depVentas.getId());
+            seedTramitesPrueba(polPrueba, clientes, depVentas.getId());
         }
 
         log.info("Data Seeding completed successfully. 23 Users and 15 Trámites created.");
@@ -479,6 +480,39 @@ public class DataInitializer implements CommandLineRunner {
                     .tipoEvento(TipoEvento.CREACION)
                     .nodoDestinoId("registro")
                     .nodoDestinoNombre("Registro Inicial de Cliente")
+                    .ejecutadoPorUsuarioId(c.getId())
+                    .ejecutadoPorNombre(c.getNombre() + " " + c.getApellidos())
+                    .createdAt(t.getCreatedAt())
+                    .build());
+        }
+    }
+
+    private void seedTramitesPrueba(PoliticaWorkflow pol, List<Usuario> clientes, String idDepVentas) {
+        Random rand = new Random();
+        for (int i = 1; i <= 3; i++) {
+            Usuario c = clientes.get(rand.nextInt(clientes.size()));
+            TramiteInstancia t = tramiteRepository.save(TramiteInstancia.builder()
+                    .codigoTramite("PRU-2026-" + String.format("%04d", i))
+                    .idPolitica(pol.getId())
+                    .idUsuarioSolicitante(c.getId())
+                    .ciSolicitante(c.getCi())
+                    .nombreSolicitante(c.getNombre() + " " + c.getApellidos())
+                    .estadoActual("EN_PROGRESO")
+                    .nodoActualId("recopilacion")
+                    .departamentoActualId(idDepVentas)
+                    .createdAt(LocalDateTime.now().minusHours(rand.nextInt(24)))
+                    .datosAcumuladosFormulario(Map.of(
+                            "f_nombre", c.getNombre(),
+                            "f_apellidos", c.getApellidos(),
+                            "f_ci", c.getCi(),
+                            "f_email", c.getEmail()))
+                    .build());
+
+            historialRepository.save(EventoHistorial.builder()
+                    .idTramite(t.getId())
+                    .tipoEvento(TipoEvento.CREACION)
+                    .nodoDestinoId("recopilacion")
+                    .nodoDestinoNombre("Recopilación de Requisitos")
                     .ejecutadoPorUsuarioId(c.getId())
                     .ejecutadoPorNombre(c.getNombre() + " " + c.getApellidos())
                     .createdAt(t.getCreatedAt())
