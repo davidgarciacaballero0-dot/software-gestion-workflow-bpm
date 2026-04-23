@@ -144,6 +144,9 @@ public class DataInitializer implements CommandLineRunner {
         }
 
         // 5. Políticas
+        PoliticaWorkflow polVacaciones = getOrCreatePoliticaVacaciones(org.getId(), depRRHH.getId());
+        PoliticaWorkflow polFibra = getOrCreatePoliticaFibra(org.getId(), depVentas.getId(), depIT.getId(),
+                depFin.getId(), depOp.getId());
         PoliticaWorkflow polPrueba = getOrCreatePoliticaPrueba2026(org.getId(), depVentas.getId(), depIT.getId());
 
         // 6. Trámites (~15 instancias si está vacío)
