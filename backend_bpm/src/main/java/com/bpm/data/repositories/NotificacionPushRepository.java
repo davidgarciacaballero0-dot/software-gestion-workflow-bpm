@@ -9,4 +9,5 @@ import java.util.List;
 @Repository
 public interface NotificacionPushRepository extends MongoRepository<NotificacionPush, String> {
     List<NotificacionPush> findByIdUsuarioDestinoAndLeidaFalse(String idUsuarioDestino);
+    List<NotificacionPush> findByIdUsuarioDestino(String idUsuarioDestino, org.springframework.data.domain.Sort sort);
 }

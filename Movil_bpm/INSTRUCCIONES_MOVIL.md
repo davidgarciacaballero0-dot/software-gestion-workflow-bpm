@@ -36,19 +36,19 @@ Para asegurar un desarrollo ordenado y escalable, el proyecto se dividirá en la
 - **Tarea 3.3:** Módulo para subir fotos de requisitos desde la cámara o galería (File Uploader conectado a GridFS). ✅
 - **Tarea 3.4:** Conexión con el endpoint de inicio de trámite (`Submission`). ✅
 
-#### FASE 4: Seguimiento y Timeline (Complejo - Núcleo de Valor) 🚧
-- **Tarea 4.1:** Pantalla de lista detallada "Mis Trámites" (Pendientes, En Proceso, Finalizados). 🚧
-- **Tarea 4.2:** **(CRÍTICO)** Pantalla de "Rastreo" (Tracking) de solo lectura.
-- **Tarea 4.3:** Componente visual tipo "Stepper" vertical o "Línea de Tiempo" (Timeline). Debe mostrar:
+#### FASE 4: Seguimiento y Timeline (Complejo - Núcleo de Valor) ✅
+- **Tarea 4.1:** Pantalla de lista detallada "Mis Trámites" (Pendientes, En Proceso, Finalizados). ✅
+- **Tarea 4.2:** **(CRÍTICO)** Pantalla de "Rastreo" (Tracking) de solo lectura. ✅
+- **Tarea 4.3:** Componente visual tipo "Stepper" vertical o "Línea de Tiempo" (Timeline). Debe mostrar: ✅
    - Departamento en el que se encuentra actualmente el trámite.
    - Pasos ya completados (con fecha y hora).
    - Estado de SLA (si está en tiempo o demorado).
-- **Tarea 4.4:** Lógica UI para "Subsanar un documento" (el único caso donde se permite edición en esta vista).
+- **Tarea 4.4:** Lógica UI para "Subsanar un documento" (el único caso donde se permite edición en esta vista). ✅
 
-#### FASE 5: Tiempo Real y Retención (Avanzado)
-- **Tarea 5.1:** Conexión WebSocket para recibir alertas push.
-- **Tarea 5.2:** Mostrar notificaciones in-app (Toast o Banner superior) al cambiar de estado (ej. "Su solicitud ha sido Aprobada").
-- **Tarea 5.3:** Pestaña / Centro de Notificaciones con el historial de alertas leídas. *(Nota Backend: Se requiere crear un `NotificationController` con un endpoint GET para recuperar el historial de notificaciones).*
+#### FASE 5: Tiempo Real y Retención (Avanzado) ✅
+- **Tarea 5.1:** Conexión WebSocket para recibir alertas push. ✅
+- **Tarea 5.2:** Mostrar notificaciones in-app (Toast o Banner superior) al cambiar de estado (ej. "Su solicitud ha sido Aprobada"). ✅
+- **Tarea 5.3:** Pestaña / Centro de Notificaciones con el historial de alertas leídas. ✅
 
 ### 🛠️ INSTRUCCIONES DE EJECUCIÓN:
 Genera el código base en Flutter siguiendo estrictamente el orden de las fases descritas arriba. Comienza ejecutando la **FASE 1**. Para cada tarea, asegúrate de implementar la capa de Dominio (Entities/Models), la capa de Datos (Repository/API) y la capa de Presentación (UI/Providers) antes de pasar a la siguiente tarea.

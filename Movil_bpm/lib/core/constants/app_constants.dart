@@ -11,6 +11,9 @@ class AppConstants {
   // En dispositivo físico, usa la IP local del equipo (p.ej. 192.168.x.x).
   static const String baseUrl = 'http://10.0.2.2:8080/api/v1';
 
+  // ── WebSocket (STOMP) ────────────────────────────────────────
+  static const String wsUrl = 'ws://10.0.2.2:8080/ws-bpm/websocket';
+
   // ── JWT ──────────────────────────────────────────────────────
   static const String tokenKey = 'bpm_jwt_token';
   static const String userKey  = 'bpm_user_data';

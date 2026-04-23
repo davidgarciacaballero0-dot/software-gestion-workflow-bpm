@@ -18,6 +18,7 @@ import 'package:workflow_app/features/catalog/domain/models/policy_model.dart';
 import 'package:workflow_app/features/tramites/presentation/screens/my_procedures_screen.dart';
 import 'package:workflow_app/features/tramites/presentation/screens/tracking_screen.dart';
 import 'package:workflow_app/features/tramites/domain/models/tramite_model.dart';
+import 'package:workflow_app/features/notifications/presentation/screens/notifications_screen.dart';
 
 final _shellNavigatorHomeKey = GlobalKey<NavigatorState>(debugLabel: 'shellHome');
 final _shellNavigatorCatalogKey = GlobalKey<NavigatorState>(debugLabel: 'shellCatalog');
@@ -81,6 +82,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: '/my-procedures',
                 builder: (context, state) => const MyProceduresScreen(),
+              ),
+            ],
+          ),
+          // Branch Notificaciones (Fase 5)
+          StatefulShellBranch(
+            navigatorKey: GlobalKey<NavigatorState>(debugLabel: 'shellNotifications'),
+            routes: [
+              GoRoute(
+                path: '/notifications',
+                builder: (context, state) => const NotificationsScreen(),
               ),
             ],
           ),
