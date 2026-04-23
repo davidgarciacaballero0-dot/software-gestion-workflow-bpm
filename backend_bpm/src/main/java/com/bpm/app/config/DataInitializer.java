@@ -144,9 +144,7 @@ public class DataInitializer implements CommandLineRunner {
         }
 
         // 5. Políticas
-        PoliticaWorkflow polVacaciones = getOrCreatePoliticaVacaciones(org.getId(), depRRHH.getId());
-        PoliticaWorkflow polFibra = getOrCreatePoliticaFibra(org.getId(), depVentas.getId(), depIT.getId(),
-                depFin.getId(), depOp.getId());
+        PoliticaWorkflow polPrueba = getOrCreatePoliticaPrueba2026(org.getId(), depVentas.getId(), depIT.getId());
 
         // 6. Trámites (~15 instancias si está vacío)
         if (tramiteRepository.count() == 0) {
@@ -320,6 +318,98 @@ public class DataInitializer implements CommandLineRunner {
                 .idOrganizacion(idOrg)
                 .nombre("Instalación de Fibra Óptica (Residencial)")
                 .description("Proceso ágil para alta de nuevos clientes de Internet y TV.")
+                .version("1.0")
+                .status(PolicyStatus.PUBLISHED)
+                .nodes(nodes)
+                .edges(edges)
+                .createdAt(LocalDateTime.now())
+                .build();
+    }
+
+    private PoliticaWorkflow getOrCreatePoliticaPrueba2026(String idOrg, String idVentas, String idIT) {
+        return politicaRepository.findByNombre("Prueba 2026")
+                .orElseGet(() -> politicaRepository.save(createPoliticaPrueba2026(idOrg, idVentas, idIT)));
+    }
+
+    private PoliticaWorkflow createPoliticaPrueba2026(String idOrg, String idVentas, String idIT) {
+        List<WorkflowNode> nodes = List.of(
+                WorkflowNode.builder().id("start").type(NodeType.START).name("Inicio")
+                        .uiPosition(new UIPosition(50.0, 200.0)).build(),
+                
+                WorkflowNode.builder()
+                        .id("recopilacion")
+                        .type(NodeType.USER_TASK)
+                        .name("Recopilación de Requisitos")
+                        .departmentId(idVentas)
+                        .slaHours(24)
+                        .uiPosition(new UIPosition(200.0, 200.0))
+                        .formDefinition(List.of(
+                                new FormFieldDefinition("f_nombre", "Nombres del Cliente", FormFieldType.TEXT, true, null),
+                                new FormFieldDefinition("f_apellidos", "Apellidos del Cliente", FormFieldType.TEXT, true, null),
+                                new FormFieldDefinition("f_ci", "Cédula de Identidad", FormFieldType.TEXT, true, null),
+                                new FormFieldDefinition("f_foto_ci", "Foto del CI (Anverso)", FormFieldType.FILE, true, null),
+                                new FormFieldDefinition("f_email", "Correo Electrónico", FormFieldType.TEXT, true, null)))
+                        .build(),
+
+                WorkflowNode.builder()
+                        .id("evaluacion")
+                        .type(NodeType.USER_TASK)
+                        .name("Evaluación Técnica")
+                        .departmentId(idIT)
+                        .slaHours(48)
+                        .uiPosition(new UIPosition(400.0, 200.0))
+                        .formDefinition(List.of(
+                                new FormFieldDefinition("f_aprobado", "¿Cumple con los requisitos?", FormFieldType.BOOLEAN, true, null)))
+                        .build(),
+
+                WorkflowNode.builder()
+                        .id("bifurcacion")
+                        .type(NodeType.EXCLUSIVE_GATEWAY)
+                        .name("Decisión")
+                        .uiPosition(new UIPosition(550.0, 200.0))
+                        .build(),
+
+                WorkflowNode.builder()
+                        .id("camino_a")
+                        .type(NodeType.USER_TASK)
+                        .name("Procesamiento Premium")
+                        .departmentId(idIT)
+                        .slaHours(12)
+                        .uiPosition(new UIPosition(700.0, 100.0))
+                        .build(),
+
+                WorkflowNode.builder()
+                        .id("camino_b")
+                        .type(NodeType.USER_TASK)
+                        .name("Procesamiento Estándar")
+                        .departmentId(idVentas)
+                        .slaHours(48)
+                        .uiPosition(new UIPosition(700.0, 300.0))
+                        .build(),
+
+                WorkflowNode.builder().id("end").type(NodeType.END).name("Finalizado")
+                        .uiPosition(new UIPosition(900.0, 200.0)).build()
+        );
+
+        List<WorkflowEdge> edges = List.of(
+                new WorkflowEdge("e1", "start", "recopilacion", null),
+                new WorkflowEdge("e2", "recopilacion", "evaluacion", null),
+                new WorkflowEdge("e3", "evaluacion", "bifurcacion", null),
+                
+                // Bifurcación basada en f_aprobado
+                new WorkflowEdge("e4", "bifurcacion", "camino_a", 
+                        Condition.builder().variable("f_aprobado").operator(ConditionOperator.EQUALS).value("true").build()),
+                new WorkflowEdge("e5", "bifurcacion", "camino_b", 
+                        Condition.builder().variable("f_aprobado").operator(ConditionOperator.EQUALS).value("false").build()),
+                
+                new WorkflowEdge("e6", "camino_a", "end", null),
+                new WorkflowEdge("e7", "camino_b", "end", null)
+        );
+
+        return PoliticaWorkflow.builder()
+                .idOrganizacion(idOrg)
+                .nombre("Prueba 2026")
+                .description("Flujo de prueba completo con adjuntos y bifurcación.")
                 .version("1.0")
                 .status(PolicyStatus.PUBLISHED)
                 .nodes(nodes)

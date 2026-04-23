@@ -15,12 +15,9 @@ import com.bpm.data.entities.embedded.WorkflowNode;
 import com.bpm.data.entities.enums.NodeType;
 import com.bpm.data.entities.enums.PolicyStatus;
 import com.bpm.data.entities.enums.TipoEvento;
-import com.bpm.data.repositories.DepartamentoRepository;
-import com.bpm.data.repositories.EventoHistorialRepository;
-import com.bpm.data.repositories.PoliticaWorkflowRepository;
-import com.bpm.data.repositories.TramiteInstanciaRepository;
-import com.bpm.data.repositories.UsuarioRepository;
+import com.bpm.data.repositories.RolRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.Calendar;
@@ -40,6 +37,8 @@ public class TramiteService {
     private final NotificationService notificationService;
     private final EventoHistorialRepository historialRepository;
     private final UsuarioRepository usuarioRepository;
+    private final RolRepository rolRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Autowired
     public TramiteService(TramiteInstanciaRepository tramiteRepository,
@@ -48,7 +47,9 @@ public class TramiteService {
                           SequenceGeneratorService sequenceGenerator,
                           NotificationService notificationService,
                           EventoHistorialRepository historialRepository,
-                          UsuarioRepository usuarioRepository) {
+                          UsuarioRepository usuarioRepository,
+                          RolRepository rolRepository,
+                          PasswordEncoder passwordEncoder) {
         this.tramiteRepository = tramiteRepository;
         this.politicaRepository = politicaRepository;
         this.departamentoRepository = departamentoRepository;
@@ -56,6 +57,8 @@ public class TramiteService {
         this.notificationService = notificationService;
         this.historialRepository = historialRepository;
         this.usuarioRepository = usuarioRepository;
+        this.rolRepository = rolRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public TramiteResponseDTO iniciarTramite(StartProcedureRequestDTO request) {
@@ -89,16 +92,35 @@ public class TramiteService {
         int year = Calendar.getInstance().get(Calendar.YEAR);
         String code = String.format("TRM-%d-%04d", year, seqNum);
 
-        // Obtener datos del solicitante para denormalización (REQ FASE 4)
-        Usuario solicitante = usuarioRepository.findById(request.getIdUsuarioSolicitante())
-                .orElse(null);
+        // --- REQ: Auto-registro de Usuario Solicitante ---
+        Usuario solicitante = null;
+        if (request.getIdUsuarioSolicitante() != null && !request.getIdUsuarioSolicitante().isEmpty()) {
+            solicitante = usuarioRepository.findById(request.getIdUsuarioSolicitante()).orElse(null);
+        }
+
+        // Si no se encuentra por ID, intentar por CI en los datos iniciales
+        if (solicitante == null && request.getDatosIniciales() != null) {
+            String ciReq = (String) request.getDatosIniciales().get("f_ci");
+            if (ciReq == null) ciReq = (String) request.getDatosIniciales().get("ci");
+
+            if (ciReq != null) {
+                solicitante = usuarioRepository.findByCi(ciReq).orElse(null);
+                
+                // Si aún no existe, proceder a la CREACIÓN AUTOMÁTICA
+                if (solicitante == null) {
+                    solicitante = autoRegistrarUsuario(request.getDatosIniciales(), ciReq);
+                }
+            }
+        }
+
         String ci = (solicitante != null) ? solicitante.getCi() : "";
-        String nombreCompleto = (solicitante != null) ? (solicitante.getNombre() + " " + solicitante.getApellidos()) : "";
+        String nombreCompleto = (solicitante != null) ? (solicitante.getNombre() + " " + solicitante.getApellidos()) : "Cliente Externo";
+        String idSolicitante = (solicitante != null) ? solicitante.getId() : request.getIdUsuarioSolicitante();
 
         TramiteInstancia instancia = TramiteInstancia.builder()
                 .codigoTramite(code)
                 .idPolitica(politica.getId())
-                .idUsuarioSolicitante(request.getIdUsuarioSolicitante())
+                .idUsuarioSolicitante(idSolicitante)
                 .ciSolicitante(ci)
                 .nombreSolicitante(nombreCompleto)
                 .estadoActual("EN_PROGRESO")
@@ -307,6 +329,37 @@ public class TramiteService {
                 .filter(n -> n.getId().equals(nodeId))
                 .findFirst()
                 .orElseThrow(() -> new WorkflowValidationException("Nodo no encontrado: " + nodeId));
+    }
+
+    private Usuario autoRegistrarUsuario(Map<String, Object> datos, String ci) {
+        String nombre = (String) datos.getOrDefault("f_nombre", datos.getOrDefault("nombre", "Usuario"));
+        String apellidos = (String) datos.getOrDefault("f_apellidos", datos.getOrDefault("apellidos", "Nuevo"));
+        String email = (String) datos.getOrDefault("f_email", datos.getOrDefault("email", ci + "@bpm.temp"));
+        String celular = (String) datos.getOrDefault("f_celular", datos.getOrDefault("celular", ""));
+
+        // Lógica de Password: iniciales + "." + CI
+        String iniciales = "";
+        if (nombre.length() > 0) iniciales += nombre.substring(0, 1).toLowerCase();
+        if (apellidos.length() > 0) iniciales += apellidos.substring(0, 1).toLowerCase();
+        String rawPassword = iniciales + "." + ci;
+
+        // Buscar Rol CLIENTE
+        String idRolCliente = rolRepository.findByNombre("CLIENTE")
+                .map(Rol::getId)
+                .orElse(null);
+
+        Usuario nuevo = Usuario.builder()
+                .nombre(nombre)
+                .apellidos(apellidos)
+                .ci(ci)
+                .email(email)
+                .celular(celular)
+                .passwordHash(passwordEncoder.encode(rawPassword))
+                .idRol(idRolCliente)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        return usuarioRepository.save(nuevo);
     }
 
     public TramiteInstancia obtenerTramitePorId(String id) {
