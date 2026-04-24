@@ -32,7 +32,12 @@ interface ChatMessage {
             <span class="role-context">{{ getRoleLabel() }}</span>
           </div>
         </div>
-        <button class="minimize-btn" (click)="toggleChat()">—</button>
+        <div class="header-actions">
+          <button class="voice-toggle-btn" (click)="toggleVoiceOutput()" title="Activar/Desactivar Voz">
+            {{ voiceEnabled() ? '🔊' : '🔇' }}
+          </button>
+          <button class="minimize-btn" (click)="toggleChat()">—</button>
+        </div>
       </div>
 
       <div class="chat-messages" #scrollContainer>
@@ -121,7 +126,9 @@ interface ChatMessage {
     .status-dot { width: 8px; height: 8px; background: #22c55e; border-radius: 50%; box-shadow: 0 0 8px #22c55e; }
     .chat-header h4 { margin: 0; font-size: 0.95rem; font-weight: 700; color: var(--primary); }
     .role-context { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; }
-    .minimize-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.2rem; }
+    .header-actions { display: flex; align-items: center; gap: 0.5rem; }
+    .minimize-btn, .voice-toggle-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.2rem; transition: transform 0.2s; }
+    .voice-toggle-btn:hover { transform: scale(1.1); }
 
     .chat-messages {
       flex: 1;
@@ -218,6 +225,7 @@ export class ChatbotWidgetComponent implements AfterViewChecked {
   isOpen = signal(false);
   isListening = false;
   isTyping = signal(false);
+  voiceEnabled = signal(true);
   messages = signal<ChatMessage[]>([]);
   userInput = '';
   recognition: any;
@@ -266,6 +274,10 @@ export class ChatbotWidgetComponent implements AfterViewChecked {
     }
   }
 
+  toggleVoiceOutput() {
+    this.voiceEnabled.update(v => !v);
+  }
+
   getRoleLabel(): string {
     const user = this.authService.currentUser();
     if (user?.nombreRol === 'ADMIN' || user?.esJefe) return 'Consultor Estratégico';
@@ -292,7 +304,10 @@ export class ChatbotWidgetComponent implements AfterViewChecked {
         this.isTyping.set(false);
         const aiResponse = res.respuesta;
         this.messages.update(prev => [...prev, { text: aiResponse, isAi: true, timestamp: new Date() }]);
-        this.elevenLabs.speak(aiResponse); // Mantener síntesis de voz
+        
+        if (this.voiceEnabled()) {
+          this.elevenLabs.speak(aiResponse);
+        }
       },
       error: (err) => {
         this.isTyping.set(false);

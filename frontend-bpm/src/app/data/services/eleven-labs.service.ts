@@ -8,7 +8,7 @@ import { Observable } from 'rxjs';
 export class ElevenLabsService {
   // En una implementación real, esto debería venir de un environment o proxy
   private readonly VOIC_ID = '21m00Tcm4lcv85onWvbf'; // Rachel
-  private readonly API_KEY = 'sk_cb7bae10b9e3d105747d02ed660cdb54a0bc472b9d6ce287'; // Configurada por el usuario
+  private readonly API_KEY = 'sk_e416995838804ecd738956dd0b79eebdb12e59f356e2a661'; // Configurada por el usuario
 
   constructor(private http: HttpClient) {}
 
