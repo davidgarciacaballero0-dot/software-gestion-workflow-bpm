@@ -115,7 +115,7 @@ public class AnaliticaService {
         }
     }
 
-    public byte[] generarPDFAnalisis(String analysisText) {
+    public byte[] generarPDFAnalisis(String analysisText, String chartImageBase64) {
         try (java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream()) {
             com.itextpdf.kernel.pdf.PdfWriter writer = new com.itextpdf.kernel.pdf.PdfWriter(out);
             com.itextpdf.kernel.pdf.PdfDocument pdf = new com.itextpdf.kernel.pdf.PdfDocument(writer);
@@ -146,6 +146,25 @@ public class AnaliticaService {
             // Análisis Narrativo
             document.add(new com.itextpdf.layout.element.Paragraph("\nANÁLISIS Y JUSTIFICACIÓN DE LA IA:\n").setBold());
             document.add(new com.itextpdf.layout.element.Paragraph(analysisText).setFontSize(11));
+
+            // Agregar el gráfico generado si existe
+            if (chartImageBase64 != null && !chartImageBase64.isEmpty()) {
+                try {
+                    String base64Data = chartImageBase64;
+                    // Eliminar cabecera data:image/...;base64, si viene incluida
+                    if (base64Data.contains(",")) {
+                        base64Data = base64Data.split(",")[1];
+                    }
+                    byte[] imageBytes = java.util.Base64.getDecoder().decode(base64Data);
+                    com.itextpdf.io.image.ImageData imageData = com.itextpdf.io.image.ImageDataFactory.create(imageBytes);
+                    com.itextpdf.layout.element.Image pdfImage = new com.itextpdf.layout.element.Image(imageData);
+                    pdfImage.setAutoScale(true); // Ajustar el tamaño a la página
+                    document.add(new com.itextpdf.layout.element.Paragraph("\nGráfico de Tendencia de Carga:\n").setBold());
+                    document.add(pdfImage);
+                } catch (Exception e) {
+                    System.err.println("No se pudo insertar el gráfico en el PDF: " + e.getMessage());
+                }
+            }
 
             document.close();
             return out.toByteArray();

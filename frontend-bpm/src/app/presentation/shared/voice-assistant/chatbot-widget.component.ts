@@ -17,9 +17,8 @@ interface ChatMessage {
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <!-- Botón Flotante (FAB) -->
     <div class="chatbot-fab" [class.active]="isOpen()" (click)="toggleChat()">
-      <span class="icon">{{ isOpen() ? '✕' : '🎧' }}</span>
+      <span class="icon">{{ isOpen() ? '✕' : '🤖' }}</span>
       <div class="pulse" *ngIf="isListening"></div>
     </div>
 
@@ -57,7 +56,7 @@ interface ChatMessage {
 
       <div class="chat-input-area">
         <button class="voice-btn" [class.listening]="isListening" (click)="toggleListening()">
-          {{ isListening ? '🛑' : '🎤' }}
+          {{ isListening ? '🛑' : '🎙️' }}
         </button>
         <input type="text" 
                [(ngModel)]="userInput" 
@@ -65,7 +64,7 @@ interface ChatMessage {
                placeholder="Escribe tu consulta..."
                [disabled]="isTyping()">
         <button class="send-btn" (click)="sendMessage()" [disabled]="!userInput.trim() || isTyping()">
-          ✈️
+          ➤
         </button>
       </div>
     </div>

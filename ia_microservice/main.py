@@ -57,7 +57,7 @@ SYSTEM_INSTRUCTION = """Eres un asistente inteligente del sistema de Gestión de
 Responde siempre en español. Sé conciso y profesional."""
 
 model_logic = genai.GenerativeModel(
-    model_name="gemini-2.0-flash",
+    model_name="gemini-2.5-flash",
     system_instruction=SYSTEM_INSTRUCTION
 )
 
@@ -105,8 +105,14 @@ async def chat_interactivo(req: ChatRequest):
     full_prompt = f"{persona_prompt}\n\nUsuario pregunta: {req.prompt}"
     
     # 3. Generar respuesta
-    response = model_logic.generate_content(full_prompt)
-    return {"respuesta": response.text}
+    try:
+        response = model_logic.generate_content(full_prompt)
+        return {"respuesta": response.text}
+    except Exception as e:
+        error_str = str(e)
+        if "429" in error_str or "quota" in error_str.lower():
+            raise HTTPException(status_code=429, detail="Cuota de la API de Gemini excedida. Intente de nuevo en unos segundos.")
+        raise HTTPException(status_code=503, detail=f"Error del servicio IA: {error_str[:200]}")
 
 
 def obtener_estadisticas_db() -> dict:

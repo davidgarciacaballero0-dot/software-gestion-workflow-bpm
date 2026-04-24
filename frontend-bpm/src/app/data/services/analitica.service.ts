@@ -39,8 +39,8 @@ export class AnaliticaService {
     return this.http.get(`${this.apiUrl}/report/excel`, { responseType: 'blob' });
   }
 
-  downloadPdf(text: string): Observable<Blob> {
-    return this.http.post(`${this.apiUrl}/report/pdf`, { text }, { responseType: 'blob' });
+  downloadPdf(text: string, chartImage?: string): Observable<Blob> {
+    return this.http.post(`${this.apiUrl}/report/pdf`, { text, chartImage }, { responseType: 'blob' });
   }
 
   reassignPersonal(request: ReassignMassRequest): Observable<any> {

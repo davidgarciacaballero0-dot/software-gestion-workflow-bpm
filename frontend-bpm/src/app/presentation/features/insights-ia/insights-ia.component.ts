@@ -25,6 +25,7 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
   analyzingIA = false;
   executingAction = false;
   metrics: MetricData[] = [];
+  realTimeMetrics: MetricData[] = [];
   aiReport: string = '';
   formattedReport: SafeHtml = '';
   errorMsg: string = '';
@@ -123,20 +124,40 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
   cargarMetricas() {
     this.loadingMetrics = true;
     this.errorMsg = '';
+    
+    // Fetch global real-time metrics (no filters) for the top panel
+    this.analiticaService.getMetrics(0, '').subscribe({
+      next: (data) => {
+        this.realTimeMetrics = data;
+        // Also fetch filtered metrics for charts
+        this.fetchFilteredMetrics();
+      },
+      error: (err) => {
+        console.error('Error fetching global metrics:', err);
+        this.handleError();
+      }
+    });
+  }
+
+  fetchFilteredMetrics() {
     this.analiticaService.getMetrics(this.filtros.meses, this.filtros.idDepartamento).subscribe({
       next: (data) => {
-        this.metrics = data;
+        this.metrics = data; // these are the filtered ones used for charts
         this.updateChartData();
         this.loadingMetrics = false;
         this.cdr.detectChanges();
       },
       error: (err) => {
-        console.error('Error -100 Detection:', err);
-        this.errorMsg = 'Error de conexión con el Backend. Verifique que el servicio Java esté corriendo.';
-        this.loadingMetrics = false;
-        this.cdr.detectChanges();
+        console.error('Error fetching filtered metrics:', err);
+        this.handleError();
       }
     });
+  }
+
+  handleError() {
+    this.errorMsg = 'Error de conexión con el Backend. Verifique que el servicio Java esté corriendo.';
+    this.loadingMetrics = false;
+    this.cdr.detectChanges();
   }
 
   getLoadPercent(m: MetricData): number {
@@ -148,7 +169,8 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   aplicarFiltros() {
-    this.cargarMetricas();
+    this.loadingMetrics = true;
+    this.fetchFilteredMetrics();
   }
 
   // ========================================
@@ -352,7 +374,17 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
       alert('Primero genere un análisis IA para poder exportar el PDF.');
       return;
     }
-    this.analiticaService.downloadPdf(this.aiReport).subscribe({
+
+    let chartImageBase64 = '';
+    try {
+      if (this.chart?.chart) {
+        chartImageBase64 = this.chart.chart.toBase64Image();
+      }
+    } catch (e) {
+      console.warn('No se pudo extraer la imagen del gráfico', e);
+    }
+
+    this.analiticaService.downloadPdf(this.aiReport, chartImageBase64).subscribe({
       next: (blob) => {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');

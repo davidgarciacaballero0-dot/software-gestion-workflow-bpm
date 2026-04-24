@@ -86,7 +86,8 @@ public class OptimizacionController {
     @PostMapping("/report/pdf")
     public ResponseEntity<byte[]> downloadPdfReport(@RequestBody Map<String, String> request) {
         String text = request.get("text");
-        byte[] content = analiticaService.generarPDFAnalisis(text);
+        String chartImage = request.get("chartImage");
+        byte[] content = analiticaService.generarPDFAnalisis(text, chartImage);
         return ResponseEntity.ok()
                 .header("Content-Type", "application/pdf")
                 .header("Content-Disposition", "attachment; filename=informe_ia_consultoria.pdf")

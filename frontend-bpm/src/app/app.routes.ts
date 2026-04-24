@@ -26,6 +26,7 @@ export const routes: Routes = [
     children: [
       { path: '', redirectTo: 'catalog', pathMatch: 'full' },
       { path: 'catalog', component: PoliticaListComponent },
+      { path: 'designer', component: PoliticaListComponent },
       { path: 'politica/designer/:id', component: PoliticaDesignerComponent },
       { path: 'inbox', component: InboxComponent },
       { path: 'tramite/atencion/:id', component: TramiteAtencionComponent },

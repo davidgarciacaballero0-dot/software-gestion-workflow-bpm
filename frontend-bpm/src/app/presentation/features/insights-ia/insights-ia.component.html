@@ -25,7 +25,7 @@
       <label style="display: block; font-size: 0.85rem; color: #64748b; margin-bottom: 0.5rem; font-weight: 600;">📍 Departamento</label>
       <select [(ngModel)]="filtros.idDepartamento" (change)="aplicarFiltros()" class="select-premium" style="width: 100%; padding: 0.75rem; border-radius: 10px; border: 1px solid rgba(0,0,0,0.1); background: white; cursor: pointer; outline: none;">
         <option [value]="''">Todos los Departamentos</option>
-        <option *ngFor="let m of metrics" [value]="m.departamentoId">{{ m.nombreDepartamento }}</option>
+        <option *ngFor="let m of realTimeMetrics" [value]="m.departamentoId">{{ m.nombreDepartamento }}</option>
       </select>
     </div>
   </div>
@@ -50,8 +50,8 @@
           <div class="skeleton-bar" *ngFor="let i of [1,2,3,4,5]"></div>
         </div>
 
-        <div *ngIf="!loadingMetrics && metrics.length" class="dept-bars">
-          <div class="dept-row" *ngFor="let m of metrics">
+        <div *ngIf="!loadingMetrics && realTimeMetrics.length" class="dept-bars">
+          <div class="dept-row" *ngFor="let m of realTimeMetrics">
             <div class="dept-name">{{ m.nombreDepartamento }}</div>
             <div class="dept-progress-track">
               <div class="dept-progress-fill"
@@ -69,7 +69,7 @@
           </div>
         </div>
 
-        <div *ngIf="!loadingMetrics && !metrics.length" class="empty-state-small">
+        <div *ngIf="!loadingMetrics && !realTimeMetrics.length" class="empty-state-small">
           No hay datos departamentales disponibles.
         </div>
 
@@ -79,7 +79,7 @@
             <span *ngIf="!analyzingIA">🤖 Analizar...</span>
             <span *ngIf="analyzingIA">⏳ Procesando...</span>
           </button>
-          <button class="btn-action btn-excel" (click)="exportarExcel()" [disabled]="!metrics.length">
+          <button class="btn-action btn-excel" (click)="exportarExcel()" [disabled]="!realTimeMetrics.length">
             📗 Excel
           </button>
           <button class="btn-action btn-pdf" (click)="exportarPDF()" [disabled]="!aiReport">
@@ -156,7 +156,7 @@
             <label>Departamento Origen</label>
             <select [(ngModel)]="reassignForm.idOrigen" (change)="onOrigenChange()" class="select-premium">
               <option value="">-- Seleccione Origen --</option>
-              <option *ngFor="let m of metrics" [value]="m.departamentoId">{{ m.nombreDepartamento }}</option>
+              <option *ngFor="let m of realTimeMetrics" [value]="m.departamentoId">{{ m.nombreDepartamento }}</option>
             </select>
           </div>
 
@@ -174,7 +174,7 @@
             <label>Departamento Destino</label>
             <select [(ngModel)]="reassignForm.idDestino" class="select-premium">
               <option value="">-- Seleccione Destino --</option>
-              <option *ngFor="let m of metrics" [value]="m.departamentoId">{{ m.nombreDepartamento }}</option>
+              <option *ngFor="let m of realTimeMetrics" [value]="m.departamentoId">{{ m.nombreDepartamento }}</option>
             </select>
           </div>
 
