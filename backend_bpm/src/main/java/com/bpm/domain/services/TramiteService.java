@@ -427,6 +427,12 @@ public class TramiteService {
                 .collect(Collectors.toList());
     }
 
+    public List<TramiteResponseDTO> listarSupervisionGlobal() {
+        return tramiteRepository.findAll().stream()
+                .map(this::transformarADTO)
+                .collect(Collectors.toList());
+    }
+
     public List<TramiteResponseDTO> buscarPorCi(String ci) {
         return tramiteRepository.findByCiSolicitanteContaining(ci).stream()
                 .map(this::transformarADTO)

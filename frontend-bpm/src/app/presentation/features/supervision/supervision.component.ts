@@ -71,7 +71,14 @@ export class SupervisionComponent implements OnInit {
       } catch (e) {}
     }
     const user = this.authService.currentUser();
-    this.deptId = user?.idDepartamento || '';
+    
+    // Si es Administrador, tiene acceso global
+    if (user?.nombreRol === 'ADMIN') {
+      this.deptId = 'ALL';
+    } else {
+      this.deptId = user?.idDepartamento || '';
+    }
+
     // Fallback: si el JWT no tenía orgId, usar el del login response
     if (!this.orgId) {
       this.orgId = user?.idOrganizacion || '';
@@ -87,7 +94,11 @@ export class SupervisionComponent implements OnInit {
     this.analiticaService.getMetrics().subscribe({
       next: (data) => {
         this.zone.run(() => {
-          this.metricasDepartamentales = data || [];
+          if (this.deptId !== 'ALL') {
+             this.metricasDepartamentales = (data || []).filter(m => m.departamentoId === this.deptId);
+          } else {
+             this.metricasDepartamentales = data || [];
+          }
           this.cd.detectChanges();
         });
       }

@@ -69,6 +69,9 @@ public class TramiteController {
     // CU-20: Supervisión de Jefatura
     @GetMapping("/supervision/{departamentoId}")
     public ResponseEntity<List<TramiteResponseDTO>> listarSupervision(@PathVariable String departamentoId) {
+        if ("ALL".equalsIgnoreCase(departamentoId)) {
+            return ResponseEntity.ok(tramiteService.listarSupervisionGlobal());
+        }
         return ResponseEntity.ok(tramiteService.listarSupervisionDepartamento(departamentoId));
     }
 

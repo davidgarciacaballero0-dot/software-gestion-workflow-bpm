@@ -2,12 +2,12 @@ import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../../data/services/auth.service';
-import { VoiceAssistantComponent } from '../../shared/voice-assistant/voice-assistant.component';
+import { ChatbotWidgetComponent } from '../../shared/voice-assistant/chatbot-widget.component';
 
 @Component({
   selector: 'app-main-layout',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, VoiceAssistantComponent],
+  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, ChatbotWidgetComponent],
   template: `
     <div class="app-layout">
       <!-- Modal de Perfil (Fase 4 - Glassmorphism) -->
@@ -68,8 +68,8 @@ import { VoiceAssistantComponent } from '../../shared/voice-assistant/voice-assi
         </div>
       </div>
 
-      <!-- Asistente de Voz Global -->
-      <app-voice-assistant></app-voice-assistant>
+      <!-- Chatbot Inteligente Global -->
+      <app-chatbot-widget></app-chatbot-widget>
       <!-- Sidebar de Navegación -->
       <aside class="sidebar-container glass-premium">
         <div class="sidebar-header">
@@ -93,7 +93,7 @@ import { VoiceAssistantComponent } from '../../shared/voice-assistant/voice-assi
             <span class="icon">🎨</span>
             <span>Diseñador BPM</span>
           </a>
-          <a routerLink="/app/supervision" routerLinkActive="active" class="nav-item" *ngIf="isJefe()">
+          <a routerLink="/app/supervision" routerLinkActive="active" class="nav-item" *ngIf="isAdmin() || isJefe()">
             <span class="icon">📊</span>
             <span>Métricas de Supervisión</span>
           </a>
