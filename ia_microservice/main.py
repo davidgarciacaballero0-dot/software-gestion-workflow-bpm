@@ -52,8 +52,14 @@ class ChatRequest(BaseModel):
     prompt: str
     rol: str # CLIENTE, FUNCIONARIO, ADMIN, etc.
 
-# --- Configuración de Instrucción de Sistema ---
-# ... (SYSTEM_INSTRUCTION remains for previous endpoints)
+# --- Configuración de Instrucción de Sistema e Instancia del Modelo ---
+SYSTEM_INSTRUCTION = """Eres un asistente inteligente del sistema de Gestión de Procesos de Negocio (BPM Workflow). 
+Responde siempre en español. Sé conciso y profesional."""
+
+model_logic = genai.GenerativeModel(
+    model_name="gemini-2.0-flash",
+    system_instruction=SYSTEM_INSTRUCTION
+)
 
 @app.post("/ia/chat-interactivo")
 @retry(

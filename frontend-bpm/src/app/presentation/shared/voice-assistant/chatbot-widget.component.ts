@@ -288,7 +288,7 @@ export class ChatbotWidgetComponent implements AfterViewChecked {
     };
 
     // Usar el nuevo endpoint de chat interactivo
-    this.http.post('http://localhost:8000/ia/chat-interactivo', payload).subscribe({
+    this.http.post('/ia/chat-interactivo', payload).subscribe({
       next: (res: any) => {
         this.isTyping.set(false);
         const aiResponse = res.respuesta;
