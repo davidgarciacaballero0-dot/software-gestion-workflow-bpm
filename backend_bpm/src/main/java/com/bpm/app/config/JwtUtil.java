@@ -24,12 +24,12 @@ public class JwtUtil {
     }
 
     /**
-     * Genera un JWT firmado con email como subject y rol como claim personalizado.
+     * Genera un JWT firmado con email como subject y el nombre del rol como claim personalizado.
      */
-    public String generateToken(String email, String rolId, String userId, String orgId) {
+    public String generateToken(String email, String rolNombre, String userId, String orgId) {
         return Jwts.builder()
                 .subject(email)
-                .claim("rol", rolId)
+                .claim("rol", rolNombre)
                 .claim("userId", userId)
                 .claim("orgId", orgId)
                 .issuedAt(new Date())
@@ -53,7 +53,7 @@ public class JwtUtil {
         return extractClaims(token).getSubject();
     }
 
-    public String extractIdRol(String token) {
+    public String extractRolName(String token) {
         return extractClaims(token).get("rol", String.class);
     }
 

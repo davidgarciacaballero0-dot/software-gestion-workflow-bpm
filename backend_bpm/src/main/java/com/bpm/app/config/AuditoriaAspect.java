@@ -37,8 +37,8 @@ public class AuditoriaAspect {
             // filtro)
             String emailUsuario = "ANONIMO";
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            if (auth != null && auth.getPrincipal() != null) {
-                emailUsuario = auth.getPrincipal().toString();
+            if (auth != null && auth.isAuthenticated()) {
+                emailUsuario = auth.getName();
             }
 
             // Extraer IP de origen de la petición HTTP

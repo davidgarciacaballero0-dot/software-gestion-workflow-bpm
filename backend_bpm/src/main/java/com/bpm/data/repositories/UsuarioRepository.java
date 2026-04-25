@@ -9,6 +9,8 @@ import java.util.List;
 @Repository
 public interface UsuarioRepository extends MongoRepository<Usuario, String> {
     List<Usuario> findByIdDepartamento(String idDepartamento);
+
     java.util.Optional<Usuario> findByEmail(String email); // Útil para Login e idempotencia
+
     java.util.Optional<Usuario> findByCi(String ci); // Para auto-registro por CI
 }

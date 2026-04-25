@@ -18,7 +18,9 @@ public class OptimizacionController {
 
     private final AnaliticaService analiticaService;
     private final RestTemplate restTemplate = new RestTemplate();
-    private final String IA_URL = "http://ia-service:8000/ia";
+    
+    @org.springframework.beans.factory.annotation.Value("${ia.service.url:http://localhost:8000/ia}")
+    private String IA_URL;
 
     @GetMapping("/metrics")
     public ResponseEntity<List<AnaliticaService.MetricDataDTO>> getMetrics(
@@ -73,13 +75,23 @@ public class OptimizacionController {
     @PostMapping("/analyze-flow")
     public ResponseEntity<Map<String, Object>> analyzeFlow(@RequestBody Map<String, String> request) {
         try {
+            // REQ-14 Fix: Mapear 'descripcion' (frontend) a 'prompt' (IA Microservice)
+            Map<String, String> iaRequest = new HashMap<>();
+            String prompt = request.get("prompt");
+            if (prompt == null) prompt = request.get("descripcion");
+            
+            iaRequest.put("prompt", prompt);
+
             @SuppressWarnings("unchecked")
             Class<Map<String, Object>> responseType = (Class<Map<String, Object>>) (Class<?>) Map.class;
-            ResponseEntity<Map<String, Object>> response = restTemplate.postForEntity(IA_URL + "/generar-flujo", request, responseType);
+            ResponseEntity<Map<String, Object>> response = restTemplate.postForEntity(IA_URL + "/generar-flujo", iaRequest, responseType);
             return ResponseEntity.ok(response.getBody());
         } catch (Exception e) {
+            System.err.println("Error calling IA flow generation: " + e.getMessage());
+            e.printStackTrace();
             Map<String, Object> error = new HashMap<>();
             error.put("error", "Error al generar flujo con IA.");
+            error.put("details", e.getMessage());
             return ResponseEntity.status(503).body(error);
         }
     }
@@ -115,11 +127,26 @@ public class OptimizacionController {
     @PostMapping("/asistente")
     public ResponseEntity<Map<String, Object>> chatAssistant(@RequestBody Map<String, String> request) {
         try {
+            // REQ-14: Inyectar rol si falta para compatibilidad con microservicio IA
+            Map<String, String> iaRequest = new HashMap<>(request);
+            if (!iaRequest.containsKey("rol")) {
+                org.springframework.security.core.Authentication auth = 
+                    org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+                String rol = "CLIENTE"; // Default
+                if (auth != null) {
+                    rol = auth.getAuthorities().stream()
+                        .map(r -> r.getAuthority().replace("ROLE_", ""))
+                        .findFirst().orElse("CLIENTE");
+                }
+                iaRequest.put("rol", rol);
+            }
+
             @SuppressWarnings("unchecked")
             Class<Map<String, Object>> responseType = (Class<Map<String, Object>>) (Class<?>) Map.class;
-            ResponseEntity<Map<String, Object>> response = restTemplate.postForEntity(IA_URL + "/chat-interactivo", request, responseType);
+            ResponseEntity<Map<String, Object>> response = restTemplate.postForEntity(IA_URL + "/chat-interactivo", iaRequest, responseType);
             return ResponseEntity.ok(response.getBody());
         } catch (HttpStatusCodeException e) {
+            System.err.println("IA Service HTTP Error: " + e.getStatusCode() + " - " + e.getResponseBodyAsString());
             Map<String, Object> error = new HashMap<>();
             if (e.getStatusCode().value() == 429) {
                 error.put("error", "El asistente virtual está muy solicitado en este momento.");
@@ -129,8 +156,11 @@ public class OptimizacionController {
             error.put("error", "Error en el asistente virtual.");
             return ResponseEntity.status(e.getStatusCode()).body(error);
         } catch (Exception e) {
+            System.err.println("Error connecting to IA assistant: " + e.getMessage());
+            e.printStackTrace();
             Map<String, Object> error = new HashMap<>();
             error.put("error", "Error al conectar con el asistente virtual.");
+            error.put("details", e.getMessage());
             return ResponseEntity.status(503).body(error);
         }
     }

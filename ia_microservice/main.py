@@ -57,7 +57,7 @@ SYSTEM_INSTRUCTION = """Eres un asistente inteligente del sistema de Gestión de
 Responde siempre en español. Sé conciso y profesional."""
 
 model_logic = genai.GenerativeModel(
-    model_name="gemini-2.5-flash",
+    model_name="gemini-1.5-flash",
     system_instruction=SYSTEM_INSTRUCTION
 )
 
@@ -184,7 +184,7 @@ def obtener_estadisticas_db(dias_atras: int = 30) -> dict:
     from datetime import datetime, timedelta
     
     # 1. Obtener URI con prioridad a Docker
-    mongo_uri = os.getenv("MONGO_URI") or os.getenv("MONGODB_URI") or "mongodb://mongodb_bpm:27017/bpm_workflow"
+    mongo_uri = os.getenv("MONGO_URI") or os.getenv("MONGODB_URI") or "mongodb://localhost:27017/bpm_workflow"
     print(f"DEBUG IA: Intentando conectar a MongoDB en: {mongo_uri}")
     
     try:

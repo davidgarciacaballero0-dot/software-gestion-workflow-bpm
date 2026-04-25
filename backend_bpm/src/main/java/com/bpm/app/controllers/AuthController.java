@@ -104,19 +104,19 @@ public class AuthController {
     // HELPER: Construye el AuthResponseDTO + JWT a partir de un Usuario
     // ─────────────────────────────────────────────────────────────────────────
     private AuthResponseDTO buildAuthResponse(Usuario usuario) {
-        String token = jwtUtil.generateToken(
-                usuario.getEmail(),
-                usuario.getIdRol(),
-                usuario.getId(),
-                usuario.getIdOrganizacion());
-
-        boolean esJefe = departamentoRepository.existsByIdJefe(usuario.getId());
-
-        String nombreRol = "";
+        String nombreRol = "USER";
         if (usuario.getIdRol() != null) {
             Rol rol = rolRepository.findById(usuario.getIdRol()).orElse(null);
             if (rol != null) nombreRol = rol.getNombre();
         }
+
+        String token = jwtUtil.generateToken(
+                usuario.getEmail(),
+                nombreRol,
+                usuario.getId(),
+                usuario.getIdOrganizacion());
+
+        boolean esJefe = departamentoRepository.existsByIdJefe(usuario.getId());
 
         return new AuthResponseDTO(
                 usuario.getId(),

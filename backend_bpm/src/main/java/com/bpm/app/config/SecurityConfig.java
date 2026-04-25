@@ -32,6 +32,7 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final UsuarioRepository usuarioRepository;
+    private final com.bpm.data.repositories.RolRepository rolRepository;
 
     @Bean
     public UserDetailsService userDetailsService() {
@@ -40,10 +41,18 @@ public class SecurityConfig {
             if (usuario == null) {
                 throw new UsernameNotFoundException("Usuario no encontrado: " + username);
             }
+            
+            String nombreRol = "USER";
+            if (usuario.getIdRol() != null) {
+                nombreRol = rolRepository.findById(usuario.getIdRol())
+                        .map(com.bpm.data.entities.Rol::getNombre)
+                        .orElse("USER");
+            }
+            
             return org.springframework.security.core.userdetails.User.builder()
                 .username(usuario.getEmail())
                 .password(usuario.getPasswordHash())
-                .roles(usuario.getIdRol())
+                .roles(nombreRol)
                 .build();
         };
     }
