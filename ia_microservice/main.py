@@ -57,7 +57,7 @@ SYSTEM_INSTRUCTION = """Eres un asistente inteligente del sistema de Gestión de
 Responde siempre en español. Sé conciso y profesional."""
 
 model_logic = genai.GenerativeModel(
-    model_name="gemini-1.5-flash",
+    model_name="gemini-2.5-flash",
     system_instruction=SYSTEM_INSTRUCTION
 )
 
@@ -124,7 +124,7 @@ async def chat_interactivo(req: ChatRequest):
         error_str = str(e)
         if "429" in error_str or "quota" in error_str.lower():
             raise HTTPException(status_code=429, detail="Cuota de la API de Gemini excedida. Intente de nuevo en unos segundos.")
-        raise HTTPException(status_code=503, detail=f"Error del servicio IA: {error_str[:200]}")
+        raise HTTPException(status_code=503, detail=f"Error del servicio IA: {error_str}")
 
 
 @app.post("/ia/asistente")
@@ -153,8 +153,7 @@ async def analizar_rendimiento(req: AnalysisRequest):
             text = text.split("```json")[1].split("```")[0].strip()
         return json.loads(text)
     except Exception as e:
-        # Si falla el parseo JSON, devolver texto plano estructurado
-        return {"analisis": response.text, "status": "processed_as_text"}
+        return {"analisis": f"Error en análisis: {str(e)}", "status": "error"}
 
 
 @app.post("/ia/generar-flujo")
@@ -175,7 +174,7 @@ async def generar_flujo(req: FlowRequest):
             text = text.split("```json")[1].split("```")[0].strip()
         return json.loads(text)
     except Exception as e:
-        return {"error": "No se pudo generar el JSON del flujo", "respuesta": response.text}
+        return {"error": "No se pudo generar el flujo", "detalle": str(e)}
 
 
 def obtener_estadisticas_db(dias_atras: int = 30) -> dict:

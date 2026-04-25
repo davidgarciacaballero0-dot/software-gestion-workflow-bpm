@@ -71,79 +71,82 @@ import { ChatbotWidgetComponent } from '../../shared/voice-assistant/chatbot-wid
       <!-- Chatbot Inteligente Global -->
       <app-chatbot-widget></app-chatbot-widget>
       <!-- Sidebar de Navegación -->
-      <aside class="sidebar-container glass-premium">
+      <aside class="sidebar-container glass-premium" [class.collapsed]="isCollapsed()">
         <div class="sidebar-header">
           <div class="logo-box">BPM</div>
-          <div class="brand-text">
+          <div class="brand-text" *ngIf="!isCollapsed()">
             <h2>Workflow</h2>
             <span>Enterprise Edition</span>
           </div>
+          <button class="toggle-sidebar-btn" (click)="toggleSidebar()" [title]="isCollapsed() ? 'Expandir' : 'Colapsar'">
+            {{ isCollapsed() ? '»' : '«' }}
+          </button>
         </div>
 
         <nav class="sidebar-nav">
-          <a routerLink="/app/catalog" routerLinkActive="active" class="nav-item" *ngIf="!isClient()">
+          <a routerLink="/app/catalog" routerLinkActive="active" class="nav-item" *ngIf="!isClient()" [title]="isCollapsed() ? 'Catálogo' : ''">
             <span class="icon">🚀</span>
-            <span>Catálogo de Trámites</span>
+            <span class="label" *ngIf="!isCollapsed()">Catálogo de Trámites</span>
           </a>
-          <a routerLink="/app/inbox" routerLinkActive="active" class="nav-item">
+          <a routerLink="/app/inbox" routerLinkActive="active" class="nav-item" [title]="isCollapsed() ? 'Bandeja' : ''">
             <span class="icon">📥</span>
-            <span>{{ isClient() ? 'Mis Trámites' : 'Bandeja de Entrada' }}</span>
+            <span class="label" *ngIf="!isCollapsed()">{{ isClient() ? 'Mis Trámites' : 'Bandeja' }}</span>
           </a>
-          <a routerLink="/app/designer" routerLinkActive="active" class="nav-item" *ngIf="isAdmin()">
+          <a routerLink="/app/designer" routerLinkActive="active" class="nav-item" *ngIf="isAdmin()" [title]="isCollapsed() ? 'Diseñador' : ''">
             <span class="icon">🎨</span>
-            <span>Diseñador BPM</span>
+            <span class="label" *ngIf="!isCollapsed()">Diseñador BPM</span>
           </a>
-          <a routerLink="/app/supervision" routerLinkActive="active" class="nav-item" *ngIf="isAdmin() || isJefe()">
+          <a routerLink="/app/supervision" routerLinkActive="active" class="nav-item" *ngIf="isAdmin() || isJefe()" [title]="isCollapsed() ? 'Supervisión' : ''">
             <span class="icon">📊</span>
-            <span>Métricas de Supervisión</span>
+            <span class="label" *ngIf="!isCollapsed()">Métricas de Supervisión</span>
           </a>
 
-          <!-- Módulos de Gestión Administrativa (CU-1.2) -->
-          <div class="nav-divider" *ngIf="isAdmin()">
+          <div class="nav-divider" *ngIf="isAdmin() && !isCollapsed()">
              <span>Gestión</span>
           </div>
-          <a routerLink="/app/organizations" routerLinkActive="active" class="nav-item" *ngIf="isAdmin()">
+          <a routerLink="/app/organizations" routerLinkActive="active" class="nav-item" *ngIf="isAdmin()" [title]="isCollapsed() ? 'Organizaciones' : ''">
             <span class="icon">🏢</span>
-            <span>Organizaciones</span>
+            <span class="label" *ngIf="!isCollapsed()">Organizaciones</span>
           </a>
-          <a routerLink="/app/departments" routerLinkActive="active" class="nav-item" *ngIf="isAdmin()">
+          <a routerLink="/app/departments" routerLinkActive="active" class="nav-item" *ngIf="isAdmin()" [title]="isCollapsed() ? 'Departamentos' : ''">
             <span class="icon">🏘️</span>
-            <span>Departamentos</span>
+            <span class="label" *ngIf="!isCollapsed()">Departamentos</span>
           </a>
-          <a routerLink="/app/users" routerLinkActive="active" class="nav-item" *ngIf="isAdmin()">
+          <a routerLink="/app/users" routerLinkActive="active" class="nav-item" *ngIf="isAdmin()" [title]="isCollapsed() ? 'Usuarios' : ''">
             <span class="icon">👥</span>
-            <span>Usuarios</span>
+            <span class="label" *ngIf="!isCollapsed()">Usuarios</span>
           </a>
-          <a routerLink="/app/roles" routerLinkActive="active" class="nav-item" *ngIf="isAdmin()">
+          <a routerLink="/app/roles" routerLinkActive="active" class="nav-item" *ngIf="isAdmin()" [title]="isCollapsed() ? 'Roles' : ''">
             <span class="icon">🔐</span>
-            <span>Roles</span>
+            <span class="label" *ngIf="!isCollapsed()">Roles</span>
           </a>
-          <a routerLink="/app/audit" routerLinkActive="active" class="nav-item" *ngIf="isAdmin()">
+          <a routerLink="/app/audit" routerLinkActive="active" class="nav-item" *ngIf="isAdmin()" [title]="isCollapsed() ? 'Auditoría' : ''">
             <span class="icon">📋</span>
-            <span>Auditoría</span>
+            <span class="label" *ngIf="!isCollapsed()">Auditoría</span>
           </a>
-          <a routerLink="/app/insights" routerLinkActive="active" class="nav-item" *ngIf="isAdmin()">
+          <a routerLink="/app/insights" routerLinkActive="active" class="nav-item" *ngIf="isAdmin()" [title]="isCollapsed() ? 'IA Insights' : ''">
             <span class="icon">🤖</span>
-            <span>Reportes y Analítica IA</span>
+            <span class="label" *ngIf="!isCollapsed()">Reportes y Analítica IA</span>
           </a>
         </nav>
 
         <div class="sidebar-footer">
           <div class="user-profile-pill monolith-surface clickable-profile" 
                *ngIf="authService.currentUser() as user"
-               (click)="toggleProfile()">
+               (click)="toggleProfile()"
+               [title]="isCollapsed() ? user.nombre : ''">
             <div class="avatar-gradient">
               {{ user.nombre.charAt(0).toUpperCase() }}
             </div>
-            <div class="user-details">
+            <div class="user-details" *ngIf="!isCollapsed()">
               <span class="name">{{ user.nombre }}</span>
               <span class="role">{{ user.nombreRol }}</span>
             </div>
           </div>
           
-          <button class="logout-action" (click)="authService.logout()">
+          <button class="logout-action" (click)="authService.logout()" [title]="isCollapsed() ? 'Cerrar Sesión' : ''">
             <span class="icon">🚪</span>
-            <span>Cerrar Sesión</span>
+            <span class="label" *ngIf="!isCollapsed()">Cerrar Sesión</span>
           </button>
         </div>
       </aside>
@@ -190,12 +193,46 @@ import { ChatbotWidgetComponent } from '../../shared/voice-assistant/chatbot-wid
       box-shadow: 1px 0 10px rgba(7, 2, 53, 0.03); /* Subtle lift */
     }
 
+    .sidebar-container.collapsed {
+      width: 85px;
+      padding: 1.5rem 0.75rem;
+    }
+
     .sidebar-header {
       display: flex;
       align-items: center;
       gap: 1rem;
       margin-bottom: 2.5rem;
       padding-left: 0.5rem;
+      position: relative;
+    }
+
+    .toggle-sidebar-btn {
+      position: absolute;
+      right: -12px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 24px;
+      height: 24px;
+      background: var(--primary);
+      border: none;
+      border-radius: 50%;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 0.8rem;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      z-index: 100;
+      transition: all 0.3s ease;
+    }
+    .toggle-sidebar-btn:hover { background: var(--primary-container); scale: 1.1; }
+
+    .sidebar-container.collapsed .toggle-sidebar-btn {
+      right: 50%;
+      transform: translate(50%, -50%);
+      top: 110%;
     }
 
     .logo-box {
@@ -234,6 +271,18 @@ import { ChatbotWidgetComponent } from '../../shared/voice-assistant/chatbot-wid
       font-size: 0.85rem; /* body-md */
       font-weight: 500;
       transition: all 0.2s;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+
+    .sidebar-container.collapsed .nav-item {
+      justify-content: center;
+      padding: 0.7rem 0;
+      gap: 0;
+    }
+
+    .sidebar-container.collapsed .icon {
+      font-size: 1.2rem;
     }
 
     .nav-item:hover {
@@ -428,6 +477,11 @@ import { ChatbotWidgetComponent } from '../../shared/voice-assistant/chatbot-wid
 export class MainLayoutComponent {
   authService = inject(AuthService);
   showProfile = signal(false);
+  isCollapsed = signal(false);
+
+  toggleSidebar() {
+    this.isCollapsed.update(v => !v);
+  }
 
   toggleProfile() {
     this.showProfile.update((v: boolean) => !v);

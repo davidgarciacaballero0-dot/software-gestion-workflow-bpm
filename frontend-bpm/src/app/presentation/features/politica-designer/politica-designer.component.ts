@@ -1,5 +1,5 @@
 import { Component, OnInit, inject, ChangeDetectorRef, NgZone } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DragDropModule, CdkDragEnd } from '@angular/cdk/drag-drop';
@@ -66,6 +66,7 @@ export class PoliticaDesignerComponent implements OnInit {
   isAdmin = false;
 
   private route = inject(ActivatedRoute);
+  private router = inject(Router);
   private workflowService = inject(PoliticaWorkflowService);
   private depService = inject(DepartamentoService);
   private authService = inject(AuthService);
@@ -470,11 +471,9 @@ export class PoliticaDesignerComponent implements OnInit {
 
     this.workflowService.nuevaVersion(this.currentPolicy.id).subscribe({
       next: (res: PoliticaWorkflow) => {
-        this.currentPolicy = res;
-        this.nodes = res.nodes || [];
-        this.edges = res.edges || [];
-        this.selectedNode = null;
-        alert('Se ha creado la versión ' + res.version + ' en modo borrador.');
+        // Redirigir a la nueva versión para que la URL sea correcta y permita editar
+        this.router.navigate(['/app/designer', res.id]);
+        this.notificationService.notify('Se ha creado la versión ' + res.version + ' en modo borrador.', 'SUCCESS');
       },
       error: (err: any) => this.handleError(err)
     });

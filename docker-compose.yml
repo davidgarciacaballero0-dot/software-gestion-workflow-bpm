@@ -34,6 +34,7 @@ services:
       - SPRING_DATA_MONGODB_URI=mongodb://mongodb_bpm:27017/bpm_workflow
       - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRATION_MS=${JWT_EXPIRATION_MS:-86400000}
+      - IA_SERVICE_URL=http://ia-service:8000/ia
 
   # ============================================================
   # IA Microservice - FastAPI

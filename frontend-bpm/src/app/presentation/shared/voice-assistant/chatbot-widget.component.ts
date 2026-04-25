@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
-import { ElevenLabsService } from '../../../data/services/eleven-labs.service';
 import { AuthService } from '../../../data/services/auth.service';
 
 interface ChatMessage {
@@ -33,9 +32,6 @@ interface ChatMessage {
           </div>
         </div>
         <div class="header-actions">
-          <button class="voice-toggle-btn" (click)="toggleVoiceOutput()" title="Activar/Desactivar Voz">
-            {{ voiceEnabled() ? '🔊' : '🔇' }}
-          </button>
           <button class="minimize-btn" (click)="toggleChat()">—</button>
         </div>
       </div>
@@ -225,7 +221,6 @@ export class ChatbotWidgetComponent implements AfterViewChecked {
   isOpen = signal(false);
   isListening = false;
   isTyping = signal(false);
-  voiceEnabled = signal(true);
   messages = signal<ChatMessage[]>([]);
   userInput = '';
   recognition: any;
@@ -234,7 +229,6 @@ export class ChatbotWidgetComponent implements AfterViewChecked {
     private router: Router, 
     private zone: NgZone,
     private http: HttpClient,
-    private elevenLabs: ElevenLabsService,
     public authService: AuthService
   ) {
     this.initSpeechRecognition();
@@ -274,10 +268,6 @@ export class ChatbotWidgetComponent implements AfterViewChecked {
     }
   }
 
-  toggleVoiceOutput() {
-    this.voiceEnabled.update(v => !v);
-  }
-
   getRoleLabel(): string {
     const user = this.authService.currentUser();
     if (user?.nombreRol === 'ADMIN' || user?.esJefe) return 'Consultor Estratégico';
@@ -304,10 +294,6 @@ export class ChatbotWidgetComponent implements AfterViewChecked {
         this.isTyping.set(false);
         const aiResponse = res.respuesta;
         this.messages.update(prev => [...prev, { text: aiResponse, isAi: true, timestamp: new Date() }]);
-        
-        if (this.voiceEnabled()) {
-          this.elevenLabs.speak(aiResponse);
-        }
       },
       error: (err) => {
         this.isTyping.set(false);

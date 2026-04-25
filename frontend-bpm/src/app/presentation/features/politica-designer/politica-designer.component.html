@@ -4,7 +4,10 @@
     <div class="policy-info">
       <h2>{{ currentPolicy.nombre }}</h2>
       <span class="badge" [class]="currentPolicy.status">{{ currentPolicy.status }}</span>
-      <span class="version-tag">v{{ currentPolicy.version }}</span>
+      <div class="version-box">
+        <span>v</span>
+        <input type="text" [(ngModel)]="currentPolicy.version" [disabled]="!canEdit()" class="version-input" title="Número de Versión">
+      </div>
     </div>
     <div class="header-actions">
       <button *ngIf="currentPolicy.status === 'PUBLISHED' && isAdmin" class="btn-premium btn-premium-primary ghost-border"
