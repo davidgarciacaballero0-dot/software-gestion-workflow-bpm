@@ -10,6 +10,11 @@
     "secure": false,
     "changeOrigin": true
   },
+  "/ia": {
+    "target": "http://localhost:8000",
+    "secure": false,
+    "changeOrigin": true
+  },
   "/elevenlabs-api": {
     "target": "https://api.elevenlabs.io",
     "secure": true,
@@ -17,5 +22,11 @@
     "pathRewrite": {
       "^/elevenlabs-api": ""
     }
+  },
+  "/ws-bpm": {
+    "target": "http://localhost:8080",
+    "secure": false,
+    "ws": true,
+    "changeOrigin": true
   }
 }

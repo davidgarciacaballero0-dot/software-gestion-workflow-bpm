@@ -31,6 +31,10 @@ export class TramiteService {
     return this.http.get<any[]>(`${this.apiUrl}/solicitante/${usuarioId}`);
   }
 
+  listarAsignados(usuarioId: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/asignados/${usuarioId}`);
+  }
+
   obtenerHistorial(idTramite: string): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/${idTramite}/historial`);
   }

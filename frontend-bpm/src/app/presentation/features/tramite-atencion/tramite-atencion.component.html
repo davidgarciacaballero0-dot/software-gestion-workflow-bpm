@@ -151,3 +151,54 @@
     <button class="btn btn-primary mt-2" (click)="volver()">Volver a la Bandeja</button>
   </div>
 </div>
+
+<!-- MODAL DE ÉXITO PREMIUM (PASO DE ESTAFETA) -->
+<div class="success-overlay animate-fade-in" *ngIf="showSuccessModal">
+  <div class="success-modal glass-premium shadow-premium animate-zoom-in">
+    <div class="success-icon-wrapper">
+      <div class="success-icon-circle">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+      </div>
+    </div>
+
+    <div class="success-content">
+      <h2 class="text-gradient">¡Tarea Finalizada con Éxito!</h2>
+      <p class="success-description">
+        La tarea ha sido procesada y derivada correctamente al siguiente paso del flujo de trabajo.
+      </p>
+
+      <div class="derivation-flow-visual">
+        <div class="flow-step current">
+          <div class="step-icon">👤</div>
+          <div class="step-info">
+            <span class="step-label">Paso Completado</span>
+            <span class="step-value">{{ nodoActual?.name }}</span>
+          </div>
+        </div>
+        <div class="flow-connector">
+          <div class="connector-line"></div>
+          <div class="connector-arrow">➔</div>
+        </div>
+        <div class="flow-step next">
+          <div class="step-icon">🏢</div>
+          <div class="step-info">
+            <span class="step-label">Derivado a</span>
+            <span class="step-value">{{ targetDeptName }}</span>
+            <span class="step-subvalue">📍 {{ targetNodeName }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="success-actions">
+        <button class="btn-premium btn-premium-secondary" (click)="volver()">
+          🏠 Volver a Bandeja
+        </button>
+        <button class="btn-premium btn-premium-primary" (click)="volver()">
+          📋 Ver Historial
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

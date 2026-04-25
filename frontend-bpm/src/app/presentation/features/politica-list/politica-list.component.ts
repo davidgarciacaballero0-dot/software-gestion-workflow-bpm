@@ -39,6 +39,14 @@ export class PoliticaListComponent implements OnInit {
     version: '1.0'
   };
   errorMessage: string | null = null;
+  
+  // Datos del cliente para inicio por funcionario
+  clientData = {
+    ci: '',
+    nombre: '',
+    apellidos: '',
+    celular: ''
+  };
 
   constructor(
     private politicaService: PoliticaWorkflowService,
@@ -144,7 +152,11 @@ export class PoliticaListComponent implements OnInit {
       idUsuarioSolicitante: userId,
       datosIniciales: {
         timestamp_inicio: new Date().toISOString(),
-        procedencia: 'Front-End BPM - ' + (this.isClient ? 'External Client' : 'Internal User')
+        procedencia: 'Front-End BPM - ' + (this.isClient ? 'External Client' : 'Internal User'),
+        f_ci: this.clientData.ci,
+        nombre: this.clientData.nombre,
+        apellidos: this.clientData.apellidos,
+        celular: this.clientData.celular
       }
     };
 

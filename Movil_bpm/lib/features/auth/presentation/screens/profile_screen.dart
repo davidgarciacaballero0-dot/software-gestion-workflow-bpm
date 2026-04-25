@@ -1,11 +1,8 @@
-// ─────────────────────────────────────────────────────────────
-// lib/features/auth/presentation/screens/profile_screen.dart
-// Pantalla de Perfil — "Mis datos" (Tarea 1.4)
-// Solo lectura. Muestra los datos del Cliente autenticado.
-// ─────────────────────────────────────────────────────────────
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:animate_do/animate_do.dart';
 import 'package:workflow_app/core/theme/app_theme.dart';
 import 'package:workflow_app/features/auth/domain/models/user_model.dart';
 import 'package:workflow_app/features/auth/presentation/providers/auth_providers.dart';
@@ -18,34 +15,32 @@ class ProfileScreen extends ConsumerWidget {
     final session = ref.watch(sessionProvider);
 
     return session.when(
-      loading: () => const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      ),
+      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (e, _) => Scaffold(body: Center(child: Text(e.toString()))),
       data: (user) {
         if (user == null) return const SizedBox.shrink();
-        return _ProfileView(user: user, ref: ref);
+        return _ProfileGlassView(user: user, ref: ref);
       },
     );
   }
 }
 
-class _ProfileView extends StatelessWidget {
+class _ProfileGlassView extends StatelessWidget {
   final UserModel user;
   final WidgetRef ref;
 
-  const _ProfileView({required this.user, required this.ref});
+  const _ProfileGlassView({required this.user, required this.ref});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.surface,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text('Mi perfil'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout_rounded),
-            tooltip: 'Cerrar sesión',
+            icon: const Icon(Icons.logout_rounded, color: AppTheme.primary),
             onPressed: () async {
               await ref.read(sessionProvider.notifier).logout();
               if (context.mounted) context.go('/login');
@@ -53,73 +48,136 @@ class _ProfileView extends StatelessWidget {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            // ── Avatar ────────────────────────────────────────
-            const SizedBox(height: 16),
-            CircleAvatar(
-              radius: 40,
-              backgroundColor: AppTheme.primary,
-              child: Text(
-                user.nombre.isNotEmpty ? user.nombre[0].toUpperCase() : 'C',
-                style: const TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              user.nombreCompleto,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: BoxDecoration(
-                color: const Color(0xFFE8F0FE),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                user.nombreRol,
-                style: const TextStyle(
-                  color: AppTheme.primary,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 12,
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 32),
-
-            // ── Datos ─────────────────────────────────────────
-            _DataCard(children: [
-              _DataRow(icon: Icons.email_outlined,  label: 'Correo', value: user.email),
-              _DataRow(icon: Icons.badge_outlined,   label: 'C.I.',   value: user.ci.isNotEmpty ? user.ci : 'No registrado'),
-              _DataRow(icon: Icons.phone_outlined,   label: 'Celular', value: user.celular.isNotEmpty ? user.celular : 'No registrado'),
-            ]),
-
-            const SizedBox(height: 16),
-
-            _DataCard(children: [
-              _DataRow(
-                icon: Icons.calendar_today_outlined,
-                label: 'Miembro desde',
-                value: _formatDate(user.createdAt),
-              ),
-              _DataRow(
-                icon: Icons.business_outlined,
-                label: 'Organización',
-                value: user.idOrganizacion ?? 'Cliente externo',
-              ),
-            ]),
-          ],
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: RadialGradient(
+            center: Alignment.topRight,
+            radius: 1.5,
+            colors: [Color(0x26070235), Colors.white],
+          ),
         ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 100),
+          child: Column(
+            children: [
+              FadeInDown(
+                child: _buildHeader(context),
+              ),
+              const SizedBox(height: 40),
+              FadeInUp(
+                delay: const Duration(milliseconds: 200),
+                child: _buildGlassCard(context),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Miembro desde: ${_formatDate(user.createdAt)}',
+                style: const TextStyle(fontSize: 12, color: AppTheme.subtle, fontStyle: FontStyle.italic),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    return Column(
+      children: [
+        Container(
+          width: 80,
+          height: 80,
+          decoration: BoxDecoration(
+            color: AppTheme.primary,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.primary.withOpacity(0.3),
+                blurRadius: 15,
+                offset: const Offset(0, 8),
+              )
+            ],
+          ),
+          child: Center(
+            child: Text(
+              user.nombre.isNotEmpty ? user.nombre[0].toUpperCase() : 'C',
+              style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          user.nombreCompleto,
+          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: AppTheme.primary),
+        ),
+        const SizedBox(height: 4),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          decoration: BoxDecoration(
+            color: AppTheme.primary.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(
+            user.nombreRol,
+            style: const TextStyle(color: AppTheme.primary, fontWeight: FontWeight.bold, fontSize: 11),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGlassCard(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(32),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.7),
+            borderRadius: BorderRadius.circular(32),
+            border: Border.all(color: Colors.white.withOpacity(0.3)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Información Personal', style: TextStyle(
+                fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.primary, letterSpacing: 1.2,
+              )),
+              const SizedBox(height: 20),
+              _buildInfoGrid(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoGrid() {
+    return Column(
+      children: [
+        _buildInfoItem('Carnet de Identidad (CI)', user.ci.isNotEmpty ? user.ci : 'Sin registrar'),
+        const Divider(height: 24, color: Color(0x1A000000)),
+        _buildInfoItem('Teléfono / Celular', user.celular.isNotEmpty ? user.celular : 'Sin registrar'),
+        const Divider(height: 24, color: Color(0x1A000000)),
+        _buildInfoItem('Correo Electrónico', user.email),
+        const Divider(height: 24, color: Color(0x1A000000)),
+        _buildInfoItem('Fecha de Nacimiento', user.fechaNacimiento ?? 'No disponible'),
+      ],
+    );
+  }
+
+  Widget _buildInfoItem(String label, String value) {
+    return SizedBox(
+      width: double.infinity,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 11, color: AppTheme.subtle)),
+          const SizedBox(height: 4),
+          Text(value, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+        ],
       ),
     );
   }
@@ -132,40 +190,5 @@ class _ProfileView extends StatelessWidget {
     } catch (_) {
       return raw;
     }
-  }
-}
-
-class _DataCard extends StatelessWidget {
-  final List<Widget> children;
-  const _DataCard({required this.children});
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Column(children: children),
-      ),
-    );
-  }
-}
-
-class _DataRow extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-
-  const _DataRow({required this.icon, required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      leading: Icon(icon, color: AppTheme.primary, size: 22),
-      title: Text(label, style: const TextStyle(fontSize: 12, color: AppTheme.subtle)),
-      subtitle: Text(
-        value,
-        style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 15),
-      ),
-    );
   }
 }

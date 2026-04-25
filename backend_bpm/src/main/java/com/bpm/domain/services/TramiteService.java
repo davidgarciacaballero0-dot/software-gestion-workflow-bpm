@@ -100,26 +100,33 @@ public class TramiteService {
         int year = Calendar.getInstance().get(Calendar.YEAR);
         String code = String.format("TRM-%d-%04d", year, seqNum);
 
-        // --- REQ: Auto-registro de Usuario Solicitante ---
-        Usuario solicitante = null;
+        // --- REQ: Auto-registro de Usuario Solicitante y Detección de Iniciador ---
+        Usuario iniciador = null;
         if (request.getIdUsuarioSolicitante() != null && !request.getIdUsuarioSolicitante().isEmpty()) {
-            solicitante = usuarioRepository.findById(request.getIdUsuarioSolicitante()).orElse(null);
+            iniciador = usuarioRepository.findById(request.getIdUsuarioSolicitante()).orElse(null);
         }
 
-        // Si no se encuentra por ID, intentar por CI en los datos iniciales
-        if (solicitante == null && request.getDatosIniciales() != null) {
-            String ciReq = (String) request.getDatosIniciales().get("f_ci");
-            if (ciReq == null)
-                ciReq = (String) request.getDatosIniciales().get("ci");
+        // Determinar si el iniciador es Funcionario (tiene departamento)
+        boolean esFuncionarioIniciador = iniciador != null && iniciador.getIdDepartamento() != null;
+        
+        Usuario solicitante = null;
+        String ciParaSolicitante = null;
 
-            if (ciReq != null) {
-                solicitante = usuarioRepository.findByCi(ciReq).orElse(null);
+        // Extraer CI del cliente desde los datos iniciales (proporcionado por el funcionario)
+        if (request.getDatosIniciales() != null) {
+            ciParaSolicitante = (String) request.getDatosIniciales().get("f_ci");
+            if (ciParaSolicitante == null) ciParaSolicitante = (String) request.getDatosIniciales().get("ci");
+        }
 
-                // Si aún no existe, proceder a la CREACIÓN AUTOMÁTICA
-                if (solicitante == null) {
-                    solicitante = autoRegistrarUsuario(request.getDatosIniciales(), ciReq);
-                }
+        if (esFuncionarioIniciador && ciParaSolicitante != null) {
+            // El funcionario está registrando a un cliente
+            solicitante = usuarioRepository.findByCi(ciParaSolicitante).orElse(null);
+            if (solicitante == null) {
+                solicitante = autoRegistrarUsuario(request.getDatosIniciales(), ciParaSolicitante);
             }
+        } else {
+            // Es un cliente iniciando su propio trámite (o no se proporcionó CI de tercero)
+            solicitante = iniciador;
         }
 
         String ci = (solicitante != null) ? solicitante.getCi() : "";
@@ -136,6 +143,7 @@ public class TramiteService {
                 .estadoActual("EN_PROGRESO")
                 .nodoActualId(firstOpNode.getId())
                 .departamentoActualId(firstOpNode.getDepartmentId())
+                .funcionarioAsignadoId((esFuncionarioIniciador && iniciador != null) ? iniciador.getId() : null) // Auto-asignación si es funcionario
                 .prioridad(request.getPrioridad() != null ? request.getPrioridad() : 2)
                 .datosAcumuladosFormulario(
                         request.getDatosIniciales() != null ? request.getDatosIniciales() : new HashMap<>())
@@ -250,16 +258,24 @@ public class TramiteService {
         LocalDateTime oldSlaVencimiento = instancia.getFechaVencimientoSla();
 
         // 4. Actualizar la instancia según el nodo destino
+        String deptAnteriorId = instancia.getDepartamentoActualId();
+        
         if (nextStopNode.getType() == NodeType.END) {
             instancia.setEstadoActual("FINALIZADO");
             instancia.setNodoActualId(nextStopNode.getId());
             instancia.setFechaVencimientoSla(null);
+            instancia.setFuncionarioAsignadoId(null); // Limpiar al finalizar
         } else {
             instancia.setNodoActualId(nextStopNode.getId());
             instancia.setDepartamentoActualId(nextStopNode.getDepartmentId());
             instancia.setFechaInicioNodoActual(LocalDateTime.now());
             instancia.setFechaVencimientoSla(nextStopNode.getSlaHours() != null ? 
                 LocalDateTime.now().plusHours(nextStopNode.getSlaHours()) : null);
+            
+            // REQ: Si cambia de departamento, liberar la tarea
+            if (nextStopNode.getDepartmentId() != null && !nextStopNode.getDepartmentId().equals(deptAnteriorId)) {
+                instancia.setFuncionarioAsignadoId(null);
+            }
         }
 
         instancia.setUpdatedAt(LocalDateTime.now());
@@ -442,6 +458,12 @@ public class TramiteService {
                 .collect(Collectors.toList());
     }
 
+    public List<TramiteResponseDTO> listarBandejaAsignados(String funcionarioId) {
+        return tramiteRepository.findByFuncionarioAsignadoId(funcionarioId).stream()
+                .map(this::transformarADTO)
+                .collect(Collectors.toList());
+    }
+
     // ========================================================================================
     // CU-20: SUPERVISIÓN DE JEFATURA — Vista de carga departamental completa
     // ========================================================================================
@@ -460,7 +482,8 @@ public class TramiteService {
     }
 
     public List<TramiteResponseDTO> buscarPorCi(String ci) {
-        return tramiteRepository.findByCiSolicitanteContaining(ci).stream()
+        List<TramiteInstancia> resultados = tramiteRepository.findByCiSolicitanteContaining(ci);
+        return resultados.stream()
                 .map(this::transformarADTO)
                 .collect(Collectors.toList());
     }

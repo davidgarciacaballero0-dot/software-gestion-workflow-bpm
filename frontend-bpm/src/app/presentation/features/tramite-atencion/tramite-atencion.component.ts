@@ -26,6 +26,11 @@ export class TramiteAtencionComponent implements OnInit {
   submitting = false;
   errorMessage: string | null = null;
 
+  // Modal de Éxito Premium
+  showSuccessModal = false;
+  targetNodeName = '';
+  targetDeptName = '';
+
   private userId = '';
 
   constructor(
@@ -188,7 +193,12 @@ export class TramiteAtencionComponent implements OnInit {
       next: (res) => {
         this.zone.run(() => {
           this.submitting = false;
-          this.router.navigate(['/app/inbox']);
+          
+          // REQ: Activar modal de éxito premium
+          this.targetNodeName = res.nombreNodoActual || 'Siguiente Paso';
+          this.targetDeptName = res.nombreDepartamentoActual || 'Área correspondiente';
+          this.showSuccessModal = true;
+          this.cd.detectChanges();
         });
       },
       error: (err) => {

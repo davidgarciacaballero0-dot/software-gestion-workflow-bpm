@@ -198,12 +198,46 @@
 
 <!-- Confirm Dialog (Iniciar Trámite) -->
 <div class="modal-overlay" *ngIf="showConfirmDialog">
-  <div class="modal-content glass-premium animate-pop" style="max-width: 450px; padding: 2rem; text-align: center;">
-    <h3 style="margin-bottom: 1rem; color: var(--primary);">Confirmar Inicio de Trámite</h3>
-    <p>¿Confirma la ejecución inmediata del flujo <strong>"{{ pendingPolitica?.nombre }}"</strong>?</p>
-    <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 1.5rem;">
-      <button class="btn btn-secondary" (click)="cancelarInicio()">Cancelar</button>
-      <button class="btn btn-primary" (click)="confirmarInicio()">Confirmar</button>
+  <div class="modal-content glass-premium animate-pop" style="max-width: 500px; padding: 2rem;">
+    <h3 style="margin-bottom: 0.5rem; color: var(--primary); text-align: center;">🚀 Iniciar Nuevo Trámite</h3>
+    <p style="text-align: center; margin-bottom: 1.5rem; font-size: 0.9rem; color: var(--text-muted);">
+      {{ isClient ? '¿Confirma la ejecución inmediata del flujo?' : 'Ingrese los datos del ciudadano que solicita el trámite.' }}
+    </p>
+
+    <!-- Formulario para Funcionarios -->
+    <div class="client-capture-form" *ngIf="!isClient">
+      <div class="form-group mb-3">
+        <label style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--primary);">Documento de Identidad (CI)</label>
+        <input type="text" class="form-control" [(ngModel)]="clientData.ci" placeholder="Ingrese CI del cliente">
+      </div>
+      <div class="row" style="display: flex; gap: 1rem;">
+        <div class="form-group mb-3" style="flex: 1;">
+          <label style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700;">Nombres</label>
+          <input type="text" class="form-control" [(ngModel)]="clientData.nombre" placeholder="Nombre">
+        </div>
+        <div class="form-group mb-3" style="flex: 1;">
+          <label style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700;">Apellidos</label>
+          <input type="text" class="form-control" [(ngModel)]="clientData.apellidos" placeholder="Apellidos">
+        </div>
+      </div>
+      <div class="form-group mb-4">
+        <label style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700;">Celular de Contacto</label>
+        <input type="text" class="form-control" [(ngModel)]="clientData.celular" placeholder="Ej: 78945612">
+      </div>
+    </div>
+
+    <!-- Confirmación para Clientes -->
+    <div *ngIf="isClient" style="text-align: center; padding: 1rem; background: rgba(var(--primary-rgb), 0.05); border-radius: 12px; margin-bottom: 1.5rem;">
+      <strong style="display: block; font-size: 1.1rem; color: var(--primary);">{{ pendingPolitica?.nombre }}</strong>
+    </div>
+
+    <div style="display: flex; gap: 1rem; justify-content: center;">
+      <button class="btn btn-secondary" style="flex: 1;" (click)="cancelarInicio()">Cancelar</button>
+      <button class="btn-premium btn-premium-primary" style="flex: 2;" 
+              (click)="confirmarInicio()" 
+              [disabled]="!isClient && !clientData.ci">
+        {{ isClient ? 'Confirmar Inicio' : 'Registrar e Iniciar' }}
+      </button>
     </div>
   </div>
 </div>

@@ -50,7 +50,13 @@ Para asegurar un desarrollo ordenado y escalable, el proyecto se dividirá en la
 - **Tarea 5.2:** Mostrar notificaciones in-app (Toast o Banner superior) al cambiar de estado (ej. "Su solicitud ha sido Aprobada"). ✅
 - **Tarea 5.3:** Pestaña / Centro de Notificaciones con el historial de alertas leídas. ✅
 
+#### FASE 6: Inteligencia Artificial y Experiencia Premium (Vanguardia) ✅
+- **Tarea 6.1:** Sincronización Estética con Web (Glassmorphism, Colores `#070235`, Tipografía Inter). ✅
+- **Tarea 6.2:** Integración del Asistente Virtual (Chatbot) con el modelo IA del backend. ✅
+- **Tarea 6.3:** Soporte de Voz Multilingüe (Speech-to-Text para consultas y ElevenLabs para respuestas de la IA). ✅
+- **Tarea 6.4:** Implementación de Animaciones Fluidas (`animate_do`) en transiciones y cards. ✅
+
 ### 🛠️ INSTRUCCIONES DE EJECUCIÓN:
-Genera el código base en Flutter siguiendo estrictamente el orden de las fases descritas arriba. Comienza ejecutando la **FASE 1**. Para cada tarea, asegúrate de implementar la capa de Dominio (Entities/Models), la capa de Datos (Repository/API) y la capa de Presentación (UI/Providers) antes de pasar a la siguiente tarea.
+Genera el código base en Flutter siguiendo estrictamente el orden de las fases descritas arriba. El modelo a seguir en cuanto a estética y funcionalidades es siempre la **Versión Web**, asegurando paridad total para el rol de Cliente.
 
 > **NOTA IMPORTANTE DE SINCRONIZACIÓN:** El endpoint de **Registro de Nuevos Clientes** que se creará en el Backend para dar soporte a la app móvil (Fase 1), también deberá ser integrado en el **Frontend Web (Angular)**. El equipo web debe diseñar una pantalla de registro público para que los clientes puedan crear sus cuentas desde el navegador de escritorio.

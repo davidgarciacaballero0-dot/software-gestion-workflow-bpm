@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:dio/dio.dart';
 import 'package:workflow_app/core/network/dio_client.dart';
+import 'package:workflow_app/core/services/voice_service.dart';
 
 /// Instancia única de FlutterSecureStorage
 final secureStorageProvider = Provider<FlutterSecureStorage>((ref) {
@@ -19,4 +20,11 @@ final secureStorageProvider = Provider<FlutterSecureStorage>((ref) {
 final dioProvider = Provider<Dio>((ref) {
   final storage = ref.watch(secureStorageProvider);
   return DioClient.build(storage);
+});
+
+/// Servicio de Voz (STT y TTS)
+final voiceServiceProvider = Provider<VoiceService>((ref) {
+  final service = VoiceService();
+  ref.onDispose(() => service.dispose());
+  return service;
 });

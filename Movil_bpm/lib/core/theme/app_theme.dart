@@ -10,13 +10,17 @@ import 'package:google_fonts/google_fonts.dart';
 class AppTheme {
   AppTheme._();
 
-  // ── Colores de marca ─────────────────────────────────────────
-  static const Color primary   = Color(0xFF1A73E8); // Azul corporativo
-  static const Color secondary = Color(0xFF00897B); // Verde éxito / confirmación
-  static const Color error     = Color(0xFFD32F2F);
-  static const Color surface   = Color(0xFFF8F9FA);
-  static const Color onSurface = Color(0xFF1C1B1F);
-  static const Color subtle    = Color(0xFF8E9093);  // Texto secundario
+  // ── Colores de marca (Sincronizados con la Web) ───────────────────
+  static const Color primary   = Color(0xFF070235); // Azul profundo (Orchestrated Monolith)
+  static const Color secondary = Color(0xFF1E1B4B); // Contenedor primario
+  static const Color error     = Color(0xFFBA1A1A); // Rojo Material Web
+  static const Color surface   = Color(0xFFF7F9FB); // Fondo claro web
+  static const Color onSurface = Color(0xFF191C1E); // Texto principal
+  static const Color subtle    = Color(0xFF47464F); // Texto secundario
+
+  // Vidrio/Glassmorphism tokens
+  static const Color glassBackground = Color(0xCCF7F9FB); // 80% opacidad del surface
+  static const Color ghostBorder = Color(0x26C8C5D0);    // outline-variant 15%
 
   static ThemeData get light {
     final base = ColorScheme.fromSeed(
@@ -30,16 +34,16 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       colorScheme: base,
-      textTheme: GoogleFonts.outfitTextTheme().apply(
+      textTheme: GoogleFonts.interTextTheme().apply(
         bodyColor: onSurface,
         displayColor: onSurface,
       ),
       appBarTheme: AppBarTheme(
         elevation: 0,
         centerTitle: false,
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.transparent, // Glass effect usually transparent
         foregroundColor: onSurface,
-        titleTextStyle: GoogleFonts.outfit(
+        titleTextStyle: GoogleFonts.inter(
           fontSize: 20,
           fontWeight: FontWeight.w600,
           color: onSurface,
@@ -51,17 +55,8 @@ class AppTheme {
           foregroundColor: Colors.white,
           minimumSize: const Size(double.infinity, 52),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          textStyle: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w600),
+          textStyle: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600),
           elevation: 0,
-        ),
-      ),
-      outlinedButtonTheme: OutlinedButtonThemeData(
-        style: OutlinedButton.styleFrom(
-          foregroundColor: primary,
-          minimumSize: const Size(double.infinity, 52),
-          side: const BorderSide(color: primary),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          textStyle: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w600),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -79,24 +74,21 @@ class AppTheme {
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: primary, width: 1.5),
         ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: error, width: 1.5),
-        ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        labelStyle: GoogleFonts.outfit(color: subtle),
-        hintStyle: GoogleFonts.outfit(color: subtle),
+        labelStyle: GoogleFonts.inter(color: subtle),
+        hintStyle: GoogleFonts.inter(color: subtle),
       ),
       cardTheme: CardThemeData(
         elevation: 0,
         color: Colors.white,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: Color(0xFFE8EAED)),
+          side: const BorderSide(color: Color(0x26C8C5D0)), // Ghost border
         ),
-        margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 6),
+        margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
       ),
       scaffoldBackgroundColor: surface,
     );
   }
 }
+

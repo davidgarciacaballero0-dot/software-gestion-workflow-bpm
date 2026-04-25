@@ -8,8 +8,9 @@ import java.util.List;
 
 @Repository
 public interface TramiteInstanciaRepository extends MongoRepository<TramiteInstancia, String> {
-    
-    // Método crítico para consultar con máxima velocidad las Entradas de un Departamento específico
+
+    // Método crítico para consultar con máxima velocidad las Entradas de un
+    // Departamento específico
     List<TramiteInstancia> findByDepartamentoActualId(String departamentoActualId);
 
     // Consulta de la Bandeja Personal (Trámites iniciados por un usuario)
@@ -17,5 +18,9 @@ public interface TramiteInstanciaRepository extends MongoRepository<TramiteInsta
 
     // Búsqueda por Carnet de Identidad (CI) - REQ FASE 4
     List<TramiteInstancia> findByCiSolicitanteContaining(String ci);
+
     List<TramiteInstancia> findByCiSolicitante(String ci);
+
+    // Consulta de trámites asignados a un funcionario específico para su atención
+    List<TramiteInstancia> findByFuncionarioAsignadoId(String funcionarioAsignadoId);
 }

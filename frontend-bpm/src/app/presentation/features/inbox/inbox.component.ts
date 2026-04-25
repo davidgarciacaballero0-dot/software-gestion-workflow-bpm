@@ -86,7 +86,7 @@ export class InboxComponent implements OnInit {
     }, 4000);
 
     const obs = this.activeTab === 'personal'
-      ? this.tramiteService.listarPorUsuario(this.userId)
+      ? (this.isClient ? this.tramiteService.listarPorUsuario(this.userId) : this.tramiteService.listarAsignados(this.userId))
       : this.tramiteService.listarPorDepartamento(this.deptId);
 
     obs.subscribe({

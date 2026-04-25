@@ -508,6 +508,26 @@
 
 .node-tool:hover {
   background: var(--surface-bright);
+  transform: translateX(5px);
+}
+
+.tool-color {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1);
+}
+
+.tool-start .tool-color { background: #10b981; }
+.tool-task .tool-color { background: #3b82f6; }
+.tool-decision .tool-color { background: #f59e0b; }
+.tool-end .tool-color { background: #ef4444; }
+
+.node-tool span {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #475569;
 }
 
 .sidebar h4 {

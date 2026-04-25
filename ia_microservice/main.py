@@ -127,6 +127,57 @@ async def chat_interactivo(req: ChatRequest):
         raise HTTPException(status_code=503, detail=f"Error del servicio IA: {error_str[:200]}")
 
 
+@app.post("/ia/asistente")
+async def asistente_alias(req: ChatRequest):
+    """Alias para compatibilidad con versiones anteriores del backend."""
+    return await chat_interactivo(req)
+
+
+@app.post("/ia/analizar-rendimiento")
+async def analizar_rendimiento(req: AnalysisRequest):
+    """
+    Analiza métricas de departamentos para detectar cuellos de botella.
+    """
+    prompt = f"""
+    Analiza las siguientes métricas de rendimiento del sistema BPM:
+    {json.dumps([m.dict() for m in req.metricas], ensure_ascii=False)}
+    
+    Identifica cuellos de botella, departamentos sobrecargados y sugiere acciones correctivas.
+    Responde en formato JSON con las llaves: 'analisis', 'recomendaciones', 'nivel_alerta'.
+    """
+    try:
+        response = model_logic.generate_content(prompt)
+        # Intentar extraer JSON si el modelo responde con texto enriquecido
+        text = response.text
+        if "```json" in text:
+            text = text.split("```json")[1].split("```")[0].strip()
+        return json.loads(text)
+    except Exception as e:
+        # Si falla el parseo JSON, devolver texto plano estructurado
+        return {"analisis": response.text, "status": "processed_as_text"}
+
+
+@app.post("/ia/generar-flujo")
+async def generar_flujo(req: FlowRequest):
+    """
+    Genera una estructura de flujo de trabajo a partir de una descripción.
+    """
+    prompt = f"""
+    Diseña un flujo de trabajo BPM basado en esta descripción: {req.prompt}
+    
+    Responde en formato JSON con una lista de 'nodos' (id, nombre, tipo) y 'conexiones' (de, a).
+    Usa tipos de nodo: 'START', 'TASK', 'EXCLUSIVE_GATEWAY', 'END'.
+    """
+    try:
+        response = model_logic.generate_content(prompt)
+        text = response.text
+        if "```json" in text:
+            text = text.split("```json")[1].split("```")[0].strip()
+        return json.loads(text)
+    except Exception as e:
+        return {"error": "No se pudo generar el JSON del flujo", "respuesta": response.text}
+
+
 def obtener_estadisticas_db(dias_atras: int = 30) -> dict:
     """Conecta directamente a MongoDB y extrae estadísticas filtradas por tiempo."""
     from pymongo import MongoClient

@@ -117,7 +117,7 @@ public class OptimizacionController {
         try {
             @SuppressWarnings("unchecked")
             Class<Map<String, Object>> responseType = (Class<Map<String, Object>>) (Class<?>) Map.class;
-            ResponseEntity<Map<String, Object>> response = restTemplate.postForEntity(IA_URL + "/asistente", request, responseType);
+            ResponseEntity<Map<String, Object>> response = restTemplate.postForEntity(IA_URL + "/chat-interactivo", request, responseType);
             return ResponseEntity.ok(response.getBody());
         } catch (HttpStatusCodeException e) {
             Map<String, Object> error = new HashMap<>();

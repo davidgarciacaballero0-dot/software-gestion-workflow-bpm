@@ -8,6 +8,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:workflow_app/features/notifications/presentation/providers/notification_providers.dart';
+import 'package:workflow_app/features/ia/presentation/widgets/chatbot_widget.dart';
+
 
 class MainScaffold extends ConsumerWidget {
   final StatefulNavigationShell navigationShell;
@@ -27,7 +29,12 @@ class MainScaffold extends ConsumerWidget {
     ref.watch(stompClientProvider);
 
     return Scaffold(
-      body: navigationShell,
+      body: Stack(
+        children: [
+          navigationShell,
+          const ChatbotWidget(),
+        ],
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: navigationShell.currentIndex,
         onDestinationSelected: (index) {

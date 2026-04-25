@@ -24,4 +24,7 @@ class AppConstants {
 
   // ── Rol del cliente (consistente con DataInitializer) ────────
   static const String rolCliente = 'CLIENTE';
+  // ── IA & Voz (ElevenLabs) ───────────────────────────────────
+  static const String elevenLabsVoiceId = 'Xb7hH8MSUJpSbSDYk0k2'; // Alice
+  static const String elevenLabsApiKey  = 'sk_e416995838804ecd738956dd0b79eebdb12e59f356e2a661';
 }

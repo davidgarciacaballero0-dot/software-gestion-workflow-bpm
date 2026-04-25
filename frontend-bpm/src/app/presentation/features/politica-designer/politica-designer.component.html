@@ -25,17 +25,21 @@
     <aside class="sidebar" [class.disabled]="!canEdit()">
       <div class="tool-section">
         <h4>Nodos de Control</h4>
-        <div class="node-tool" (click)="addNode('START')">
-          <span>Inicio</span>
+        <div class="node-tool tool-start" (click)="addNode('START')">
+          <div class="tool-color"></div>
+          <span>Inicio (Evento)</span>
         </div>
-        <div class="node-tool" (click)="addNode('USER_TASK')">
-          <span>Tarea Usuario</span>
+        <div class="node-tool tool-task" (click)="addNode('USER_TASK')">
+          <div class="tool-color"></div>
+          <span>Tarea de Usuario</span>
         </div>
-        <div class="node-tool" (click)="addNode('EXCLUSIVE_GATEWAY')">
-          <span>Decisión</span>
+        <div class="node-tool tool-decision" (click)="addNode('EXCLUSIVE_GATEWAY')">
+          <div class="tool-color"></div>
+          <span>Decisión / Gateway</span>
         </div>
-        <div class="node-tool" (click)="addNode('END')">
-          <span>Fin</span>
+        <div class="node-tool tool-end" (click)="addNode('END')">
+          <div class="tool-color"></div>
+          <span>Fin (Evento)</span>
         </div>
       </div>
 

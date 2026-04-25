@@ -60,6 +60,11 @@ public class TramiteController {
         return ResponseEntity.ok(tramiteService.listarBandejaPersonal(usuarioId));
     }
 
+    @GetMapping("/asignados/{usuarioId}")
+    public ResponseEntity<List<TramiteResponseDTO>> listarBandejaAsignados(@PathVariable String usuarioId) {
+        return ResponseEntity.ok(tramiteService.listarBandejaAsignados(usuarioId));
+    }
+
     // Búsqueda por Carnet de Identidad (REQ FASE 4)
     @GetMapping("/search/ci/{ci}")
     public ResponseEntity<List<TramiteResponseDTO>> buscarPorCi(@PathVariable String ci) {
