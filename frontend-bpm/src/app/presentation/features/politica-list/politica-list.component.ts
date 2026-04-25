@@ -27,6 +27,8 @@ export class PoliticaListComponent implements OnInit {
   resultMessage: string | null = null;
   resultIsError = false;
   welcomeMessage = '';
+  isAdmin = false;
+  isDesignerView = false;
   tramitesActivos: TramiteResponseDTO[] = [];
   
   // Modal de Nueva Política
@@ -51,7 +53,17 @@ export class PoliticaListComponent implements OnInit {
   ngOnInit(): void {
     const user = this.authService.currentUser();
     this.isClient = user?.nombreRol === 'CLIENTE';
-    this.welcomeMessage = `¡Bienvenido, ${user?.nombre} ${user?.apellidos || ''}!`;
+    this.isAdmin = user?.nombreRol === 'ADMIN';
+    
+    // Detectar si estamos en modo Diseñador o Catálogo
+    this.isDesignerView = this.router.url.includes('/app/designer');
+
+    if (this.isDesignerView) {
+      this.welcomeMessage = 'Diseñador de Procesos BPM';
+    } else {
+      this.welcomeMessage = this.isClient ? 'Portal del Ciudadano' : 'Catálogo de Trámites';
+    }
+
     this.cargarDatos();
     
     if (this.isClient && user?.id) {

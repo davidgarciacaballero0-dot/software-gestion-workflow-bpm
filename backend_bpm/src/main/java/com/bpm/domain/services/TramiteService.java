@@ -215,6 +215,18 @@ public class TramiteService {
         PoliticaWorkflow politica = politicaRepository.findById(instancia.getIdPolitica())
                 .orElseThrow(() -> new WorkflowValidationException("Política asociada no encontrada."));
 
+        // === NUEVO CANDADO DE SEGURIDAD: Segmentación por Departamento ===
+        if (request.getIdUsuarioAccion() != null && !request.getIdUsuarioAccion().isEmpty()) {
+            Usuario usuarioEjecutor = usuarioRepository.findById(request.getIdUsuarioAccion()).orElse(null);
+            if (usuarioEjecutor != null && usuarioEjecutor.getIdDepartamento() != null && !usuarioEjecutor.getIdDepartamento().isEmpty()) {
+                // Si el usuario pertenece a un departamento, debe coincidir con el departamento actual del trámite
+                if (instancia.getDepartamentoActualId() != null && !instancia.getDepartamentoActualId().equals(usuarioEjecutor.getIdDepartamento())) {
+                    throw new WorkflowValidationException("Acceso Denegado: Este trámite se encuentra en otra área. Solo funcionarios del departamento correspondiente pueden avanzar el proceso.");
+                }
+            }
+        }
+        // =================================================================
+
         // 1. Acumular datos del formulario
         if (request.getDatosFormulario() != null) {
             if (instancia.getDatosAcumuladosFormulario() == null) {
@@ -396,6 +408,20 @@ public class TramiteService {
     public TramiteInstancia obtenerTramitePorId(String id) {
         return tramiteRepository.findById(id)
                 .orElseThrow(() -> new WorkflowValidationException("Trámite no encontrado: " + id));
+    }
+
+    public TramiteResponseDTO asignarFuncionario(String tramiteId, String funcionarioId) {
+        TramiteInstancia tramite = obtenerTramitePorId(tramiteId);
+        usuarioRepository.findById(funcionarioId)
+                .orElseThrow(() -> new WorkflowValidationException("Funcionario no encontrado"));
+
+        tramite.setFuncionarioAsignadoId(funcionarioId);
+        TramiteInstancia guardado = tramiteRepository.save(tramite);
+
+        registrarEvento(guardado, tramite.getNodoActualId(), tramite.getNodoActualId(), 
+                funcionarioId, TipoEvento.AVANCE, "Trámite tomado por el funcionario para su atención.", null, false, null);
+
+        return mapearADTO(guardado, obtenerNombrePolitica(guardado.getIdPolitica()));
     }
 
     public String obtenerNombrePolitica(String idPolitica) {

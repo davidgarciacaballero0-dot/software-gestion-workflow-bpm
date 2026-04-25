@@ -46,5 +46,9 @@ export class TramiteService {
   buscarPorCi(ci: string): Observable<TramiteResponseDTO[]> {
     return this.http.get<TramiteResponseDTO[]>(`${this.apiUrl}/search/ci/${ci}`);
   }
+
+  asignarFuncionario(tramiteId: string, funcionarioId: string): Observable<TramiteResponseDTO> {
+    return this.http.patch<TramiteResponseDTO>(`${this.apiUrl}/${tramiteId}/asignar/${funcionarioId}`, {});
+  }
 }
 

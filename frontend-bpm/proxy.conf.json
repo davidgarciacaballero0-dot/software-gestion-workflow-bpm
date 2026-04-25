@@ -9,5 +9,13 @@
     "target": "http://localhost:8080",
     "secure": false,
     "changeOrigin": true
+  },
+  "/elevenlabs-api": {
+    "target": "https://api.elevenlabs.io",
+    "secure": true,
+    "changeOrigin": true,
+    "pathRewrite": {
+      "^/elevenlabs-api": ""
+    }
   }
 }

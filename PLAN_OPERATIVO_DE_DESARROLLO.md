@@ -105,3 +105,8 @@
 - 🚧 **Orquestación Final:** Ajuste de `docker-compose.yml` para entorno de producción.
 - 🚧 **Documentación de Entrega:** Finalización de README y Manual Técnico.
 - 🚧 **Cierre de Proyecto:** Sincronización final y limpieza de entornos locales.
+
+---
+
+### 📎 TAREAS OPCIONALES (Post-Cierre)
+- ⚠️ **Extensión de Voz IA:** Integrar ElevenLabs en el Dashboard de Insights (Resumen Ejecutivo por voz).

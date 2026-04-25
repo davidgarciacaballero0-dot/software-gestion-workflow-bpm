@@ -65,6 +65,21 @@ export class TramiteAtencionComponent implements OnInit {
           throw new Error('No se encontró información del trámite.');
         }
         this.tramite = tramite;
+
+        // AUTO-ASIGNACIÓN (Si no tiene responsable y es un funcionario)
+        const user = this.authService.currentUser();
+        const isStaff = user?.nombreRol === 'JEFE' || user?.nombreRol === 'ADMIN' || user?.nombreRol === 'FUNCIONARIO';
+        
+        if (isStaff && (!tramite.funcionarioAsignadoId || tramite.funcionarioAsignadoId === '')) {
+          console.log('⚡ Auto-asignando trámite al funcionario actual...');
+          return this.tramiteService.asignarFuncionario(tramite.id, this.userId).pipe(
+            switchMap(assignedTramite => {
+              this.tramite = assignedTramite;
+              return this.politicaService.obtenerPorId(assignedTramite.idPolitica);
+            })
+          );
+        }
+
         if (!tramite.idPolitica) {
           throw new Error('El trámite no tiene una política asociada.');
         }

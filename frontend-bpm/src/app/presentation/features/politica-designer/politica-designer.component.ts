@@ -22,6 +22,27 @@ export class PoliticaDesignerComponent implements OnInit {
   edges: WorkflowEdge[] = [];
   departamentos: Departamento[] = [];
 
+  // Configuración de Carriles (Swimlanes) Dinámicos
+  activeLanes: any[] = [
+    { id: 'lane_0', departamentoId: '' },
+    { id: 'lane_1', departamentoId: '' },
+    { id: 'lane_2', departamentoId: '' }
+  ];
+
+  addLane(): void {
+    if (this.activeLanes.length < this.departamentos.length || this.activeLanes.length < 10) {
+      this.activeLanes.push({ id: `lane_${this.activeLanes.length}`, departamentoId: '' });
+      this.cd.detectChanges();
+    }
+  }
+
+  removeLane(): void {
+    if (this.activeLanes.length > 1) {
+      this.activeLanes.pop();
+      this.cd.detectChanges();
+    }
+  }
+
   selectedNode: WorkflowNode | null = null;
   selectedEdge: string | null = null;
   connectingSourceNode: WorkflowNode | null = null;
@@ -41,6 +62,8 @@ export class PoliticaDesignerComponent implements OnInit {
     nodes: [],
     edges: []
   };
+  
+  isAdmin = false;
 
   private route = inject(ActivatedRoute);
   private workflowService = inject(PoliticaWorkflowService);
@@ -54,6 +77,7 @@ export class PoliticaDesignerComponent implements OnInit {
 
   ngOnInit(): void {
     const user = this.authService.currentUser();
+    this.isAdmin = user?.nombreRol === 'ADMIN';
     const orgId = user?.idOrganizacion || '';
     this.currentPolicy.idOrganizacion = orgId;
 
@@ -163,12 +187,9 @@ export class PoliticaDesignerComponent implements OnInit {
   onNodeDragMoved(event: any, node: WorkflowNode): void {
     if (!this.canEdit()) return;
     
-    // El CDK ya nos da la posición libre si la solicitamos
     const pos = event.source.getFreeDragPosition();
     this.draggingPositions[node.id] = { x: pos.x, y: pos.y };
     
-    // Forzamos detección de cambios local para redibujar el SVG a 60fps
-    // Usamos detectChanges para que sea inmediato sin esperar al ciclo global
     this.cd.detectChanges();
   }
 
@@ -179,8 +200,36 @@ export class PoliticaDesignerComponent implements OnInit {
     node.uiPosition = { x: pos.x, y: pos.y };
     
     delete this.draggingPositions[node.id];
+    
+    // Auto-Asignación basada en la coordenada X (Carril)
+    const laneWidth = 400; 
+    const laneIndex = Math.floor(node.uiPosition.x / laneWidth);
+    const safeIndex = Math.max(0, Math.min(this.activeLanes.length - 1, laneIndex));
+    
+    const targetLane = this.activeLanes[safeIndex];
+    if (node.type === NodeType.USER_TASK && targetLane) {
+      // Si el carril tiene un departamento, lo asignamos. 
+      // Si el carril está vacío, mantenemos el actual o limpiamos? El usuario dice "No se actualiza", 
+      // probablemente espera que si la calle tiene depto, se asigne.
+      if (targetLane.departamentoId) {
+        node.departmentId = targetLane.departamentoId;
+        console.log(`Nodo auto-asignado: ${node.name} -> Lane ${safeIndex} (${targetLane.departamentoId})`);
+      }
+    }
+
+    // Importante: Si este es el nodo seleccionado, forzamos que el panel de propiedades se entere
+    if (this.selectedNode && this.selectedNode.id === node.id) {
+      this.selectedNode = { ...node }; // Trigger change detection for property panel
+    }
+
     this.broadcastChange('NODE_MOVED', node);
     this.cd.detectChanges();
+  }
+
+  getDepartmentName(id: string | undefined): string {
+    if (!id) return '';
+    const d = this.departamentos.find(dept => dept.id === id);
+    return d ? d.nombre : '';
   }
 
   selectNode(node: WorkflowNode): void {
@@ -188,7 +237,7 @@ export class PoliticaDesignerComponent implements OnInit {
   }
 
   canEdit(): boolean {
-    return this.currentPolicy.status === PolicyStatus.DRAFT;
+    return this.isAdmin && this.currentPolicy.status === PolicyStatus.DRAFT;
   }
 
   removeNode(node: WorkflowNode): void {
@@ -251,7 +300,9 @@ export class PoliticaDesignerComponent implements OnInit {
     }
   }
 
-  // --- Operaciones del Lienzo ---
+
+
+  // --- Operaciones de Edición Básicas ---
   
   getNodeIcon(type: NodeType): string {
     switch (type) {

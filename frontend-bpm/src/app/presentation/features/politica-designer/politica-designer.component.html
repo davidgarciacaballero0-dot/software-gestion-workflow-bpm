@@ -7,11 +7,11 @@
       <span class="version-tag">v{{ currentPolicy.version }}</span>
     </div>
     <div class="header-actions">
-      <button *ngIf="currentPolicy.status === 'PUBLISHED'" class="btn-premium btn-premium-primary ghost-border"
+      <button *ngIf="currentPolicy.status === 'PUBLISHED' && isAdmin" class="btn-premium btn-premium-primary ghost-border"
         (click)="onNewVersion()">
         + Nueva Versión
       </button>
-      <button *ngIf="currentPolicy.status === 'DRAFT'" class="btn-premium btn-premium-primary" (click)="onPublish()">
+      <button *ngIf="currentPolicy.status === 'DRAFT' && isAdmin" class="btn-premium btn-premium-primary" (click)="onPublish()">
         🚀 Publicar
       </button>
       <button class="btn-premium btn-premium-primary" (click)="saveWorkflow()" [disabled]="!canEdit()">
@@ -26,20 +26,28 @@
       <div class="tool-section">
         <h4>Nodos de Control</h4>
         <div class="node-tool" (click)="addNode('START')">
-          <div class="icon-box" style="background: #10b981;">▶</div>
           <span>Inicio</span>
         </div>
         <div class="node-tool" (click)="addNode('USER_TASK')">
-          <div class="icon-box" style="background: #3b82f6;">👤</div>
           <span>Tarea Usuario</span>
         </div>
         <div class="node-tool" (click)="addNode('EXCLUSIVE_GATEWAY')">
-          <div class="icon-box" style="background: #f59e0b;">◆</div>
           <span>Decisión</span>
         </div>
         <div class="node-tool" (click)="addNode('END')">
-          <div class="icon-box" style="background: #ef4444;">■</div>
           <span>Fin</span>
+        </div>
+      </div>
+
+      <div class="tool-section">
+        <h4>Gestión de Carriles</h4>
+        <div class="lane-controls d-flex gap-2 mb-3">
+          <button class="btn btn-sm btn-outline-primary w-100" (click)="addLane()" [disabled]="activeLanes.length >= 10">
+            ➕ Agregar
+          </button>
+          <button class="btn btn-sm btn-outline-danger w-100" (click)="removeLane()" [disabled]="activeLanes.length <= 1">
+            ➖ Quitar
+          </button>
         </div>
       </div>
 
@@ -66,6 +74,19 @@
 
     <!-- Lienzo Central -->
     <main class="canvas-area" id="canvas" *ngIf="isLoaded">
+      
+      <!-- Capa de Carriles (Swimlanes) -->
+      <div class="swimlanes-container">
+        <div class="lane" *ngFor="let lane of activeLanes; let i = index">
+          <div class="lane-header glass-premium shadow-ambient">
+            <select [(ngModel)]="lane.departamentoId" class="lane-select form-control" [disabled]="!canEdit()">
+              <option value="">Seleccione Departamento...</option>
+              <option *ngFor="let d of departamentos" [value]="d.id">{{ d.nombre }}</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
       <!-- Capa SVG para Aristas -->
       <svg class="connections-svg">
         <defs>
@@ -100,7 +121,6 @@
 
         <div class="node-content-wrapper">
           <div class="node-header">
-            <div class="icon-box">{{ getNodeIcon(node.type) }}</div>
             <span>{{ node.name }}</span>
           </div>
           <div class="node-sub">
@@ -109,8 +129,8 @@
               <span *ngSwitchCase="'END'">FIN</span>
               <span *ngSwitchCase="'EXCLUSIVE_GATEWAY'">?</span>
               <span *ngSwitchCase="'PARALLEL_GATEWAY'">II</span>
-              <span *ngSwitchDefault>
-                {{ node.departmentId ? 'ASIGNADO' : 'PENDIENTE' }}
+              <span *ngSwitchDefault class="dept-badge">
+                {{ getDepartmentName(node.departmentId) || 'SIN ASIGNAR' }}
               </span>
             </ng-container>
             <span *ngIf="node.type === 'USER_TASK' && node.slaHours" class="sla-badge">

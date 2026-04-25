@@ -36,19 +36,58 @@
 </div>
 
 <div class="catalog-container animate-fade-in">
-  <!-- Header Personalizado (Fase 4) -->
+  <!-- Header Personalizado -->
   <div class="header">
-    <h1 class="page-title">{{ welcomeMessage }}</h1>
-    <p class="page-subtitle" *ngIf="!isClient">
-      Acceda a los procesos operativos autorizados para su gestión departamental.
-    </p>
-    <p class="page-subtitle" *ngIf="isClient">
-      Eche un vistazo al estado de sus solicitudes vigentes.
-    </p>
-    <div class="header-actions" *ngIf="!isClient">
+    <div class="header-main">
+      <h1 class="page-title">{{ welcomeMessage }}</h1>
+      <p class="page-subtitle" *ngIf="isDesignerView">
+        Cree, edite y gestione los flujos de trabajo institucionales con herramientas de IA y diseño visual.
+      </p>
+      <p class="page-subtitle" *ngIf="!isDesignerView">
+        Explore y solicite los servicios digitales disponibles para su gestión.
+      </p>
+    </div>
+    <div class="header-actions" *ngIf="isAdmin && isDesignerView">
       <button class="btn-premium btn-premium-primary" (click)="abrirNuevoModal()">
-        ➕ Nueva Política BPM
+        ➕ Crear Nueva Política
       </button>
+    </div>
+  </div>
+
+  <!-- Sección de Guía Visual (Solo para el Diseñador BPM) -->
+  <div class="designer-guide-section glass-premium mb-5" *ngIf="isDesignerView">
+    <div class="guide-content">
+      <div class="guide-text">
+        <h3>🚀 Guía de Creación de Flujos</h3>
+        <p>Siga este patrón para diseñar procesos eficientes y automatizados:</p>
+        <ul class="guide-steps">
+          <li><strong>1. Inicio:</strong> Todo trámite comienza con un nodo de inicio.</li>
+          <li><strong>2. Pasos:</strong> Defina las tareas y asigne el departamento responsable.</li>
+          <li><strong>3. Decisiones:</strong> Use bifurcaciones para caminos condicionales.</li>
+          <li><strong>4. Fin:</strong> Asegúrese de que todos los caminos lleguen a un final.</li>
+        </ul>
+      </div>
+      
+      <!-- Esquema Gráfico / Prototipo -->
+      <div class="flow-schema-viz">
+        <div class="schema-node start">Inicio</div>
+        <div class="schema-arrow">→</div>
+        <div class="schema-node task">Paso 1</div>
+        <div class="schema-arrow">→</div>
+        <div class="schema-node gateway">¿Aprobado?</div>
+        <div class="schema-branch-container">
+          <div class="branch yes">
+            <div class="schema-arrow vertical">↓ Si</div>
+            <div class="schema-node task">Paso 2</div>
+            <div class="schema-arrow">→</div>
+            <div class="schema-node end">Fin</div>
+          </div>
+          <div class="branch no">
+            <div class="schema-arrow horizontal-up">↑ No</div>
+            <div class="schema-node task back">Revisión</div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -118,7 +157,7 @@
               {{ p.status === 'PUBLISHED' ? '🚀 Iniciar Trámite' : 'Borrador (No Disponible)' }}
             </button>
 
-            <!-- Botones Admin -->
+            <!-- Botones Admin/Funcionario -->
             <ng-container *ngIf="!isClient">
               <button *ngIf="p.status === 'PUBLISHED'" 
                 class="btn-premium btn-premium-primary start-btn w-full" 
@@ -126,10 +165,16 @@
                 🚀 Iniciar Trámite Personalizado
               </button>
               
-              <button *ngIf="p.status === 'DRAFT'" 
+              <button *ngIf="p.status === 'DRAFT' && isAdmin" 
                 class="btn-premium start-btn w-full" style="background: var(--surface-container-high); color: var(--text-main);"
                 [routerLink]="['/app/politica/designer', p.id || p._id]">
                 ✏️ Continuar Diseño
+              </button>
+
+              <button *ngIf="p.status === 'DRAFT' && !isAdmin" 
+                class="btn-premium start-btn w-full" style="background: transparent; border: 1px solid var(--text-muted); color: var(--text-muted);"
+                [routerLink]="['/app/politica/designer', p.id || p._id]">
+                👁️ Ver Borrador (Lectura)
               </button>
               
               <button *ngIf="p.status === 'PUBLISHED' || p.status === 'ARCHIVED'"

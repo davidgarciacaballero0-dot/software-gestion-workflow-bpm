@@ -30,6 +30,42 @@
     </div>
   </div>
 
+  <!-- KPI DASHBOARD EXECUTIVE -->
+  <div class="kpi-grid animate-fade-in" *ngIf="metrics.length">
+    <div class="kpi-card">
+      <div class="kpi-icon blue">⚙️</div>
+      <div class="kpi-info">
+        <span class="kpi-label">Total Trámites</span>
+        <h2 class="kpi-value">{{ totalTramites }}</h2>
+        <p class="kpi-trend">En flujo actual</p>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon indigo">👥</div>
+      <div class="kpi-info">
+        <span class="kpi-label">Capacidad Personal</span>
+        <h2 class="kpi-value">{{ totalPersonal }}</h2>
+        <p class="kpi-trend">Funcionarios activos</p>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon cyan">⏱️</div>
+      <div class="kpi-info">
+        <span class="kpi-label">Tiempo Promedio</span>
+        <h2 class="kpi-value">{{ tiempoPromedioGlobal | number:'1.1-1' }}h</h2>
+        <p class="kpi-trend">Global de resolución</p>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon red">⚠️</div>
+      <div class="kpi-info">
+        <span class="kpi-label">Brecha SLA</span>
+        <h2 class="kpi-value">{{ totalRetrasos }}</h2>
+        <p class="kpi-trend">Retrasos detectados</p>
+      </div>
+    </div>
+  </div>
+
   <!-- Main Grid: 2 columnas -->
   <div class="insights-grid">
 

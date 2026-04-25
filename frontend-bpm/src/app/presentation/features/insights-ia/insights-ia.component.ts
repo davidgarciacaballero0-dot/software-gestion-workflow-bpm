@@ -102,6 +102,28 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
     private sanitizer: DomSanitizer
   ) {}
 
+  // ========================================
+  //  KPI GETTERS (Calculados sobre métricas filtradas)
+  // ========================================
+
+  get totalTramites(): number {
+    return this.metrics.reduce((sum, m) => sum + m.cantidadTramites, 0);
+  }
+
+  get totalPersonal(): number {
+    return this.metrics.reduce((sum, m) => sum + m.capacidadPersonal, 0);
+  }
+
+  get tiempoPromedioGlobal(): number {
+    if (!this.metrics.length) return 0;
+    const sum = this.metrics.reduce((s, m) => s + m.tiempoPromedioHoras, 0);
+    return sum / this.metrics.length;
+  }
+
+  get totalRetrasos(): number {
+    return this.metrics.reduce((sum, m) => sum + (m.retrasosSla || 0), 0);
+  }
+
   ngOnInit(): void {
     this.cargarMetricas();
     this.initVoiceRecognition();
@@ -224,7 +246,10 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
     this.analyzingIA = true;
     this.aiReport = '';
     this.formattedReport = '';
-    this.http.post<any>('/api/v1/optimization/analyze', {}).subscribe({
+    this.http.post<any>('/api/v1/optimization/analyze', { 
+      meses: this.filtros.meses, 
+      idDepartamento: this.filtros.idDepartamento 
+    }).subscribe({
       next: (res) => {
         this.aiReport = res.reporte || res.respuesta || JSON.stringify(res);
         this.formattedReport = this.formatReport(this.aiReport);

@@ -76,49 +76,33 @@ public class DataInitializer implements CommandLineRunner {
                 commonPass, jefeRol.getId(), org.getId(), depVentas.getId());
 
         // Update departamentos with Jefes IDs (CU-17)
-        if (depIT.getIdJefe() == null) {
-            depIT.setIdJefe(jefeIT.getId());
-            depRepository.save(depIT);
-        }
-        if (depRRHH.getIdJefe() == null) {
-            depRRHH.setIdJefe(jefeRRHH.getId());
-            depRepository.save(depRRHH);
-        }
-        if (depFin.getIdJefe() == null) {
-            depFin.setIdJefe(jefeFin.getId());
-            depRepository.save(depFin);
-        }
-        if (depOp.getIdJefe() == null) {
-            depOp.setIdJefe(jefeOp.getId());
-            depRepository.save(depOp);
-        }
-        if (depVentas.getIdJefe() == null) {
-            depVentas.setIdJefe(jefeVentas.getId());
-            depRepository.save(depVentas);
-        }
+        if (depIT.getIdJefe() == null) { depIT.setIdJefe(jefeIT.getId()); depRepository.save(depIT); }
+        if (depRRHH.getIdJefe() == null) { depRRHH.setIdJefe(jefeRRHH.getId()); depRepository.save(depRRHH); }
+        if (depFin.getIdJefe() == null) { depFin.setIdJefe(jefeFin.getId()); depRepository.save(depFin); }
+        if (depOp.getIdJefe() == null) { depOp.setIdJefe(jefeOp.getId()); depRepository.save(depOp); }
+        if (depVentas.getIdJefe() == null) { depVentas.setIdJefe(jefeVentas.getId()); depRepository.save(depVentas); }
 
-        // Funcionarios (Existentes)
+        // Funcionarios (5 por departamento)
         if (!partialSeed) {
-            for (int i = 1; i <= 3; i++)
-                getOrCreateUser("Dvp IT " + i, "Sistemas", "3000000" + i, "6000000" + i, "user.it" + i + "@bpm.com",
-                        commonPass, funcRol.getId(), org.getId(), depIT.getId());
-            for (int i = 1; i <= 3; i++)
-                getOrCreateUser("Analista HR " + i, "Recursos Humanos", "4000000" + i, "6100000" + i,
-                        "user.rh" + i + "@bpm.com", commonPass, funcRol.getId(), org.getId(), depRRHH.getId());
-            for (int i = 1; i <= 2; i++)
-                getOrCreateUser("Contador " + i, "Finanzas", "5000000" + i, "6200000" + i, "user.fn" + i + "@bpm.com",
-                        commonPass, funcRol.getId(), org.getId(), depFin.getId());
-            for (int i = 1; i <= 2; i++)
-                getOrCreateUser("Operador " + i, "Operaciones", "6000000" + i, "6300000" + i,
-                        "user.op" + i + "@bpm.com", commonPass, funcRol.getId(), org.getId(), depOp.getId());
-        }
+            Map<String, String> prefixMap = Map.of(
+                depIT.getId(), "it",
+                depRRHH.getId(), "rh",
+                depFin.getId(), "fn",
+                depOp.getId(), "op",
+                depVentas.getId(), "vn"
+            );
 
-        // 4.1 Usuarios Ventas (Nuevos)
-        getOrCreateUser("Asistente", "Ventas", "70000001", "71000001", "asistente.ventas@bpm.com", commonPass,
-                funcRol.getId(), org.getId(), depVentas.getId());
-        for (int i = 1; i <= 3; i++)
-            getOrCreateUser("Vendedor " + i, "Ventas", "8000000" + i, "7200000" + i, "vendedor" + i + "@bpm.com",
-                    commonPass, funcRol.getId(), org.getId(), depVentas.getId());
+            List<Departamento> deps = List.of(depIT, depRRHH, depFin, depOp, depVentas);
+            for (Departamento d : deps) {
+                String prefix = prefixMap.get(d.getId());
+                for (int i = 1; i <= 5; i++) {
+                    getOrCreateUser("Funcionario " + i, d.getNombre(), 
+                        "3" + (10 + deps.indexOf(d)) + "0000" + i, 
+                        "6" + (10 + deps.indexOf(d)) + "0000" + i, 
+                        "func." + prefix + i + "@bpm.com", commonPass, funcRol.getId(), org.getId(), d.getId());
+                }
+            }
+        }
 
         // Clientes (Existentes)
         List<Usuario> clientes = usuarioRepository.findAll().stream()
@@ -148,6 +132,9 @@ public class DataInitializer implements CommandLineRunner {
         PoliticaWorkflow polFibra = getOrCreatePoliticaFibra(org.getId(), depVentas.getId(), depIT.getId(),
                 depFin.getId(), depOp.getId());
         PoliticaWorkflow polPrueba = getOrCreatePoliticaPrueba2026(org.getId(), depVentas.getId(), depIT.getId());
+
+        // 5.1 EJEMPLO SOLICITADO POR EL USUARIO
+        getOrCreatePoliticaEjemploAprobacion(org.getId(), depRRHH.getId(), depFin.getId());
 
         // 6. Trámites (~15 instancias si está vacío)
         if (tramiteRepository.count() == 0) {
@@ -518,5 +505,44 @@ public class DataInitializer implements CommandLineRunner {
                     .createdAt(t.getCreatedAt())
                     .build());
         }
+    }
+    private PoliticaWorkflow getOrCreatePoliticaEjemploAprobacion(String idOrg, String depRRHH, String depFin) {
+        return politicaRepository.findByIdOrganizacionAndNombre(idOrg, "EJEMPLO: Flujo de Aprobación")
+                .stream()
+                .findFirst()
+                .orElseGet(() -> politicaRepository.save(createExamplePolicy(idOrg, depRRHH, depFin)));
+    }
+
+    private PoliticaWorkflow createExamplePolicy(String idOrg, String dep1, String dep2) {
+        List<WorkflowNode> nodes = List.of(
+                WorkflowNode.builder().id("start").name("Inicio").type(NodeType.START).uiPosition(new UIPosition(100.0, 150.0)).build(),
+                WorkflowNode.builder().id("step1").name("Paso 1: Revisión").type(NodeType.USER_TASK).departmentId(dep1).uiPosition(new UIPosition(450.0, 120.0)).build(),
+                WorkflowNode.builder().id("gate").name("¿Aprobado?").type(NodeType.EXCLUSIVE_GATEWAY).uiPosition(new UIPosition(850.0, 100.0)).build(),
+                WorkflowNode.builder().id("step2").name("Paso 2: Ejecución").type(NodeType.USER_TASK).departmentId(dep2).uiPosition(new UIPosition(1250.0, 50.0)).build(),
+                WorkflowNode.builder().id("rev").name("Revisión").type(NodeType.USER_TASK).departmentId(dep1).uiPosition(new UIPosition(1250.0, 200.0)).build(),
+                WorkflowNode.builder().id("end").name("Fin").type(NodeType.END).uiPosition(new UIPosition(1650.0, 150.0)).build()
+        );
+
+        List<WorkflowEdge> edges = List.of(
+                new WorkflowEdge("e1", "start", "step1", null),
+                new WorkflowEdge("e2", "step1", "gate", null),
+                new WorkflowEdge("e3", "gate", "step2", 
+                        Condition.builder().variable("f_aprobado").operator(ConditionOperator.EQUALS).value("true").build()),
+                new WorkflowEdge("e4", "gate", "rev", 
+                        Condition.builder().variable("f_aprobado").operator(ConditionOperator.EQUALS).value("false").build()),
+                new WorkflowEdge("e5", "step2", "end", null),
+                new WorkflowEdge("e6", "rev", "step1", null)
+        );
+
+        return PoliticaWorkflow.builder()
+                .idOrganizacion(idOrg)
+                .nombre("EJEMPLO: Flujo de Aprobación")
+                .description("Estructura de ejemplo: Inicio -> Paso 1 -> Decisión -> (Si) Paso 2 / (No) Revisión -> Fin.")
+                .version("1.0")
+                .status(PolicyStatus.PUBLISHED)
+                .nodes(nodes)
+                .edges(edges)
+                .createdAt(LocalDateTime.now())
+                .build();
     }
 }

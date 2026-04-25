@@ -81,4 +81,9 @@ public class TramiteController {
         TramiteResponseDTO response = tramiteService.intervenirTramite(request);
         return ResponseEntity.ok(response);
     }
+
+    @PatchMapping("/{tramiteId}/asignar/{funcionarioId}")
+    public ResponseEntity<TramiteResponseDTO> asignarFuncionario(@PathVariable String tramiteId, @PathVariable String funcionarioId) {
+        return ResponseEntity.ok(tramiteService.asignarFuncionario(tramiteId, funcionarioId));
+    }
 }

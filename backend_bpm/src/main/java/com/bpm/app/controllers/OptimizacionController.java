@@ -33,8 +33,26 @@ public class OptimizacionController {
     }
 
     @PostMapping("/analyze")
-    public ResponseEntity<Map<String, Object>> analyzeBottlenecks() {
-        List<AnaliticaService.MetricDataDTO> metrics = analiticaService.calcularMetricasDepartamentales();
+    public ResponseEntity<Map<String, Object>> analyzeBottlenecks(@RequestBody(required = false) Map<String, Object> payload) {
+        Integer meses = 0;
+        String idDepartamento = null;
+        
+        if (payload != null) {
+            if (payload.get("meses") != null) {
+                meses = (Integer) payload.get("meses");
+            }
+            if (payload.get("idDepartamento") != null) {
+                idDepartamento = (String) payload.get("idDepartamento");
+                if (idDepartamento != null && idDepartamento.trim().isEmpty()) idDepartamento = null;
+            }
+        }
+
+        List<AnaliticaService.MetricDataDTO> metrics;
+        if (meses != null && meses > 0) {
+            metrics = analiticaService.calcularMetricasHistoricas(meses, idDepartamento, null);
+        } else {
+            metrics = analiticaService.calcularMetricasDepartamentales();
+        }
         
         Map<String, Object> request = new HashMap<>();
         request.put("metricas", metrics);

@@ -6,6 +6,7 @@ import com.bpm.domain.services.PoliticaService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -14,16 +15,18 @@ import java.util.List;
 @RequestMapping("/api/v1/policies")
 @RequiredArgsConstructor
 public class PoliticaController {
-
+    
     private final PoliticaService politicaService;
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<WorkflowResponseDTO> guardarPolitica(@RequestBody WorkflowRequestDTO request) {
         WorkflowResponseDTO response = politicaService.guardarPolitica(request);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<WorkflowResponseDTO> actualizarPolitica(@PathVariable String id, @RequestBody WorkflowRequestDTO request) {
         request.setId(id);
         WorkflowResponseDTO response = politicaService.guardarPolitica(request);
@@ -46,11 +49,13 @@ public class PoliticaController {
     }
 
     @PatchMapping("/{id}/publish")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<WorkflowResponseDTO> publicarPolitica(@PathVariable String id) {
         return ResponseEntity.ok(politicaService.publicarPolitica(id));
     }
 
     @PostMapping("/{id}/new-version")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<WorkflowResponseDTO> crearNuevaVersion(@PathVariable String id) {
         return new ResponseEntity<>(politicaService.crearNuevaVersion(id), HttpStatus.CREATED);
     }

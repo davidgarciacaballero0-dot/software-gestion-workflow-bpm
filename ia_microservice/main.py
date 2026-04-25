@@ -70,22 +70,34 @@ model_logic = genai.GenerativeModel(
 )
 async def chat_interactivo(req: ChatRequest):
     """
-    Chatbot multinivel: Adapta su comportamiento y acceso a datos según el rol del usuario.
+    Chatbot multinivel con detección de rango temporal para análisis.
     """
     rol = req.rol.upper()
+    prompt_lower = req.prompt.lower()
     
+    # Detección básica de rango temporal en el prompt
+    dias = 30 # Default: último mes
+    if "3 meses" in prompt_lower: dias = 90
+    elif "6 meses" in prompt_lower: dias = 180
+    elif "12 meses" in prompt_lower or "un año" in prompt_lower or "1 año" in prompt_lower: dias = 365
+    elif "2 años" in prompt_lower: dias = 730
+    elif "3 años" in prompt_lower: dias = 1095
+    elif "siempre" in prompt_lower or "histórico" in prompt_lower: dias = 9999
+
     # 1. Definir la personalidad y contexto según el ROL
     if rol == "ADMIN" or rol == "GERENTE":
-        # Patrón RAG para el Administrador: Consulta datos reales
-        stats = obtener_estadisticas_db()
+        stats = obtener_estadisticas_db(dias_atras=dias)
         persona_prompt = f"""
         Eres un Consultor Estratégico y Analista de Datos del sistema BPM. 
         Tu objetivo es ayudar al Administrador/Gerente a tomar decisiones basadas en datos.
+        
+        PERIODO ANALIZADO: Últimos {dias} días (o histórico total si es > 3000).
         
         DATOS REALES DEL SISTEMA (Contexto RAG):
         {json.dumps(stats, ensure_ascii=False, default=str)}
         
         INSTRUCCIONES: Responde de forma ejecutiva, destaca cuellos de botella si los ves en los datos y sugiere optimizaciones.
+        Si el usuario pregunta por un tiempo específico, confirma que los datos mostrados corresponden a ese rango.
         """
     elif rol == "FUNCIONARIO" or rol == "JEFE_DEP":
         persona_prompt = """
@@ -115,28 +127,68 @@ async def chat_interactivo(req: ChatRequest):
         raise HTTPException(status_code=503, detail=f"Error del servicio IA: {error_str[:200]}")
 
 
-def obtener_estadisticas_db() -> dict:
-    """Conecta directamente a MongoDB y extrae estadísticas crudas."""
-    mongo_uri = os.getenv("MONGO_URI", "mongodb://localhost:27017/bpm_workflow")
+def obtener_estadisticas_db(dias_atras: int = 30) -> dict:
+    """Conecta directamente a MongoDB y extrae estadísticas filtradas por tiempo."""
+    from pymongo import MongoClient
+    from datetime import datetime, timedelta
+    
+    # 1. Obtener URI con prioridad a Docker
+    mongo_uri = os.getenv("MONGO_URI") or os.getenv("MONGODB_URI") or "mongodb://mongodb_bpm:27017/bpm_workflow"
+    print(f"DEBUG IA: Intentando conectar a MongoDB en: {mongo_uri}")
+    
     try:
-        from pymongo import MongoClient
-        client = MongoClient(mongo_uri, serverSelectionTimeoutMS=3000)
-        db = client.get_default_database() if "/" in mongo_uri.split("://")[-1] else client["bpm_workflow"]
+        fecha_limite = datetime.now() - timedelta(days=dias_atras)
+        client = MongoClient(mongo_uri, serverSelectionTimeoutMS=5000) # 5 seg timeout
+        
+        # 2. Seleccionar Base de Datos de forma robusta
+        db_name = "bpm_workflow"
+        if "/" in mongo_uri.split("://")[-1]:
+            db_name = mongo_uri.split("/")[-1].split("?")[0]
+        
+        db = client[db_name]
+        
+        # Verificar conexión con un ping
+        client.admin.command('ping')
+        print(f"DEBUG IA: Conexión exitosa a la DB: {db_name}")
 
-        # Estadísticas de departamentos
-        departamentos = list(db.departamentos.find({}, {"_id": 0, "nombre": 1}))
+        # Filtro de tiempo para trámites y eventos
+        filtro_tiempo = {"createdAt": {"$gte": fecha_limite}}
+
+        # Estadísticas de departamentos con carga real
+        departamentos_raw = list(db.departamentos.find({}, {"_id": 1, "nombre": 1}))
+        usuarios_raw = list(db.usuarios.find({}, {"idDepartamento": 1}))
+        
+        # Trámites filtrados por tiempo
+        tramites_raw = list(db.tramites_instancias.find(
+            {"estadoActual": {"$in": ["EN_PROGRESO", "PENDIENTE"]}, **filtro_tiempo}, 
+            {"departamentoActualId": 1}
+        ))
+
+        stats_deps = []
+        for d in departamentos_raw:
+            id_dep = str(d["_id"])
+            nombre = d["nombre"]
+            num_tramites = sum(1 for t in tramites_raw if t.get("departamentoActualId") == id_dep)
+            num_personal = sum(1 for u in usuarios_raw if u.get("idDepartamento") == id_dep)
+            
+            stats_deps.append({
+                "nombre": nombre,
+                "tramites_activos": num_tramites,
+                "personal_disponible": num_personal,
+                "estado_carga": "ALTA" if num_tramites > (num_personal * 1.5) else "NORMAL"
+            })
 
         # Estadísticas de políticas/workflows
         politicas = list(db.politicas_workflow.find({}, {"_id": 0, "nombre": 1, "status": 1, "version": 1}))
         total_politicas = len(politicas)
 
-        # Estadísticas de trámites
-        tramites = list(db.tramite_instancias.find({}, {"_id": 0, "estado": 1, "departamentoActualId": 1}))
-        total_tramites = len(tramites)
-        tramites_activos = sum(1 for t in tramites if t.get("estado") in ["EN_PROGRESO", "PENDIENTE"])
+        # Estadísticas globales de trámites en el periodo
+        total_tramites_periodo = db.tramites_instancias.count_documents(filtro_tiempo)
+        tramites_activos = len(tramites_raw)
 
-        # Estadísticas de SLA (Cuellos de botella históricos)
-        sla_breaches = list(db.evento_historial.find({"excedioSLA": True}, {"_id": 0, "nodoDestinoNombre": 1, "createdAt": 1}))
+        # Estadísticas de SLA filtradas por tiempo
+        filtro_sla = {"excedioSLA": True, **filtro_tiempo}
+        sla_breaches = list(db.eventos_historial.find(filtro_sla, {"_id": 0, "nodoDestinoNombre": 1, "createdAt": 1}))
         total_sla_breaches = len(sla_breaches)
 
         # Estadísticas de usuarios
@@ -145,8 +197,8 @@ def obtener_estadisticas_db() -> dict:
         client.close()
 
         return {
-            "total_departamentos": len(departamentos),
-            "departamentos": departamentos[:20],
+            "total_departamentos": len(stats_deps),
+            "departamentos": stats_deps[:20],
             "total_politicas": total_politicas,
             "politicas": politicas[:10],
             "total_tramites": total_tramites,
