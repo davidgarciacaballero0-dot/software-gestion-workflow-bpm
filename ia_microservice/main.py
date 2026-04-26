@@ -63,7 +63,7 @@ model_logic = genai.GenerativeModel(
 
 # Modelo Pro para tareas de alta complejidad estadística y estratégica
 model_pro = genai.GenerativeModel(
-    model_name="gemini-1.5-pro",
+    model_name="gemini-3.1-pro-preview",
     system_instruction="Eres un Director de Estrategia y Estadística. Tu objetivo es proyectar demanda futura con máxima precisión."
 )
 
