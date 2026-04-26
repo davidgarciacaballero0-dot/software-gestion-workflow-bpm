@@ -199,6 +199,10 @@ export class PoliticaDesignerComponent implements OnInit {
     } else if (event.eventType === 'NODE_REMOVED') {
       this.nodes = this.nodes.filter(n => n.id !== payload.id);
       this.edges = this.edges.filter(e => e.sourceNodeId !== payload.id && e.targetNodeId !== payload.id);
+    } else if (event.eventType === 'FULL_STATE_UPDATE') {
+      this.nodes = payload.nodes;
+      this.edges = payload.edges;
+      this.autoAsignarDepartamentos();
     }
     // Podríamos agregar más eventos como conexiones agregadas, etc.
   }
@@ -467,6 +471,13 @@ export class PoliticaDesignerComponent implements OnInit {
 
           this.autoAsignarDepartamentos();
           this.cd.detectChanges();
+          
+          // REQ-10: Sincronizar cambios por WebSocket con otros diseñadores
+          this.broadcastChange('FULL_STATE_UPDATE', { 
+            nodes: this.nodes, 
+            edges: this.edges 
+          });
+
           alert('✨ Flujo actualizado exitosamente por Gemini.');
         }
         this.generatingIA = false;
