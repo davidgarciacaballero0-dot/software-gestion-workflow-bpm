@@ -61,6 +61,12 @@ model_logic = genai.GenerativeModel(
     system_instruction=SYSTEM_INSTRUCTION
 )
 
+# Modelo Pro para tareas de alta complejidad estadística y estratégica
+model_pro = genai.GenerativeModel(
+    model_name="gemini-1.5-pro",
+    system_instruction="Eres un Director de Estrategia y Estadística. Tu objetivo es proyectar demanda futura con máxima precisión."
+)
+
 @app.post("/ia/chat-interactivo")
 @retry(
     wait=wait_exponential(multiplier=1, min=2, max=15),
@@ -304,7 +310,7 @@ async def proyectar_demanda(req: ProjectionRequest):
         }}
         """
         
-        response = model_logic.generate_content(prompt)
+        response = model_pro.generate_content(prompt)
         text = response.text
         if "```json" in text:
             text = text.split("```json")[1].split("```")[0].strip()
