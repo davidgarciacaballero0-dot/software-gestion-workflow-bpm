@@ -52,6 +52,10 @@ export class PoliticaDesignerComponent implements OnInit {
   generatingIA: boolean = false;
   isLoaded: boolean = false; // Flag to force DOM recreation
   draggingPositions: Record<string, { x: number, y: number }> = {};
+  
+  // Soporte de Voz
+  isListening: boolean = false;
+  private recognition: any;
 
   // CU-18 State
   currentPolicy: PoliticaWorkflow = {
@@ -105,6 +109,49 @@ export class PoliticaDesignerComponent implements OnInit {
       console.log('Sync Event Received:', event);
       this.handleSyncEvent(event);
     });
+
+    this.initVoiceRecognition();
+  }
+
+  private initVoiceRecognition(): void {
+    const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+    if (SpeechRecognition) {
+      this.recognition = new SpeechRecognition();
+      this.recognition.lang = 'es-ES';
+      this.recognition.continuous = false;
+      this.recognition.interimResults = false;
+
+      this.recognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        this.zone.run(() => {
+          this.aiPrompt = transcript;
+          this.isListening = false;
+        });
+      };
+
+      this.recognition.onerror = (event: any) => {
+        console.error('Speech Recognition Error', event);
+        this.zone.run(() => this.isListening = false);
+      };
+
+      this.recognition.onend = () => {
+        this.zone.run(() => this.isListening = false);
+      };
+    }
+  }
+
+  toggleVoiceInput(): void {
+    if (!this.recognition) {
+      alert('El reconocimiento de voz no está soportado en este navegador.');
+      return;
+    }
+
+    if (this.isListening) {
+      this.recognition.stop();
+    } else {
+      this.isListening = true;
+      this.recognition.start();
+    }
   }
 
   private loadPolicy(id: string): void {
@@ -317,6 +364,7 @@ export class PoliticaDesignerComponent implements OnInit {
 
   /**
    * Calcula el punto exacto de conexión según el tipo y forma del nodo
+   * Sincronizado con las medidas exactas de politica-designer.component.css
    */
   getConnectionPoint(nodeId: string, side: 'left' | 'right'): { x: number, y: number } {
     const node = this.nodes.find(n => n.id === nodeId);
@@ -326,15 +374,15 @@ export class PoliticaDesignerComponent implements OnInit {
     const pos = this.draggingPositions[nodeId] || node.uiPosition;
 
     let width = 180;
-    let height = 80;
+    let height = 100; // Altura estándar para tareas y gateways
 
-    // Ajustar dimensiones según el estándar visual definido en CSS
+    // Ajustar dimensiones según el estándar visual definido en CSS (.node-item.START, .node-item.END)
     if (node.type === NodeType.START || node.type === NodeType.END) {
-      width = 120;
-      height = 120;
+      width = 75;  // Sincronizado con CSS línea 220
+      height = 75; // Sincronizado con CSS línea 221
     } else if (node.type === NodeType.EXCLUSIVE_GATEWAY) {
       width = 180;
-      height = 100;
+      height = 100; // Sincronizado con CSS línea 271 (min-height)
     }
 
     const x = side === 'left' ? pos.x : pos.x + width;
@@ -343,17 +391,31 @@ export class PoliticaDesignerComponent implements OnInit {
     return { x, y };
   }
 
-  // Lógica de dibujo de conexiones (Curvas Bezier Suaves)
+  // Lógica de dibujo de conexiones (Curvas Bezier Suaves con detección de dirección)
   calculatePath(edge: WorkflowEdge): string {
-    const source = this.getConnectionPoint(edge.sourceNodeId, 'right');
-    const target = this.getConnectionPoint(edge.targetNodeId, 'left');
+    const sourceNode = this.nodes.find(n => n.id === edge.sourceNodeId);
+    const targetNode = this.nodes.find(n => n.id === edge.targetNodeId);
+    if (!sourceNode || !targetNode) return '';
+
+    const sPos = this.draggingPositions[sourceNode.id] || sourceNode.uiPosition;
+    const tPos = this.draggingPositions[targetNode.id] || targetNode.uiPosition;
+
+    // Decidir dinámicamente si conectar derecha->izquierda o viceversa para evitar bucles feos
+    const sourceIsLeft = sPos.x < tPos.x;
+    const sourceSide = sourceIsLeft ? 'right' : 'left';
+    const targetSide = sourceIsLeft ? 'left' : 'right';
+
+    const source = this.getConnectionPoint(edge.sourceNodeId, sourceSide);
+    const target = this.getConnectionPoint(edge.targetNodeId, targetSide);
 
     if (!source || !target) return '';
 
-    // Calculamos los puntos de control para la curva Bezier (C)
-    // Desplazamos los controles horizontalmente para suavizar la entrada/salida
-    const cp1x = source.x + (target.x - source.x) / 3;
-    const cp2x = source.x + (target.x - source.x) * 2 / 3;
+    // Ajuste de suavizado según la distancia horizontal
+    const deltaX = Math.abs(target.x - source.x);
+    const curveIntensity = Math.min(deltaX / 2, 100); 
+
+    const cp1x = sourceIsLeft ? source.x + curveIntensity : source.x - curveIntensity;
+    const cp2x = sourceIsLeft ? target.x - curveIntensity : target.x + curveIntensity;
 
     return `M ${source.x} ${source.y} C ${cp1x} ${source.y}, ${cp2x} ${target.y}, ${target.x} ${target.y}`;
   }
@@ -385,16 +447,30 @@ export class PoliticaDesignerComponent implements OnInit {
     if (!this.aiPrompt.trim()) return;
     this.generatingIA = true;
     
-    this.workflowService.generarConIA(this.aiPrompt).subscribe({
+    // REQ: Enviar contexto actual para permitir MODIFICACIÓN INCREMENTAL
+    const context = {
+      prompt: this.aiPrompt,
+      nodosActuales: this.nodes,
+      aristasActuales: this.edges
+    };
+
+    this.workflowService.generarConIA(context).subscribe({
       next: (res: any) => {
         if (res && res.nodes) {
           this.nodes = res.nodes;
           this.edges = res.edges || [];
-          // Intentar auto-asignar departamentos si los nombres coinciden
+          
+          // Mostrar sugerencias si existen
+          if (res.optimizaciones_sugeridas && res.optimizaciones_sugeridas.length > 0) {
+            console.log('IA Optimizations:', res.optimizaciones_sugeridas);
+          }
+
           this.autoAsignarDepartamentos();
-          alert('✨ Flujo generado exitosamente por Gemini.');
+          this.cd.detectChanges();
+          alert('✨ Flujo actualizado exitosamente por Gemini.');
         }
         this.generatingIA = false;
+        this.aiPrompt = ''; // Limpiar después de éxito
       },
       error: (err) => {
         console.error(err);

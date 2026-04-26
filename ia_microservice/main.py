@@ -36,6 +36,8 @@ app.add_middleware(
 
 class FlowRequest(BaseModel):
     prompt: str
+    nodosActuales: Optional[List[dict]] = None
+    aristasActuales: Optional[List[dict]] = None
 
 class MetricData(BaseModel):
     departamentoId: str
@@ -140,52 +142,103 @@ async def asistente_alias(req: ChatRequest):
 
 
 @app.post("/ia/analizar-rendimiento")
-async def analizar_rendimiento(req: AnalysisRequest):
+async def analizar_rendimiento(req: dict):
     """
-    Analiza métricas de departamentos para detectar cuellos de botella.
+    Analiza métricas de rendimiento y propone optimizaciones estratégicas:
+    1. Reasignación de personal entre departamentos.
+    2. Reingeniería de procesos (cambios en los workflows).
     """
-    prompt = f"""
-    Analiza estas métricas de rendimiento:
-    {json.dumps([m.dict() for m in req.metricas], ensure_ascii=False)}
+    metricas = req.get("metricas", [])
+    politicas = req.get("politicas", [])
     
-    RESPONDE ÚNICAMENTE EN FORMATO JSON con estos campos:
+    prompt = f"""
+    Eres un Consultor Senior de Estrategia BPM y Rediseño de Procesos.
+    
+    DATOS ACTUALES:
+    - Métricas de Carga y SLA: {json.dumps(metricas)}
+    - Estructura de Políticas (Workflows): {json.dumps(politicas)}
+    
+    TU MISIÓN:
+    Analiza los cuellos de botella y genera un reporte de optimización con dos enfoques obligatorios:
+    
+    1. REASIGNACIÓN DE RECURSOS HUMANOS:
+       Identifica departamentos colapsados (pocos empleados, muchos trámites) y departamentos con capacidad sobrante.
+       Sugiere exactamente a quién mover y a dónde (nombres de departamentos).
+    
+    2. REINGENIERÍA DE PROCESOS (WORKFLOWS):
+       Analiza la lógica de los pasos de las políticas. Si un paso manual en un departamento colapsado está causando retrasos, sugiere simplificar el flujo, agregar automatizaciones o eliminar pasos redundantes.
+    
+    RESPONDE ÚNICAMENTE EN FORMATO JSON:
     {{
-      "analisis_breve": "Resumen de máximo 2 líneas para la UI",
-      "analisis_detallado": "Análisis profundo y extenso con detalles técnicos para un informe PDF oficial",
-      "recomendaciones": ["Rec 1", "Rec 2", "Rec 3"],
-      "nivel_alerta": "Bajo/Moderado/Alto"
+      "analisis_breve": "Resumen ejecutivo",
+      "analisis_detallado": "Explicación profunda de los hallazgos",
+      "nivel_alerta": "Bajo/Moderado/Alto",
+      "recomendaciones_rrhh": [
+         {{ "origen": "Dpto A", "destino": "Dpto B", "justificacion": "..." }}
+      ],
+      "recomendaciones_procesos": [
+         {{ "politica": "Nombre", "cambio_sugerido": "...", "beneficio_esperado": "..." }}
+      ]
     }}
     """
     try:
-        response = model_logic.generate_content(prompt)
-        # Intentar extraer JSON si el modelo responde con texto enriquecido
+        # Usamos el modelo PRO (Gemini 3.1) para esta consultoría de alto nivel
+        response = model_pro.generate_content(prompt)
         text = response.text
         if "```json" in text:
             text = text.split("```json")[1].split("```")[0].strip()
+        
+        # Limpieza
+        text = re.sub(r'[\x00-\x1F\x7F-\x9F]', '', text)
         return json.loads(text)
     except Exception as e:
-        return {"analisis": f"Error en análisis: {str(e)}", "status": "error"}
+        return {"error": f"Error en consultoría estratégica: {str(e)}", "status": "error"}
 
 
 @app.post("/ia/generar-flujo")
 async def generar_flujo(req: FlowRequest):
     """
-    Genera una estructura de flujo de trabajo a partir de una descripción.
+    Genera o modifica una estructura de flujo de trabajo BPM usando comandos de voz/texto.
+    Soporta modificación incremental enviando el estado actual del lienzo.
     """
+    contexto_flujo = ""
+    if req.nodosActuales:
+        contexto_flujo = f"\nESTADO ACTUAL DEL FLUJO:\nNodos: {json.dumps(req.nodosActuales)}\nAristas: {json.dumps(req.aristasActuales)}"
+
     prompt = f"""
-    Diseña un flujo de trabajo BPM basado en esta descripción: {req.prompt}
+    Eres un Ingeniero Experto en Procesos BPM. Tu tarea es DISEÑAR o MODIFICAR un flujo de trabajo.
     
-    Responde en formato JSON con una lista de 'nodos' (id, nombre, tipo) y 'conexiones' (de, a).
-    Usa tipos de nodo: 'START', 'TASK', 'EXCLUSIVE_GATEWAY', 'END'.
+    COMANDO DEL USUARIO: {req.prompt}
+    {contexto_flujo}
+    
+    REGLAS ESTRICTAS:
+    1. Si hay un ESTADO ACTUAL, MODIFÍCALO según el comando. No crees todo desde cero a menos que el usuario lo pida.
+    2. Mantén la coherencia de los IDs de los nodos existentes.
+    3. Tipos de nodo permitidos: 'START', 'USER_TASK', 'EXCLUSIVE_GATEWAY', 'END'.
+    4. El campo 'edges' debe conectar los IDs de los nodos.
+    5. Devuelve también un campo 'optimizaciones_sugeridas' con 2-3 consejos breves sobre el cambio realizado.
+
+    RESPONDE ÚNICAMENTE EN FORMATO JSON:
+    {{
+      "nodes": [ {{ "id": "node_1", "name": "Nombre", "type": "USER_TASK", "uiPosition": {{"x": 100, "y": 100}} }}, ... ],
+      "edges": [ {{ "sourceNodeId": "node_1", "targetNodeId": "node_2" }}, ... ],
+      "optimizaciones_sugeridas": ["Consejo 1", "Consejo 2"]
+    }}
     """
     try:
-        response = model_logic.generate_content(prompt)
+        # Usamos el modelo PRO (Gemini 3.1) para mayor razonamiento lógico en el diseño
+        response = model_pro.generate_content(prompt)
         text = response.text
         if "```json" in text:
             text = text.split("```json")[1].split("```")[0].strip()
+        
+        # Limpieza de caracteres extraños si los hay
+        text = re.sub(r'[\x00-\x1F\x7F-\x9F]', '', text)
+        
         return json.loads(text)
     except Exception as e:
-        return {"error": "No se pudo generar el flujo", "detalle": str(e)}
+        print(f"ERROR IA GENERAR FLUJO: {str(e)}")
+        return {"error": "No se pudo procesar el comando de voz", "detalle": str(e)}
 
 
 def obtener_estadisticas_db(dias_atras: int = 30) -> dict:

@@ -19,7 +19,7 @@ public class OptimizacionController {
 
     private final AnaliticaService analiticaService;
     private final RestTemplate restTemplate = new RestTemplate();
-    
+
     @org.springframework.beans.factory.annotation.Value("${ia.service.url:http://localhost:8000/ia}")
     private String IA_URL;
 
@@ -28,7 +28,7 @@ public class OptimizacionController {
             @RequestParam(required = false) Integer meses,
             @RequestParam(required = false) String idDepartamento,
             @RequestParam(required = false) String idPolitica) {
-        
+
         if (meses != null && meses > 0) {
             return ResponseEntity.ok(analiticaService.calcularMetricasHistoricas(meses, idDepartamento, idPolitica));
         }
@@ -36,17 +36,19 @@ public class OptimizacionController {
     }
 
     @PostMapping("/analyze")
-    public ResponseEntity<Map<String, Object>> analyzeBottlenecks(@RequestBody(required = false) Map<String, Object> payload) {
+    public ResponseEntity<Map<String, Object>> analyzeBottlenecks(
+            @RequestBody(required = false) Map<String, Object> payload) {
         Integer meses = 0;
         String idDepartamento = null;
-        
+
         if (payload != null) {
             if (payload.get("meses") != null) {
                 meses = (Integer) payload.get("meses");
             }
             if (payload.get("idDepartamento") != null) {
                 idDepartamento = (String) payload.get("idDepartamento");
-                if (idDepartamento != null && idDepartamento.trim().isEmpty()) idDepartamento = null;
+                if (idDepartamento != null && idDepartamento.trim().isEmpty())
+                    idDepartamento = null;
             }
         }
 
@@ -56,14 +58,16 @@ public class OptimizacionController {
         } else {
             metrics = analiticaService.calcularMetricasDepartamentales();
         }
-        
+
         Map<String, Object> request = new HashMap<>();
         request.put("metricas", metrics);
+        request.put("politicas", analiticaService.obtenerTodasLasPoliticas());
 
         try {
             @SuppressWarnings("unchecked")
             Class<Map<String, Object>> responseType = (Class<Map<String, Object>>) (Class<?>) Map.class;
-            ResponseEntity<Map<String, Object>> response = restTemplate.postForEntity(IA_URL + "/analizar-rendimiento", request, responseType);
+            ResponseEntity<Map<String, Object>> response = restTemplate.postForEntity(IA_URL + "/analizar-rendimiento",
+                    request, responseType);
             return ResponseEntity.ok(response.getBody());
         } catch (Exception e) {
             Map<String, Object> error = new HashMap<>();
@@ -74,18 +78,17 @@ public class OptimizacionController {
     }
 
     @PostMapping("/analyze-flow")
-    public ResponseEntity<Map<String, Object>> analyzeFlow(@RequestBody Map<String, String> request) {
+    public ResponseEntity<Map<String, Object>> analyzeFlow(@RequestBody Map<String, Object> request) {
         try {
             // REQ-14 Fix: Mapear 'descripcion' (frontend) a 'prompt' (IA Microservice)
-            Map<String, String> iaRequest = new HashMap<>();
-            String prompt = request.get("prompt");
-            if (prompt == null) prompt = request.get("descripcion");
-            
-            iaRequest.put("prompt", prompt);
+            if (!request.containsKey("prompt") && request.containsKey("descripcion")) {
+                request.put("prompt", request.get("descripcion"));
+            }
 
             @SuppressWarnings("unchecked")
             Class<Map<String, Object>> responseType = (Class<Map<String, Object>>) (Class<?>) Map.class;
-            ResponseEntity<Map<String, Object>> response = restTemplate.postForEntity(IA_URL + "/generar-flujo", iaRequest, responseType);
+            ResponseEntity<Map<String, Object>> response = restTemplate.postForEntity(IA_URL + "/generar-flujo",
+                    request, responseType);
             return ResponseEntity.ok(response.getBody());
         } catch (Exception e) {
             System.err.println("Error calling IA flow generation: " + e.getMessage());
@@ -118,18 +121,18 @@ public class OptimizacionController {
     public ResponseEntity<byte[]> downloadPdfReport(@RequestBody Map<String, Object> request) {
         String text = (String) request.get("text");
         String chartImage = (String) request.get("chartImage");
-        
+
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> metricsRaw = (List<Map<String, Object>>) request.get("metrics");
-        
+
         List<AnaliticaService.MetricDataDTO> metrics = null;
         if (metricsRaw != null) {
             metrics = metricsRaw.stream().map(m -> AnaliticaService.MetricDataDTO.builder()
-                .nombreDepartamento((String) m.get("nombreDepartamento"))
-                .cantidadTramites((Integer) m.get("cantidadTramites"))
-                .tiempoPromedioHoras(Double.valueOf(String.valueOf(m.getOrDefault("tiempoPromedioHoras", 0.0))))
-                .capacidadPersonal((Integer) m.get("capacidadPersonal"))
-                .build()).collect(Collectors.toList());
+                    .nombreDepartamento((String) m.get("nombreDepartamento"))
+                    .cantidadTramites((Integer) m.get("cantidadTramites"))
+                    .tiempoPromedioHoras(Double.valueOf(String.valueOf(m.getOrDefault("tiempoPromedioHoras", 0.0))))
+                    .capacidadPersonal((Integer) m.get("capacidadPersonal"))
+                    .build()).collect(Collectors.toList());
         }
 
         byte[] content = analiticaService.generarPDFAnalisis(text, chartImage, metrics);
@@ -145,20 +148,21 @@ public class OptimizacionController {
             // REQ-14: Inyectar rol si falta para compatibilidad con microservicio IA
             Map<String, String> iaRequest = new HashMap<>(request);
             if (!iaRequest.containsKey("rol")) {
-                org.springframework.security.core.Authentication auth = 
-                    org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+                org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
+                        .getContext().getAuthentication();
                 String rol = "CLIENTE"; // Default
                 if (auth != null) {
                     rol = auth.getAuthorities().stream()
-                        .map(r -> r.getAuthority().replace("ROLE_", ""))
-                        .findFirst().orElse("CLIENTE");
+                            .map(r -> r.getAuthority().replace("ROLE_", ""))
+                            .findFirst().orElse("CLIENTE");
                 }
                 iaRequest.put("rol", rol);
             }
 
             @SuppressWarnings("unchecked")
             Class<Map<String, Object>> responseType = (Class<Map<String, Object>>) (Class<?>) Map.class;
-            ResponseEntity<Map<String, Object>> response = restTemplate.postForEntity(IA_URL + "/chat-interactivo", iaRequest, responseType);
+            ResponseEntity<Map<String, Object>> response = restTemplate.postForEntity(IA_URL + "/chat-interactivo",
+                    iaRequest, responseType);
             return ResponseEntity.ok(response.getBody());
         } catch (HttpStatusCodeException e) {
             System.err.println("IA Service HTTP Error: " + e.getStatusCode() + " - " + e.getResponseBodyAsString());
@@ -193,7 +197,8 @@ public class OptimizacionController {
         try {
             @SuppressWarnings("unchecked")
             Class<Map<String, Object>> responseType = (Class<Map<String, Object>>) (Class<?>) Map.class;
-            ResponseEntity<Map<String, Object>> response = restTemplate.postForEntity(IA_URL + "/proyectar-demanda", request, responseType);
+            ResponseEntity<Map<String, Object>> response = restTemplate.postForEntity(IA_URL + "/proyectar-demanda",
+                    request, responseType);
             return ResponseEntity.ok(response.getBody());
         } catch (Exception e) {
             Map<String, Object> error = new HashMap<>();

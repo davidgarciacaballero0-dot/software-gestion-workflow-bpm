@@ -60,14 +60,22 @@
 
       <!-- CU-14: Diseño Asistido por IA -->
       <div class="tool-section ai-section mt-1" *ngIf="canEdit()">
-        <h4>✨ Generar con IA (Gemini)</h4>
+        <h4>✨ Generar/Modificar con IA</h4>
         <div class="ai-prompt-box">
-          <textarea [(ngModel)]="aiPrompt"
-            placeholder="Ej: Proceso de préstamo con pasos en Crédito, Riesgos y Contabilidad..."
-            class="form-control ai-textarea" rows="4"></textarea>
+          <div class="textarea-wrapper">
+            <textarea [(ngModel)]="aiPrompt"
+              placeholder="Ej: 'Agrega un paso de aprobación al final' o 'Conecta Inicio con Auditoría'..."
+              class="form-control ai-textarea" rows="4"></textarea>
+            <button class="btn-voice" [class.listening]="isListening" (click)="toggleVoiceInput()" title="Dictar comando">
+              <span class="icon">{{ isListening ? '🛑' : '🎤' }}</span>
+            </button>
+          </div>
+          <div *ngIf="isListening" class="listening-indicator">
+            <span class="pulse"></span> Escuchando...
+          </div>
           <button class="btn-premium btn-premium-primary w-full mt-1" (click)="solicitarGeneracionIA()"
             [disabled]="generatingIA || !aiPrompt">
-            {{ generatingIA ? '🚀 Generando...' : 'Dibujar Flujo' }}
+            {{ generatingIA ? '🚀 Procesando...' : 'Aplicar Cambios' }}
           </button>
         </div>
       </div>

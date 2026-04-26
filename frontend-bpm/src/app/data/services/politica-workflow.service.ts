@@ -35,8 +35,8 @@ export class PoliticaWorkflowService {
     return this.http.patch<PoliticaWorkflow>(`${this.apiUrl}/${id}/publish`, {});
   }
 
-  generarConIA(descripcion: string): Observable<any> {
-    return this.http.post<any>(`/api/v1/optimization/analyze-flow`, { descripcion });
+  generarConIA(payload: any): Observable<any> {
+    return this.http.post<any>(`/api/v1/optimization/analyze-flow`, payload);
   }
 
   nuevaVersion(id: string): Observable<PoliticaWorkflow> {

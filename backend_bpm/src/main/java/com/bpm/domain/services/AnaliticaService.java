@@ -22,6 +22,7 @@ public class AnaliticaService {
     private final DepartamentoRepository departamentoRepository;
     private final UsuarioRepository usuarioRepository;
     private final EventoHistorialRepository historialRepository;
+    private final com.bpm.data.repositories.PoliticaWorkflowRepository politicaRepository;
 
     public List<MetricDataDTO> calcularMetricasDepartamentales() {
         return departamentoRepository.findAll().stream().map(dept -> {
@@ -187,6 +188,10 @@ public class AnaliticaService {
         private int capacidadPersonal;
         private int retrasosSla;
         private List<TrendPointDTO> trend;
+    }
+
+    public List<com.bpm.data.entities.PoliticaWorkflow> obtenerTodasLasPoliticas() {
+        return politicaRepository.findAll();
     }
 
     @lombok.Data
