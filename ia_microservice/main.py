@@ -54,7 +54,7 @@ class ChatRequest(BaseModel):
 
 # --- Configuración de Instrucción de Sistema e Instancia del Modelo ---
 SYSTEM_INSTRUCTION = """Eres un asistente inteligente del sistema de Gestión de Procesos de Negocio (BPM Workflow). 
-Responde siempre en español. Sé conciso y profesional."""
+Responde siempre en español. Sé extremadamente conciso, directo y usa listas de puntos. Evita párrafos largos."""
 
 model_logic = genai.GenerativeModel(
     model_name="gemini-2.5-flash",
@@ -139,11 +139,16 @@ async def analizar_rendimiento(req: AnalysisRequest):
     Analiza métricas de departamentos para detectar cuellos de botella.
     """
     prompt = f"""
-    Analiza las siguientes métricas de rendimiento del sistema BPM:
+    Analiza estas métricas de rendimiento:
     {json.dumps([m.dict() for m in req.metricas], ensure_ascii=False)}
     
-    Identifica cuellos de botella, departamentos sobrecargados y sugiere acciones correctivas.
-    Responde en formato JSON con las llaves: 'analisis', 'recomendaciones', 'nivel_alerta'.
+    RESPONDE ÚNICAMENTE EN FORMATO JSON con estos campos:
+    {{
+      "analisis_breve": "Resumen de máximo 2 líneas para la UI",
+      "analisis_detallado": "Análisis profundo y extenso con detalles técnicos para un informe PDF oficial",
+      "recomendaciones": ["Rec 1", "Rec 2", "Rec 3"],
+      "nivel_alerta": "Bajo/Moderado/Alto"
+    }}
     """
     try:
         response = model_logic.generate_content(prompt)
@@ -188,7 +193,7 @@ def obtener_estadisticas_db(dias_atras: int = 30) -> dict:
     
     try:
         fecha_limite = datetime.now() - timedelta(days=dias_atras)
-        client = MongoClient(mongo_uri, serverSelectionTimeoutMS=5000) # 5 seg timeout
+        client = MongoClient(mongo_uri, serverSelectionTimeoutMS=10000) # 10 seg timeout
         
         # 2. Seleccionar Base de Datos de forma robusta
         db_name = "bpm_workflow"
@@ -216,16 +221,16 @@ def obtener_estadisticas_db(dias_atras: int = 30) -> dict:
 
         stats_deps = []
         for d in departamentos_raw:
-            id_dep = str(d["_id"])
-            nombre = d["nombre"]
-            num_tramites = sum(1 for t in tramites_raw if t.get("departamentoActualId") == id_dep)
-            num_personal = sum(1 for u in usuarios_raw if u.get("idDepartamento") == id_dep)
+            id_dep = str(d.get("_id", ""))
+            nombre = d.get("nombre", "Sin Nombre")
+            num_tramites = sum(1 for t in tramites_raw if str(t.get("departamentoActualId", "")) == id_dep)
+            num_personal = sum(1 for u in usuarios_raw if str(u.get("idDepartamento", "")) == id_dep)
             
             stats_deps.append({
                 "nombre": nombre,
                 "tramites_activos": num_tramites,
                 "personal_disponible": num_personal,
-                "estado_carga": "ALTA" if num_tramites > (num_personal * 1.5) else "NORMAL"
+                "estado_carga": "ALTA" if num_tramites > (num_personal * 1.5 + 1) else "NORMAL"
             })
 
         # Estadísticas de políticas/workflows
@@ -233,12 +238,11 @@ def obtener_estadisticas_db(dias_atras: int = 30) -> dict:
         total_politicas = len(politicas)
 
         # Estadísticas globales de trámites en el periodo
-        total_tramites_periodo = db.tramites_instancias.count_documents(filtro_tiempo)
+        total_tramites_periodo = db.tramites_instancias.count_documents({"createdAt": {"$gte": fecha_limite}})
         tramites_activos = len(tramites_raw)
 
         # Estadísticas de SLA filtradas por tiempo
-        filtro_sla = {"excedioSLA": True, **filtro_tiempo}
-        sla_breaches = list(db.eventos_historial.find(filtro_sla, {"_id": 0, "nodoDestinoNombre": 1, "createdAt": 1}))
+        sla_breaches = list(db.eventos_historial.find({"excedioSLA": True, "createdAt": {"$gte": fecha_limite}}, {"_id": 0, "nodoDestinoNombre": 1}).limit(50))
         total_sla_breaches = len(sla_breaches)
 
         # Estadísticas de usuarios
@@ -246,19 +250,118 @@ def obtener_estadisticas_db(dias_atras: int = 30) -> dict:
 
         client.close()
 
+        print(f"DEBUG IA: Datos extraídos con éxito.")
+        
         return {
             "total_departamentos": len(stats_deps),
             "departamentos": stats_deps[:20],
             "total_politicas": total_politicas,
-            "politicas": politicas[:10],
-            "total_tramites": total_tramites,
+            "total_tramites": total_tramites_periodo,
             "tramites_activos": tramites_activos,
             "total_sla_breaches": total_sla_breaches,
-            "sla_breaches_por_nodo": sla_breaches[:50],
             "total_usuarios": total_usuarios,
+            "status": "success"
         }
     except Exception as e:
-        return {"error_db": str(e), "nota": "No se pudo conectar a MongoDB. Datos no disponibles."}
+        print(f"ERROR CRÍTICO IA DB: {str(e)}")
+        if client: client.close()
+        return {"error_db": str(e), "status": "error"}
+
+
+class ProjectionRequest(BaseModel):
+    meses: int = 3
+
+
+@app.post("/ia/proyectar-demanda")
+async def proyectar_demanda(req: ProjectionRequest):
+    """
+    Analiza el histórico de trámites y proyecta la demanda futura.
+    """
+    try:
+        historico = obtener_historico_demanda_db()
+        
+        prompt = f"""
+        Actúa como un Modelo Estadístico Predictivo Avanzado para un sistema BPM.
+        
+        HISTÓRICO DE DEMANDA (Trámites creados por mes):
+        {json.dumps(historico, ensure_ascii=False, default=str)}
+        
+        HORIZONTE DE PROYECCIÓN: {req.meses} meses a futuro.
+        
+        INSTRUCCIONES:
+        1. Analiza las tendencias de cada trámite.
+        2. Proyecta el volumen de demanda para los próximos {req.meses} meses.
+        3. Identifica qué trámites tendrán mayor crecimiento.
+        4. Sugiere una REDISTRIBUCIÓN ÓPTIMA DE PERSONAL (quién debe ir a qué departamento) para mitigar los cuellos de botella proyectados.
+        
+        RESPONDE ÚNICAMENTE EN FORMATO JSON con esta estructura:
+        {{
+          "proyecciones": [
+            {{ "tramite": "Nombre", "crecimiento_esperado": "XX%", "volumen_proyectado": 150 }}
+          ],
+          "analisis_predictivo": "Texto markdown con el análisis de tendencias...",
+          "recomendacion_personal": "Texto markdown con sugerencias de RRHH..."
+        }}
+        """
+        
+        response = model_logic.generate_content(prompt)
+        text = response.text
+        if "```json" in text:
+            text = text.split("```json")[1].split("```")[0].strip()
+        return json.loads(text)
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error en proyección: {str(e)}")
+
+
+def obtener_historico_demanda_db():
+    """Extrae el conteo histórico de trámites por mes y política."""
+    from pymongo import MongoClient
+    mongo_uri = os.getenv("MONGO_URI") or os.getenv("MONGODB_URI") or "mongodb://localhost:27017/bpm_workflow"
+    
+    try:
+        client = MongoClient(mongo_uri, serverSelectionTimeoutMS=5000)
+        db = client.get_default_database() or client["bpm_workflow"]
+        
+        # 1. Obtener nombres de políticas para mapear IDs
+        politicas_map = {str(p["_id"]): p["nombre"] for p in db.politicas_workflow.find({}, {"nombre": 1})}
+        
+        # 2. Agregar trámites por mes y política
+        pipeline = [
+            {
+                "$project": {
+                    "idPolitica": 1,
+                    "month": {"$month": "$createdAt"},
+                    "year": {"$year": "$createdAt"}
+                }
+            },
+            {
+                "$group": {
+                    "_id": {"idPolitica": "$idPolitica", "year": "$year", "month": "$month"},
+                    "count": {"$sum": 1}
+                }
+            },
+            {"$sort": {"_id.year": 1, "_id.month": 1}}
+        ]
+        
+        results = list(db.tramites_instancias.aggregate(pipeline))
+        
+        historico_formateado = []
+        for r in results:
+            id_pol = r["_id"]["idPolitica"]
+            nombre = politicas_map.get(id_pol, f"Tramite {id_pol}")
+            historico_formateado.append({
+                "tramite": nombre,
+                "periodo": f"{r['_id']['year']}-{r['_id']['month']:02d}",
+                "cantidad": r["count"]
+            })
+            
+        client.close()
+        return historico_formateado
+        
+    except Exception as e:
+        print(f"Error extrayendo histórico: {e}")
+        return []
 
 
 if __name__ == "__main__":

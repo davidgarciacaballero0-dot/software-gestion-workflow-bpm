@@ -10,6 +10,7 @@ import com.bpm.data.entities.enums.NodeType;
 import com.bpm.data.entities.enums.PolicyStatus;
 import com.bpm.data.repositories.OrganizacionRepository;
 import com.bpm.data.repositories.PoliticaWorkflowRepository;
+import com.bpm.data.repositories.TramiteInstanciaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -23,6 +24,7 @@ public class PoliticaService {
 
     private final PoliticaWorkflowRepository politicaRepository;
     private final OrganizacionRepository organizacionRepository;
+    private final TramiteInstanciaRepository tramiteRepository;
 
     public WorkflowResponseDTO guardarPolitica(WorkflowRequestDTO dto) {
         if (!organizacionRepository.existsById(dto.getIdOrganizacion())) {
@@ -138,6 +140,16 @@ public class PoliticaService {
 
         PoliticaWorkflow guardada = politicaRepository.save(nuevaPolitica);
         return mapearDTO(guardada);
+    }
+
+    public void eliminarPolitica(String id) {
+        if (tramiteRepository.countByIdPolitica(id) > 0) {
+            throw new WorkflowValidationException("No se puede eliminar la política porque tiene trámites asociados.");
+        }
+        if (!politicaRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Política no encontrada con ID: " + id);
+        }
+        politicaRepository.deleteById(id);
     }
 
     private void validarNombreUnico(String idOrg, String nombre) {

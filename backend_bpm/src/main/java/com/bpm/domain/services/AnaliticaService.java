@@ -115,7 +115,7 @@ public class AnaliticaService {
         }
     }
 
-    public byte[] generarPDFAnalisis(String analysisText, String chartImageBase64) {
+    public byte[] generarPDFAnalisis(String analysisText, String chartImageBase64, List<MetricDataDTO> customMetrics) {
         try (java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream()) {
             com.itextpdf.kernel.pdf.PdfWriter writer = new com.itextpdf.kernel.pdf.PdfWriter(out);
             com.itextpdf.kernel.pdf.PdfDocument pdf = new com.itextpdf.kernel.pdf.PdfDocument(writer);
@@ -128,17 +128,21 @@ public class AnaliticaService {
             document.add(new com.itextpdf.layout.element.Paragraph("\nGenerado por el Motor de Inteligencia Artificial (Gemini)\n")
                 .setItalic().setFontSize(10).setTextAlignment(com.itextpdf.layout.properties.TextAlignment.CENTER));
 
-            // Tabla de Resumen
+            // Tabla de Resumen Dinámica
             com.itextpdf.layout.element.Table table = new com.itextpdf.layout.element.Table(4);
-            table.addCell("Departamento");
-            table.addCell("Carga");
-            table.addCell("Tiempo Prom.");
-            table.addCell("Personal");
+            table.addCell(new com.itextpdf.layout.element.Cell().add(new com.itextpdf.layout.element.Paragraph("Departamento").setBold()));
+            table.addCell(new com.itextpdf.layout.element.Cell().add(new com.itextpdf.layout.element.Paragraph("Carga").setBold()));
+            table.addCell(new com.itextpdf.layout.element.Cell().add(new com.itextpdf.layout.element.Paragraph("Tiempo Prom.").setBold()));
+            table.addCell(new com.itextpdf.layout.element.Cell().add(new com.itextpdf.layout.element.Paragraph("Personal").setBold()));
 
-            for (MetricDataDTO m : calcularMetricasDepartamentales()) {
+            List<MetricDataDTO> data = (customMetrics != null && !customMetrics.isEmpty()) 
+                ? customMetrics 
+                : calcularMetricasDepartamentales();
+
+            for (MetricDataDTO m : data) {
                 table.addCell(m.getNombreDepartamento());
                 table.addCell(String.valueOf(m.getCantidadTramites()));
-                table.addCell(m.getTiempoPromedioHoras() + "h");
+                table.addCell(String.format("%.2fh", m.getTiempoPromedioHoras()));
                 table.addCell(String.valueOf(m.getCapacidadPersonal()));
             }
             document.add(table);

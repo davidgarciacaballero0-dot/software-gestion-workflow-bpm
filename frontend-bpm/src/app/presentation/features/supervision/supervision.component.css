@@ -227,3 +227,126 @@
 .workflow-step { display: flex; align-items: center; gap: 0.4rem; font-weight: 600; }
 .step-icon { opacity: 0.7; }
 
+/* REESTRUCTURACIÓN & CARGA (Migrado de Insights) */
+.dept-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  margin-top: 1rem;
+}
+
+.dept-row {
+  display: grid;
+  grid-template-columns: 200px 1fr 220px;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.dept-name {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--primary);
+}
+
+.dept-progress-track {
+  height: 8px;
+  background: rgba(0,0,0,0.05);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.dept-progress-fill {
+  height: 100%;
+  border-radius: 10px;
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dept-progress-fill.ok { background: linear-gradient(90deg, #10b981, #34d399); }
+.dept-progress-fill.warning { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+.dept-progress-fill.critical { background: linear-gradient(90deg, #ef4444, #f87171); }
+
+.dept-stats {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.reassign-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-top: 1.5rem;
+}
+
+.users-box {
+  background: rgba(255,255,255,0.5);
+  border: 1px solid rgba(0,0,0,0.05);
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+.users-scroll {
+  max-height: 180px;
+  overflow-y: auto;
+  margin-top: 0.5rem;
+}
+
+.user-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s;
+}
+
+.user-item:hover { background: rgba(0,0,0,0.03); }
+.user-item.selected { background: rgba(var(--primary-rgb, 103, 80, 164), 0.1); color: var(--primary); font-weight: 600; }
+
+.form-row {
+  margin-bottom: 1.25rem;
+}
+
+.form-row label {
+  display: block;
+  font-size: 0.8rem;
+  color: #64748b;
+  margin-bottom: 0.4rem;
+  font-weight: 600;
+}
+
+.select-premium {
+  width: 100%;
+  padding: 0.6rem;
+  border-radius: 8px;
+  border: 1px solid rgba(0,0,0,0.1);
+  background: white;
+  font-size: 0.85rem;
+}
+
+.btn-execute-transfer {
+  width: 100%;
+  padding: 0.75rem;
+  border-radius: 10px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-execute-transfer:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(var(--primary-rgb, 103, 80, 164), 0.3);
+}
+
+.btn-execute-transfer:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+

@@ -23,4 +23,6 @@ public interface TramiteInstanciaRepository extends MongoRepository<TramiteInsta
 
     // Consulta de trámites asignados a un funcionario específico para su atención
     List<TramiteInstancia> findByFuncionarioAsignadoId(String funcionarioAsignadoId);
+
+    long countByIdPolitica(String idPolitica);
 }

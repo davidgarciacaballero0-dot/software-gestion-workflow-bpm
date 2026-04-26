@@ -10,6 +10,7 @@ import org.springframework.web.client.RestTemplate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/optimization")
@@ -114,10 +115,24 @@ public class OptimizacionController {
     }
 
     @PostMapping("/report/pdf")
-    public ResponseEntity<byte[]> downloadPdfReport(@RequestBody Map<String, String> request) {
-        String text = request.get("text");
-        String chartImage = request.get("chartImage");
-        byte[] content = analiticaService.generarPDFAnalisis(text, chartImage);
+    public ResponseEntity<byte[]> downloadPdfReport(@RequestBody Map<String, Object> request) {
+        String text = (String) request.get("text");
+        String chartImage = (String) request.get("chartImage");
+        
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> metricsRaw = (List<Map<String, Object>>) request.get("metrics");
+        
+        List<AnaliticaService.MetricDataDTO> metrics = null;
+        if (metricsRaw != null) {
+            metrics = metricsRaw.stream().map(m -> AnaliticaService.MetricDataDTO.builder()
+                .nombreDepartamento((String) m.get("nombreDepartamento"))
+                .cantidadTramites((Integer) m.get("cantidadTramites"))
+                .tiempoPromedioHoras(Double.valueOf(String.valueOf(m.getOrDefault("tiempoPromedioHoras", 0.0))))
+                .capacidadPersonal((Integer) m.get("capacidadPersonal"))
+                .build()).collect(Collectors.toList());
+        }
+
+        byte[] content = analiticaService.generarPDFAnalisis(text, chartImage, metrics);
         return ResponseEntity.ok()
                 .header("Content-Type", "application/pdf")
                 .header("Content-Disposition", "attachment; filename=informe_ia_consultoria.pdf")
@@ -170,5 +185,21 @@ public class OptimizacionController {
         private String idOrigen;
         private String idDestino;
         private List<String> userIds;
+        private String motivo;
+    }
+
+    @PostMapping("/projections")
+    public ResponseEntity<Map<String, Object>> downloadProjections(@RequestBody Map<String, Object> request) {
+        try {
+            @SuppressWarnings("unchecked")
+            Class<Map<String, Object>> responseType = (Class<Map<String, Object>>) (Class<?>) Map.class;
+            ResponseEntity<Map<String, Object>> response = restTemplate.postForEntity(IA_URL + "/proyectar-demanda", request, responseType);
+            return ResponseEntity.ok(response.getBody());
+        } catch (Exception e) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", "Error al generar proyecciones con IA.");
+            error.put("details", e.getMessage());
+            return ResponseEntity.status(503).body(error);
+        }
     }
 }

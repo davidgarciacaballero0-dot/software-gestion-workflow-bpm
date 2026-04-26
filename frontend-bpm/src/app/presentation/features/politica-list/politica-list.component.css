@@ -503,3 +503,47 @@
     gap: 2rem;
   }
 }
+
+/* --- CRUD COMPLETO --- */
+.management-row {
+  opacity: 0.8;
+  transition: opacity 0.2s;
+}
+
+.policy-card:hover .management-row {
+  opacity: 1;
+}
+
+.btn-manage {
+  flex: 1;
+  padding: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  border: 1px solid #e2e8f0;
+  background: white;
+  transition: all 0.2s;
+}
+
+.clone-btn {
+  color: #6366f1;
+}
+
+.clone-btn:hover {
+  background: #eef2ff;
+  border-color: #6366f1;
+}
+
+.delete-btn {
+  color: #dc2626;
+}
+
+.delete-btn:hover {
+  background: #fef2f2;
+  border-color: #dc2626;
+}

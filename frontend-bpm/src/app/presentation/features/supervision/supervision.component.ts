@@ -50,6 +50,16 @@ export class SupervisionComponent implements OnInit {
     usuarioInterventorId: ''
   };
 
+  // Reassignment Form Logic (Migrated from Insights)
+  reassignForm = {
+    idOrigen: '',
+    idDestino: '',
+    motivo: 'Reequilibrio de carga operativa'
+  };
+  usuariosOrigen: any[] = [];
+  selectedUserIds: string[] = [];
+  executingAction = false;
+
   constructor(
     private tramiteService: TramiteService,
     private authService: AuthService,
@@ -245,5 +255,60 @@ export class SupervisionComponent implements OnInit {
 
   formatDate(dateStr: string): string {
     return new Date(dateStr).toLocaleDateString();
+  }
+
+  // ========================================
+  //  REESTRUCTURACIÓN (Migrado de Insights)
+  // ========================================
+
+  getLoadPercent(m: MetricData): number {
+    if (!m.capacidadPersonal || m.capacidadPersonal === 0) {
+      return m.cantidadTramites > 0 ? 100 : 0;
+    }
+    const ratio = (m.cantidadTramites / m.capacidadPersonal) * 100;
+    return Math.min(ratio, 100);
+  }
+
+  onOrigenChange() {
+    this.usuariosOrigen = [];
+    this.selectedUserIds = [];
+    if (!this.reassignForm.idOrigen) return;
+    this.analiticaService.getUsersByDepartamento(this.reassignForm.idOrigen).subscribe({
+      next: (users) => {
+        this.usuariosOrigen = users;
+        this.cd.detectChanges();
+      }
+    });
+  }
+
+  toggleUser(userId: string) {
+    const idx = this.selectedUserIds.indexOf(userId);
+    if (idx > -1) this.selectedUserIds.splice(idx, 1);
+    else this.selectedUserIds.push(userId);
+  }
+
+  ejecutarTransferencia() {
+    if (this.selectedUserIds.length === 0 || !this.reassignForm.idDestino) return;
+    this.executingAction = true;
+    this.analiticaService.reassignPersonal({
+      idOrigen: this.reassignForm.idOrigen,
+      idDestino: this.reassignForm.idDestino,
+      userIds: this.selectedUserIds,
+      motivo: this.reassignForm.motivo
+    }).subscribe({
+      next: () => {
+        this.executingAction = false;
+        this.cargarMetricas();
+        this.usuariosOrigen = [];
+        this.selectedUserIds = [];
+        alert('🚀 Reequilibrio de personal ejecutado con éxito.');
+        this.cd.detectChanges();
+      },
+      error: () => {
+        this.executingAction = false;
+        alert('Fallo en la ejecución de transferencia.');
+        this.cd.detectChanges();
+      }
+    });
   }
 }

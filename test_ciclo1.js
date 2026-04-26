@@ -9,7 +9,7 @@ async function req(method, path, body, token) {
     const res = await fetch(`${BASE}${path}`, opts);
     const text = await res.text();
     let json = null;
-    try { json = JSON.parse(text); } catch (e) {}
+    try { json = JSON.parse(text); } catch (e) { }
     return { status: res.status, json, text, ok: res.ok };
   } catch (e) {
     return { status: 0, text: e.message, ok: false };
@@ -53,7 +53,7 @@ async function testCiclo1() {
     codigoArea: 'QA-M1',
     idOrganizacion: orgId
   }, token);
-  
+
   if (deptRes.status === 201) {
     console.log('✅ 1.4 Creación de Departamento: EXITOSO');
   } else {

@@ -24,14 +24,14 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
   loadingMetrics = false;
   analyzingIA = false;
   executingAction = false;
+  filtros = { meses: 0, idDepartamento: '' };
+  activeTab: 'historico' | 'proyeccion' = 'historico';
+  
+  // Métricas para Gráficos e IA
   metrics: MetricData[] = [];
-  realTimeMetrics: MetricData[] = [];
   aiReport: string = '';
   formattedReport: SafeHtml = '';
   errorMsg: string = '';
-
-  // --- Filtros ---
-  filtros = { meses: 0, idDepartamento: '', idPolitica: '' };
 
   // --- Voz ---
   isListening = false;
@@ -145,20 +145,7 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
 
   cargarMetricas() {
     this.loadingMetrics = true;
-    this.errorMsg = '';
-    
-    // Fetch global real-time metrics (no filters) for the top panel
-    this.analiticaService.getMetrics(0, '').subscribe({
-      next: (data) => {
-        this.realTimeMetrics = data;
-        // Also fetch filtered metrics for charts
-        this.fetchFilteredMetrics();
-      },
-      error: (err) => {
-        console.error('Error fetching global metrics:', err);
-        this.handleError();
-      }
-    });
+    this.fetchFilteredMetrics();
   }
 
   fetchFilteredMetrics() {
@@ -250,7 +237,7 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
       meses: this.filtros.meses, 
       idDepartamento: this.filtros.idDepartamento 
     }).subscribe({
-      next: (res) => {
+      next: (res: any) => {
         this.aiReport = res.reporte || res.respuesta || JSON.stringify(res);
         this.formattedReport = this.formatReport(this.aiReport);
         this.analyzingIA = false;
@@ -265,12 +252,59 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  private formatReport(text: string): SafeHtml {
-    // Convertir secciones [TÍTULO] en headers destacados
-    let html = text
-      .replace(/\[([A-ZÁÉÍÓÚÑ_\s]+)\]/g, '<br><strong style="color:#4f46e5;">[$1]</strong><br>')
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\n/g, '<br>');
+  private aiDetailedReport: string = '';
+
+  private formatReport(input: any): SafeHtml {
+    let html = '';
+    let data: any = {};
+
+    try {
+      data = typeof input === 'string' ? JSON.parse(input) : input;
+    } catch (e) {
+      return this.sanitizer.bypassSecurityTrustHtml(input.replace(/\n/g, '<br>'));
+    }
+
+    // Guardar versión detallada para el PDF (si existe)
+    if (data.analisis_detallado) {
+      this.aiDetailedReport = `REPORTE DETALLADO DE CONSULTORÍA IA\n\n` + 
+                              `ANÁLISIS PROFUNDO:\n${data.analisis_detallado}\n\n` +
+                              `RECOMENDACIONES:\n${(data.recomendaciones || []).join('\n')}`;
+    }
+
+    // 1. Mostrar Versión Breve (Analisis)
+    const analisis = data.analisis_breve || data.analisis || '';
+    if (analisis) {
+      html += `<div class="report-section mb-4">
+                <h4 style="color: #4f46e5; border-bottom: 2px solid #eef2ff; padding-bottom: 0.5rem; margin-bottom: 1rem;">
+                  🔍 Análisis de Rendimiento
+                </h4>
+                <p style="line-height: 1.6; color: #334155; font-weight: 500;">${analisis}</p>
+              </div>`;
+    }
+
+    // 2. Recomendaciones (Breves)
+    if (data.recomendaciones && Array.isArray(data.recomendaciones)) {
+      html += `<div class="report-section mt-4" style="background: rgba(79, 70, 229, 0.03); padding: 1rem; border-radius: 12px; border-left: 4px solid #4f46e5;">
+                <h4 style="color: #4f46e5; margin-bottom: 0.8rem; font-size: 0.9rem;">🚀 Recomendaciones</h4>
+                <ul style="padding-left: 1.2rem; margin: 0; color: #334155; font-size: 0.85rem;">`;
+      
+      data.recomendaciones.slice(0, 3).forEach((rec: string) => {
+        html += `<li style="margin-bottom: 0.5rem;">${rec}</li>`;
+      });
+      
+      html += `</ul></div>`;
+    }
+
+    // 3. Nivel de Alerta
+    if (data.nivel_alerta) {
+      const color = data.nivel_alerta.toLowerCase().includes('alto') ? '#ef4444' : '#f59e0b';
+      html = `<div style="display:flex; justify-content: flex-end; margin-bottom: 0.5rem;">
+                <span style="background: ${color}22; color: ${color}; padding: 2px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 700; border: 1px solid ${color}44;">
+                  ${data.nivel_alerta.toUpperCase()}
+                </span>
+              </div>` + html;
+    }
+
     return this.sanitizer.bypassSecurityTrustHtml(html);
   }
 
@@ -359,7 +393,7 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
     this.cdr.detectChanges();
 
     this.http.post<any>('/api/v1/optimization/asistente', { prompt: transcript }).subscribe({
-      next: (res) => {
+      next: (res: any) => {
         this.aiReport = res.respuesta || res.reporte || JSON.stringify(res);
         this.formattedReport = this.formatReport(this.aiReport);
         this.analyzingIA = false;
@@ -400,6 +434,9 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
+    // Usar la versión detallada si existe, si no la normal
+    const contentToExport = this.aiDetailedReport || this.aiReport;
+
     let chartImageBase64 = '';
     try {
       if (this.chart?.chart) {
@@ -409,7 +446,7 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
       console.warn('No se pudo extraer la imagen del gráfico', e);
     }
 
-    this.analiticaService.downloadPdf(this.aiReport, chartImageBase64).subscribe({
+    this.analiticaService.downloadPdf(contentToExport, chartImageBase64, this.metrics).subscribe({
       next: (blob) => {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -424,45 +461,35 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  // ========================================
-  //  REESTRUCTURACIÓN
-  // ========================================
-
-  onOrigenChange() {
-    this.usuariosOrigen = [];
-    this.selectedUserIds = [];
-    if (!this.reassignForm.idOrigen) return;
-    this.http.get<any[]>('/api/v1/usuarios/departamento/' + this.reassignForm.idOrigen).subscribe(users => {
-      this.usuariosOrigen = users;
-      this.cdr.detectChanges();
-    });
+  setTab(tab: 'historico' | 'proyeccion') {
+    this.activeTab = tab;
+    if (tab === 'historico') {
+      setTimeout(() => this.refreshCharts(), 200);
+    }
   }
 
-  toggleUser(userId: string) {
-    const idx = this.selectedUserIds.indexOf(userId);
-    if (idx > -1) this.selectedUserIds.splice(idx, 1);
-    else this.selectedUserIds.push(userId);
-  }
+  // ========================================
+  //  PROYECCIONES IA (NUEVA FASE)
+  // ========================================
+  horizonteMeses = 3;
+  projectingIA = false;
+  projectionData: any = null;
+  projectionReport = '';
 
-  ejecutarTransferencia() {
-    if (this.selectedUserIds.length === 0) return;
-    this.executingAction = true;
-    this.analiticaService.reassignPersonal({
-      idOrigen: this.reassignForm.idOrigen,
-      idDestino: this.reassignForm.idDestino,
-      userIds: this.selectedUserIds,
-      motivo: this.reassignForm.motivo
-    }).subscribe({
-      next: () => {
-        this.executingAction = false;
-        this.cargarMetricas();
-        this.usuariosOrigen = [];
-        this.selectedUserIds = [];
-        alert('🚀 Reequilibrio de personal ejecutado con éxito.');
+  solicitarProyeccion() {
+    this.projectingIA = true;
+    this.projectionData = null;
+    this.http.post<any>('/api/v1/optimization/projections', { meses: this.horizonteMeses }).subscribe({
+      next: (res: any) => {
+        this.projectionData = res;
+        this.projectionReport = res.analisis_predictivo || '';
+        this.projectingIA = false;
+        this.cdr.detectChanges();
       },
       error: () => {
-        this.executingAction = false;
-        alert('Fallo en la ejecución de transferencia.');
+        alert('Error al generar la proyección. Verifique el microservicio de IA.');
+        this.projectingIA = false;
+        this.cdr.detectChanges();
       }
     });
   }

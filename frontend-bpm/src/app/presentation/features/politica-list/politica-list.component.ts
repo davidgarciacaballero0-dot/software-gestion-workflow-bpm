@@ -219,11 +219,67 @@ export class PoliticaListComponent implements OnInit {
         this.cerrarNuevoModal();
         this.router.navigate(['/app/politica/designer', res.id || res._id]);
       },
-      error: (err) => {
+      error: (err: any) => {
         this.loading = false;
         this.errorMessage = err.error?.message || 'Error al crear la política. Posible nombre duplicado.';
         this.cd.detectChanges();
       }
     });
+  }
+
+  // --- CRUD COMPLETO ---
+
+  eliminarPolitica(politica: PoliticaWorkflow, event: Event): void {
+    event.stopPropagation();
+    const id = politica.id || (politica as any)._id;
+    if (!id) return;
+
+    if (confirm(`⚠️ ¿Estás seguro de que deseas eliminar permanentemente el flujo "${politica.nombre}"? Esta acción no se puede deshacer.`)) {
+      this.loading = true;
+      this.politicaService.eliminar(id).subscribe({
+        next: () => {
+          this.politicas = this.politicas.filter(p => (p.id || (p as any)._id) !== id);
+          this.loading = false;
+          this.cd.detectChanges();
+        },
+        error: (err: any) => {
+          this.loading = false;
+          alert('Error al eliminar: ' + (err.error?.message || 'No se puede eliminar un flujo con trámites activos.'));
+          this.cd.detectChanges();
+        }
+      });
+    }
+  }
+
+  clonarPolitica(politica: PoliticaWorkflow, event: Event): void {
+    event.stopPropagation();
+    const user = this.authService.currentUser();
+    
+    const replica: Partial<PoliticaWorkflow> = {
+      ...politica,
+      id: undefined,
+      nombre: `${politica.nombre} (Copia)`,
+      status: PolicyStatus.DRAFT,
+      version: '1.0',
+      idOrganizacion: user?.idOrganizacion || politica.idOrganizacion
+    };
+    delete (replica as any)._id;
+
+    if (confirm(`¿Deseas crear una copia de "${politica.nombre}"?`)) {
+      this.loading = true;
+      this.politicaService.guardar(replica as PoliticaWorkflow).subscribe({
+        next: (res) => {
+          this.politicas.unshift(res);
+          this.loading = false;
+          this.cd.detectChanges();
+          alert('🚀 Flujo clonado como borrador exitosamente.');
+        },
+        error: (err) => {
+          this.loading = false;
+          alert('Fallo al clonar: ' + (err.error?.message || 'Error desconocido'));
+          this.cd.detectChanges();
+        }
+      });
+    }
   }
 }

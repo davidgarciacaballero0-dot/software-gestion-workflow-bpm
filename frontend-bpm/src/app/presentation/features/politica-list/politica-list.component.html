@@ -159,29 +159,36 @@
 
             <!-- Botones Admin/Funcionario -->
             <ng-container *ngIf="!isClient">
-              <button *ngIf="p.status === 'PUBLISHED'" 
-                class="btn-premium btn-premium-primary start-btn w-full" 
-                (click)="iniciarTramite(p)">
-                🚀 Iniciar Trámite Personalizado
-              </button>
-              
-              <button *ngIf="p.status === 'DRAFT' && isAdmin" 
-                class="btn-premium start-btn w-full" style="background: var(--surface-container-high); color: var(--text-main);"
-                [routerLink]="['/app/politica/designer', p.id || p._id]">
-                ✏️ Continuar Diseño
-              </button>
+              <div class="main-action-buttons" style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+                <button *ngIf="p.status === 'PUBLISHED'" 
+                  class="btn-premium btn-premium-primary start-btn" style="flex: 1;"
+                  (click)="iniciarTramite(p)">
+                  🚀 Iniciar
+                </button>
+                
+                <button *ngIf="p.status === 'DRAFT' && isAdmin" 
+                  class="btn-premium start-btn" style="flex: 1; background: var(--surface-container-high); color: var(--text-main);"
+                  [routerLink]="['/app/politica/designer', p.id || p._id]">
+                  ✏️ Diseñar
+                </button>
 
-              <button *ngIf="p.status === 'DRAFT' && !isAdmin" 
-                class="btn-premium start-btn w-full" style="background: transparent; border: 1px solid var(--text-muted); color: var(--text-muted);"
-                [routerLink]="['/app/politica/designer', p.id || p._id]">
-                👁️ Ver Borrador (Lectura)
-              </button>
-              
-              <button *ngIf="p.status === 'PUBLISHED' || p.status === 'ARCHIVED'"
-                class="btn-premium start-btn w-full mt-2" style="background: transparent; border: 1px solid var(--primary); color: var(--primary);"
-                [routerLink]="['/app/politica/designer', p.id || p._id]">
-                👁️ Ver Política (Solo Lectura)
-              </button>
+                <button *ngIf="(p.status === 'PUBLISHED' || p.status === 'ARCHIVED') && isAdmin"
+                  class="btn-premium start-btn" style="flex: 1; background: transparent; border: 1px solid var(--primary); color: var(--primary);"
+                  [routerLink]="['/app/politica/designer', p.id || p._id]">
+                  👁️ Ver
+                </button>
+              </div>
+
+              <!-- Fila de Gestión (CRUD) -->
+              <div class="management-row" *ngIf="isAdmin && isDesignerView" 
+                   style="display: flex; gap: 0.5rem; border-top: 1px solid #f1f5f9; padding-top: 0.8rem;">
+                <button class="btn-manage clone-btn" (click)="clonarPolitica(p, $event)" title="Duplicar / Clonar Flujo">
+                  📋 Clonar
+                </button>
+                <button class="btn-manage delete-btn" (click)="eliminarPolitica(p, $event)" title="Eliminar permanentemente">
+                  🗑️ Borrar
+                </button>
+              </div>
             </ng-container>
           </div>
         </div>

@@ -5,126 +5,38 @@
       <div class="header-icon">🛡️</div>
       <div>
         <h1>Reportes y Analítica IA</h1>
-        <p>Análisis predictivo de cuellos de botella y reporte ejecutivo de consultoría asistido por Gemini.</p>
+        <p>Análisis predictivo de cuellos de botella y proyecciones de demanda asistidas por Gemini.</p>
       </div>
     </div>
   </header>
 
-  <!-- BARRA DE FILTROS SUPERIOR -->
-  <div class="filters-bar glass-premium animate-fade-in" style="display: flex; gap: 2rem; padding: 1.5rem; margin-bottom: 1.5rem; border-radius: 16px; align-items: flex-end; background: rgba(255,255,255,0.6); backdrop-filter: blur(10px);">
-    <div class="filter-item" style="flex: 1;">
-      <label style="display: block; font-size: 0.85rem; color: #64748b; margin-bottom: 0.5rem; font-weight: 600;">🕒 Período de Análisis</label>
-      <select [(ngModel)]="filtros.meses" (change)="aplicarFiltros()" class="select-premium" style="width: 100%; padding: 0.75rem; border-radius: 10px; border: 1px solid rgba(0,0,0,0.1); background: white; cursor: pointer; outline: none;">
-        <option [value]="0">Tiempo Real</option>
-        <option [value]="3">Últimos 3 Meses</option>
-        <option [value]="6">Últimos 6 Meses</option>
-        <option [value]="12">Último Año</option>
-      </select>
-    </div>
-    <div class="filter-item" style="flex: 2;">
-      <label style="display: block; font-size: 0.85rem; color: #64748b; margin-bottom: 0.5rem; font-weight: 600;">📍 Departamento</label>
-      <select [(ngModel)]="filtros.idDepartamento" (change)="aplicarFiltros()" class="select-premium" style="width: 100%; padding: 0.75rem; border-radius: 10px; border: 1px solid rgba(0,0,0,0.1); background: white; cursor: pointer; outline: none;">
-        <option [value]="''">Todos los Departamentos</option>
-        <option *ngFor="let m of realTimeMetrics" [value]="m.departamentoId">{{ m.nombreDepartamento }}</option>
-      </select>
-    </div>
+  <!-- SISTEMA DE PESTAÑAS (TABS) -->
+  <div class="tabs-navigation glass-premium animate-fade-in">
+    <button class="tab-btn" [class.active]="activeTab === 'historico'" (click)="setTab('historico')">
+      📊 Histórico y Diagnóstico
+    </button>
+    <button class="tab-btn" [class.active]="activeTab === 'proyeccion'" (click)="setTab('proyeccion')">
+      🔮 Proyecciones Futuras
+    </button>
   </div>
 
-  <!-- KPI DASHBOARD EXECUTIVE -->
-  <div class="kpi-grid animate-fade-in" *ngIf="metrics.length">
-    <div class="kpi-card">
-      <div class="kpi-icon blue">⚙️</div>
-      <div class="kpi-info">
-        <span class="kpi-label">Total Trámites</span>
-        <h2 class="kpi-value">{{ totalTramites }}</h2>
-        <p class="kpi-trend">En flujo actual</p>
+  <!-- CONTENIDO: PESTAÑA HISTÓRICO -->
+  <div class="tab-content animate-fade-in" *ngIf="activeTab === 'historico'">
+    <!-- BARRA DE FILTROS -->
+    <div class="filters-bar glass-premium mb-2">
+      <div class="filter-item">
+        <label>🕒 Período de Análisis</label>
+        <select [(ngModel)]="filtros.meses" (change)="aplicarFiltros()" class="select-premium">
+          <option [value]="0">Tiempo Real</option>
+          <option [value]="3">Últimos 3 Meses</option>
+          <option [value]="6">Últimos 6 Meses</option>
+          <option [value]="12">Último Año</option>
+        </select>
       </div>
     </div>
-    <div class="kpi-card">
-      <div class="kpi-icon indigo">👥</div>
-      <div class="kpi-info">
-        <span class="kpi-label">Capacidad Personal</span>
-        <h2 class="kpi-value">{{ totalPersonal }}</h2>
-        <p class="kpi-trend">Funcionarios activos</p>
-      </div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-icon cyan">⏱️</div>
-      <div class="kpi-info">
-        <span class="kpi-label">Tiempo Promedio</span>
-        <h2 class="kpi-value">{{ tiempoPromedioGlobal | number:'1.1-1' }}h</h2>
-        <p class="kpi-trend">Global de resolución</p>
-      </div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-icon red">⚠️</div>
-      <div class="kpi-info">
-        <span class="kpi-label">Brecha SLA</span>
-        <h2 class="kpi-value">{{ totalRetrasos }}</h2>
-        <p class="kpi-trend">Retrasos detectados</p>
-      </div>
-    </div>
-  </div>
 
-  <!-- Main Grid: 2 columnas -->
-  <div class="insights-grid">
-
-    <!-- ===== COLUMNA IZQUIERDA ===== -->
-    <div class="left-column">
-
-      <!-- Card: Carga Departamental Real-Time -->
-      <div class="insight-card">
-        <div class="card-title">
-          <span class="card-icon">📊</span>
-          <h3>Carga Departamental Real-Time</h3>
-          <button class="btn-icon-refresh" (click)="cargarMetricas()" [class.spinning]="loadingMetrics" title="Refrescar">
-            ⟳
-          </button>
-        </div>
-
-        <div *ngIf="loadingMetrics" class="loading-bar-area">
-          <div class="skeleton-bar" *ngFor="let i of [1,2,3,4,5]"></div>
-        </div>
-
-        <div *ngIf="!loadingMetrics && realTimeMetrics.length" class="dept-bars">
-          <div class="dept-row" *ngFor="let m of realTimeMetrics">
-            <div class="dept-name">{{ m.nombreDepartamento }}</div>
-            <div class="dept-progress-track">
-              <div class="dept-progress-fill"
-                   [style.width.%]="getLoadPercent(m)"
-                   [class.critical]="getLoadPercent(m) > 80"
-                   [class.warning]="getLoadPercent(m) > 50 && getLoadPercent(m) <= 80"
-                   [class.ok]="getLoadPercent(m) <= 50">
-              </div>
-            </div>
-            <div class="dept-stats">
-              <span>⏱ {{ m.tiempoPromedioHoras | number:'1.0-1' }}h</span>
-              <span>⚙ {{ m.cantidadTramites }} trám.</span>
-              <span>👥 {{ m.capacidadPersonal }} pers.</span>
-            </div>
-          </div>
-        </div>
-
-        <div *ngIf="!loadingMetrics && !realTimeMetrics.length" class="empty-state-small">
-          No hay datos departamentales disponibles.
-        </div>
-
-        <!-- Botones de Acción -->
-        <div class="action-buttons">
-          <button class="btn-action btn-analyze" (click)="solicitarAnalisisIA()" [disabled]="analyzingIA || !metrics.length">
-            <span *ngIf="!analyzingIA">🤖 Analizar...</span>
-            <span *ngIf="analyzingIA">⏳ Procesando...</span>
-          </button>
-          <button class="btn-action btn-excel" (click)="exportarExcel()" [disabled]="!realTimeMetrics.length">
-            📗 Excel
-          </button>
-          <button class="btn-action btn-pdf" (click)="exportarPDF()" [disabled]="!aiReport">
-            📕 PDF
-          </button>
-        </div>
-      </div>
-
-      <!-- Card: Gráfico de Barras -->
+    <div class="insights-grid">
+      <!-- Columna Gráfico -->
       <div class="insight-card">
         <div class="card-title">
           <span class="card-icon">📈</span>
@@ -141,91 +53,105 @@
           </canvas>
         </div>
       </div>
-    </div>
 
-    <!-- ===== COLUMNA DERECHA ===== -->
-    <div class="right-column">
-
-      <!-- Card: Reporte de Consultoría IA -->
+      <!-- Columna Reporte IA -->
       <div class="insight-card report-card">
         <div class="card-title">
-          <span class="card-icon">📋</span>
-          <h3>Reporte de Consultoría IA</h3>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span class="card-icon">📋</span>
+            <h3>Consultoría de Optimización</h3>
+          </div>
+          <div class="card-actions">
+            <button class="btn-icon-refresh" (click)="solicitarAnalisisIA()" [class.spinning]="analyzingIA">⟳</button>
+            <button class="btn-icon-refresh" (click)="startVoice()">🎙️</button>
+          </div>
         </div>
 
-        <!-- Estado Vacío -->
-        <div *ngIf="!aiReport && !analyzingIA && !isListening" class="report-empty-state">
+        <div *ngIf="!aiReport && !analyzingIA" class="report-empty-state">
           <div class="mic-icon-large" (click)="startVoice()">🎙️</div>
-          <h4>Esperando instrucción</h4>
-          <p>Presiona el botón de micrófono o el botón "Analizar" para solicitar un reporte a la IA.</p>
+          <p>Solicita un análisis de cuellos de botella para comenzar.</p>
+          <button class="btn-action btn-analyze" (click)="solicitarAnalisisIA()">🤖 Iniciar Consultoría IA</button>
         </div>
 
-        <!-- Escuchando Voz -->
-        <div *ngIf="isListening" class="report-listening-state">
-          <div class="pulse-mic">🎙️</div>
-          <h4>Escuchando...</h4>
-          <p class="voice-transcript">{{ voiceTranscript || 'Hable ahora...' }}</p>
-          <button class="btn-action btn-stop" (click)="stopVoice()">⏹ Detener</button>
-        </div>
-
-        <!-- Procesando IA -->
         <div *ngIf="analyzingIA" class="report-loading-state">
           <div class="loader-ring"></div>
-          <p>Gemini está analizando los cuellos de botella...</p>
+          <p>Gemini está analizando los datos...</p>
         </div>
 
-        <!-- Resultado del Reporte -->
         <div *ngIf="aiReport && !analyzingIA" class="report-result">
           <div class="report-text-content" [innerHTML]="formattedReport"></div>
-        </div>
-      </div>
-
-      <!-- Card: Consola de Reestructuración -->
-      <div class="insight-card">
-        <div class="card-title">
-          <span class="card-icon">🔄</span>
-          <h3>Consola de Reestructuración</h3>
-        </div>
-
-        <div class="restructure-form">
-          <div class="form-row">
-            <label>Departamento Origen</label>
-            <select [(ngModel)]="reassignForm.idOrigen" (change)="onOrigenChange()" class="select-premium">
-              <option value="">-- Seleccione Origen --</option>
-              <option *ngFor="let m of realTimeMetrics" [value]="m.departamentoId">{{ m.nombreDepartamento }}</option>
-            </select>
+          <div class="mt-4" style="display: flex; gap: 1rem;">
+            <button class="btn-action btn-pdf" (click)="exportarPDF()">📕 Exportar Informe PDF</button>
+            <button class="btn-action btn-excel" (click)="exportarExcel()">📗 Data Excel</button>
           </div>
-
-          <div class="users-box" *ngIf="usuariosOrigen.length">
-            <label>Funcionarios ({{ selectedUserIds.length }} seleccionados)</label>
-            <div class="users-scroll">
-              <div *ngFor="let u of usuariosOrigen" class="user-item" [class.selected]="selectedUserIds.includes(u.id)" (click)="toggleUser(u.id)">
-                <span class="check-icon">{{ selectedUserIds.includes(u.id) ? '☑' : '☐' }}</span>
-                <span>{{ u.nombre }} — {{ u.cargo }}</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="form-row">
-            <label>Departamento Destino</label>
-            <select [(ngModel)]="reassignForm.idDestino" class="select-premium">
-              <option value="">-- Seleccione Destino --</option>
-              <option *ngFor="let m of realTimeMetrics" [value]="m.departamentoId">{{ m.nombreDepartamento }}</option>
-            </select>
-          </div>
-
-          <button class="btn-action btn-execute-transfer"
-                  [disabled]="!reassignForm.idDestino || selectedUserIds.length === 0 || executingAction"
-                  (click)="ejecutarTransferencia()">
-            {{ executingAction ? '⏳ Ejecutando...' : '🚀 Aplicar Transferencia' }}
-          </button>
         </div>
       </div>
     </div>
   </div>
 
+  <!-- CONTENIDO: PESTAÑA PROYECCIONES -->
+  <div class="tab-content animate-fade-in" *ngIf="activeTab === 'proyeccion'">
+    <div class="projection-hero glass-premium">
+      <div class="projection-config">
+        <h3>🔮 Modelo Estadístico de Demanda</h3>
+        <p>Proyecta la tendencia de trámites y recibe sugerencias de redistribución de personal.</p>
+        
+        <div class="horizon-selector mt-4">
+          <label>Horizonte de Proyección:</label>
+          <div class="horizon-options">
+            <button *ngFor="let h of [1,3,6,12]" 
+                    [class.active]="horizonteMeses === h"
+                    (click)="horizonteMeses = h" class="h-btn">
+              {{ h }} Mes{{ h > 1 ? 'es' : '' }}
+            </button>
+          </div>
+          <button class="btn-execute-projection" (click)="solicitarProyeccion()" [disabled]="projectingIA">
+            {{ projectingIA ? '⏳ Calculando...' : '🚀 Generar Proyección' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="projection-results mt-4" *ngIf="projectionData">
+      <div class="insights-grid">
+        <!-- Gráfico Proyectado (Simulado o real si implementado) -->
+        <div class="insight-card">
+          <div class="card-title">
+            <span class="card-icon">📈</span>
+            <h3>Curva de Demanda Proyectada</h3>
+          </div>
+          <div class="chart-wrapper">
+             <div class="projection-empty">
+               <p>Visualización de tendencia para los próximos {{ horizonteMeses }} meses.</p>
+               <div class="trend-indicator" [class.up]="true">📈 Crecimiento proyectado detectado</div>
+             </div>
+          </div>
+        </div>
+
+        <!-- Reporte Predictivo -->
+        <div class="insight-card report-card">
+          <div class="card-title">
+            <span class="card-icon">🤖</span>
+            <h3>Planificación Predictiva IA</h3>
+          </div>
+          <div class="report-result">
+            <div class="report-text-content">
+               <div class="predictive-box" [innerHTML]="projectionReport"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div *ngIf="!projectionData && !projectingIA" class="projection-empty-state mt-4">
+      <div class="crystal-ball">🔮</div>
+      <h4>Listo para proyectar</h4>
+      <p>Configura el horizonte de tiempo arriba y presiona "Generar Proyección".</p>
+    </div>
+  </div>
+
   <!-- Botón Flotante Micrófono -->
-  <button class="fab-mic" [class.listening]="isListening" (click)="isListening ? stopVoice() : startVoice()" title="Comando de voz">
+  <button class="fab-mic" [class.listening]="isListening" (click)="isListening ? stopVoice() : startVoice()">
     {{ isListening ? '⏹' : '🎙️' }}
   </button>
 </div>

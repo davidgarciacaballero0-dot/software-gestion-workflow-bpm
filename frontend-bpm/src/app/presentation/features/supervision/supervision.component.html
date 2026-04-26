@@ -29,27 +29,78 @@
     </div>
   </div>
 
-  <!-- Desglose por Departamento (Analítica) -->
+  <!-- Monitoreo de Carga Real-Time (Migrado de Insights) -->
   <div class="grid-card monolith-surface shadow-ambient mt-2" *ngIf="metricasDepartamentales.length > 0">
-    <h3 class="section-title">📊 Distribución de Carga por Departamento</h3>
-    <table class="supervision-table mini-table">
-      <thead>
-        <tr>
-          <th>Departamento</th>
-          <th>Trámites Activos</th>
-          <th>Tiempo Promedio</th>
-          <th>Personal</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let m of metricasDepartamentales">
-          <td><strong>{{ m.nombreDepartamento }}</strong></td>
-          <td class="text-center">{{ m.cantidadTramites }}</td>
-          <td class="text-center">{{ m.tiempoPromedioHoras | number:'1.1-1' }}h</td>
-          <td class="text-center">{{ m.capacidadPersonal }}</td>
-        </tr>
-      </tbody>
-    </table>
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <h3 class="section-title">📊 Carga Departamental Real-Time</h3>
+      <button class="btn btn-secondary btn-sm" (click)="cargarMetricas()">⟳ Refrescar</button>
+    </div>
+    
+    <div class="dept-bars">
+      <div class="dept-row" *ngFor="let m of metricasDepartamentales">
+        <div class="dept-name">{{ m.nombreDepartamento }}</div>
+        <div class="dept-progress-track">
+          <div class="dept-progress-fill"
+               [style.width.%]="getLoadPercent(m)"
+               [class.critical]="getLoadPercent(m) > 80"
+               [class.warning]="getLoadPercent(m) > 50 && getLoadPercent(m) <= 80"
+               [class.ok]="getLoadPercent(m) <= 50">
+          </div>
+        </div>
+        <div class="dept-stats">
+          <span>⏱ {{ m.tiempoPromedioHoras | number:'1.0-1' }}h</span>
+          <span>⚙ {{ m.cantidadTramites }} trám.</span>
+          <span>👥 {{ m.capacidadPersonal }} pers.</span>
+        </div>
+      </div>
+    </div>
+
+    <hr style="margin: 2rem 0; opacity: 0.1;">
+
+    <!-- Consola de Reestructuración -->
+    <h3 class="section-title">🔄 Consola de Reestructuración</h3>
+    <div class="reassign-grid">
+      <div class="reassign-source">
+        <div class="form-row">
+          <label>Departamento Origen</label>
+          <select [(ngModel)]="reassignForm.idOrigen" (change)="onOrigenChange()" class="select-premium">
+            <option value="">-- Seleccione Origen --</option>
+            <option *ngFor="let m of metricasDepartamentales" [value]="m.departamentoId">{{ m.nombreDepartamento }}</option>
+          </select>
+        </div>
+
+        <div class="users-box" *ngIf="usuariosOrigen.length">
+          <label>Funcionarios ({{ selectedUserIds.length }} seleccionados)</label>
+          <div class="users-scroll">
+            <div *ngFor="let u of usuariosOrigen" class="user-item" [class.selected]="selectedUserIds.includes(u.id)" (click)="toggleUser(u.id)">
+              <span class="check-icon">{{ selectedUserIds.includes(u.id) ? '☑' : '☐' }}</span>
+              <span>{{ u.nombre }} — {{ u.cargo }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="reassign-target">
+        <div class="form-row">
+          <label>Departamento Destino</label>
+          <select [(ngModel)]="reassignForm.idDestino" class="select-premium">
+            <option value="">-- Seleccione Destino --</option>
+            <option *ngFor="let m of metricasDepartamentales" [value]="m.departamentoId">{{ m.nombreDepartamento }}</option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <label>Motivo de la Transferencia</label>
+          <textarea [(ngModel)]="reassignForm.motivo" class="select-premium" rows="2" placeholder="Justifique el cambio..."></textarea>
+        </div>
+
+        <button class="btn-execute-transfer"
+                [disabled]="!reassignForm.idDestino || selectedUserIds.length === 0 || executingAction"
+                (click)="ejecutarTransferencia()">
+          {{ executingAction ? '⏳ Ejecutando...' : '🚀 Aplicar Transferencia Masiva' }}
+        </button>
+      </div>
+    </div>
   </div>
 
   <!-- Lista de Supervisión -->

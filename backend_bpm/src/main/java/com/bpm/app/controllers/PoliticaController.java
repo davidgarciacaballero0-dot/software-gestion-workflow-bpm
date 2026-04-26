@@ -59,4 +59,11 @@ public class PoliticaController {
     public ResponseEntity<WorkflowResponseDTO> crearNuevaVersion(@PathVariable String id) {
         return new ResponseEntity<>(politicaService.crearNuevaVersion(id), HttpStatus.CREATED);
     }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> eliminarPolitica(@PathVariable String id) {
+        politicaService.eliminarPolitica(id);
+        return ResponseEntity.noContent().build();
+    }
 }

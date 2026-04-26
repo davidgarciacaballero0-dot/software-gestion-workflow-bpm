@@ -42,4 +42,8 @@ export class PoliticaWorkflowService {
   nuevaVersion(id: string): Observable<PoliticaWorkflow> {
     return this.http.post<PoliticaWorkflow>(`${this.apiUrl}/${id}/new-version`, {});
   }
+
+  eliminar(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${id}`);
+  }
 }

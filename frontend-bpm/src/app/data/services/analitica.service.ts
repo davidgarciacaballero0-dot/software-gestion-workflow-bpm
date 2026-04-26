@@ -39,11 +39,15 @@ export class AnaliticaService {
     return this.http.get(`${this.apiUrl}/report/excel`, { responseType: 'blob' });
   }
 
-  downloadPdf(text: string, chartImage?: string): Observable<Blob> {
-    return this.http.post(`${this.apiUrl}/report/pdf`, { text, chartImage }, { responseType: 'blob' });
+  downloadPdf(text: string, chartImage?: string, metrics?: MetricData[]): Observable<Blob> {
+    return this.http.post(`${this.apiUrl}/report/pdf`, { text, chartImage, metrics }, { responseType: 'blob' });
   }
 
   reassignPersonal(request: ReassignMassRequest): Observable<any> {
     return this.http.post(`${this.apiUrl}/reassign`, request);
+  }
+
+  getUsersByDepartamento(idDept: string): Observable<any[]> {
+    return this.http.get<any[]>('/api/v1/usuarios/departamento/' + idDept);
   }
 }
