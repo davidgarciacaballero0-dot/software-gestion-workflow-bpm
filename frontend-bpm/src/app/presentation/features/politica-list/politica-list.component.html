@@ -1,7 +1,7 @@
 <div class="modal-overlay" *ngIf="showNewModal">
   <div class="modal-content glass-premium animate-pop">
     <div class="modal-header">
-      <h3>✨ Nueva Política BPM</h3>
+      <h3><span class="material-symbols-outlined">add_circle</span> Nueva Política BPM</h3>
       <p>Defina los parámetros básicos para iniciar el diseñador.</p>
     </div>
     
@@ -22,14 +22,14 @@
       </div>
 
       <div *ngIf="errorMessage" class="error-msg">
-        ⚠️ {{ errorMessage }}
+        <span class="material-symbols-outlined" style="font-size: 16px; vertical-align: middle;">error</span> {{ errorMessage }}
       </div>
     </div>
 
     <div class="modal-footer">
       <button class="btn btn-secondary" (click)="cerrarNuevoModal()">Cancelar</button>
       <button class="btn-premium btn-premium-primary" (click)="crearPolitica()" [disabled]="loading">
-        {{ loading ? 'Creando...' : '🚀 Iniciar Diseñador' }}
+        <span class="material-symbols-outlined">rocket_launch</span> {{ loading ? 'Creando...' : 'Iniciar Diseñador' }}
       </button>
     </div>
   </div>
@@ -49,7 +49,7 @@
     </div>
     <div class="header-actions" *ngIf="isAdmin && isDesignerView">
       <button class="btn-premium btn-premium-primary" (click)="abrirNuevoModal()">
-        ➕ Crear Nueva Política
+        <span class="material-symbols-outlined">add</span> Crear Nueva Política
       </button>
     </div>
   </div>
@@ -58,7 +58,7 @@
   <div class="designer-guide-section glass-premium mb-5" *ngIf="isDesignerView">
     <div class="guide-content">
       <div class="guide-text">
-        <h3>🚀 Guía de Creación de Flujos</h3>
+        <h3><span class="material-symbols-outlined">school</span> Guía de Creación de Flujos</h3>
         <p>Siga este patrón para diseñar procesos eficientes y automatizados:</p>
         <ul class="guide-steps">
           <li><strong>1. Inicio:</strong> Todo trámite comienza con un nodo de inicio.</li>
@@ -102,8 +102,8 @@
              <span class="t-code">{{ t.codigoTramite }}</span>
              <h4 class="t-name">{{ t.nombrePolitica }}</h4>
              <div class="t-location">
-               <span class="loc-tag">📍 {{ t.nombreDepartamentoActual }}</span>
-               <span class="step-tag">⚙️ {{ t.nombreNodoActual }}</span>
+               <span class="loc-tag"><span class="material-symbols-outlined" style="font-size: 14px;">location_on</span> {{ t.nombreDepartamentoActual }}</span>
+               <span class="step-tag"><span class="material-symbols-outlined" style="font-size: 14px;">settings</span> {{ t.nombreNodoActual }}</span>
              </div>
            </div>
            <button class="btn-goto" [routerLink]="['/app/tramite/historial', t.id]">Ver Detalles →</button>
@@ -113,7 +113,7 @@
 
     <!-- Mensaje No Pendientes -->
     <div class="no-pending-msg glass-premium animate-fade-in" *ngIf="tramitesActivos.length === 0">
-       <div class="icon">✨</div>
+       <div class="icon"><span class="material-symbols-outlined" style="font-size: 48px;">check_circle</span></div>
        <h3>No tiene trámites pendientes</h3>
        <p>Puede iniciar un nuevo proceso desde nuestro catálogo de servicios a continuación.</p>
     </div>
@@ -138,14 +138,14 @@
         <div class="card-status-bar" [ngClass]="getStatusBadgeClass(p.status)"></div>
         <div class="card-content">
           <div class="org-info" *ngIf="isClient">
-             <span class="org-tag">🏢 {{ getNombreOrganizacion(p.idOrganizacion) }}</span>
+             <span class="org-tag"><span class="material-symbols-outlined" style="font-size: 14px;">domain</span> {{ getNombreOrganizacion(p.idOrganizacion) }}</span>
           </div>
           <h3 class="policy-name">{{ p.nombre }}</h3>
           <p class="policy-description">{{ p.description || 'Sin descripción detallada disponible.' }}</p>
           
           <div class="policy-meta">
             <span class="version-pill">v{{ p.version }}</span>
-            <span class="node-count">🧩 {{ p.nodes.length }} pasos</span>
+            <span class="node-count"><span class="material-symbols-outlined" style="font-size: 16px;">extension</span> {{ p.nodes.length }} pasos</span>
           </div>
 
           <!-- Botones de Acción (Clientes vs Admins) -->
@@ -154,7 +154,8 @@
               class="btn-premium btn-premium-primary start-btn w-full" 
               (click)="iniciarTramite(p)"
               [disabled]="p.status !== 'PUBLISHED'">
-              {{ p.status === 'PUBLISHED' ? '🚀 Iniciar Trámite' : 'Borrador (No Disponible)' }}
+              <span class="material-symbols-outlined" *ngIf="p.status === 'PUBLISHED'">rocket_launch</span>
+              {{ p.status === 'PUBLISHED' ? 'Iniciar Trámite' : 'Borrador (No Disponible)' }}
             </button>
 
             <!-- Botones Admin/Funcionario -->
@@ -163,19 +164,19 @@
                 <button *ngIf="p.status === 'PUBLISHED'" 
                   class="btn-premium btn-premium-primary start-btn" style="flex: 1;"
                   (click)="iniciarTramite(p)">
-                  🚀 Iniciar
+                  <span class="material-symbols-outlined">rocket_launch</span> Iniciar
                 </button>
                 
                 <button *ngIf="p.status === 'DRAFT' && isAdmin" 
                   class="btn-premium start-btn" style="flex: 1; background: var(--surface-container-high); color: var(--text-main);"
                   [routerLink]="['/app/politica/designer', p.id || p._id]">
-                  ✏️ Diseñar
+                  <span class="material-symbols-outlined">edit</span> Diseñar
                 </button>
 
                 <button *ngIf="(p.status === 'PUBLISHED' || p.status === 'ARCHIVED') && isAdmin"
                   class="btn-premium start-btn" style="flex: 1; background: transparent; border: 1px solid var(--primary); color: var(--primary);"
                   [routerLink]="['/app/politica/designer', p.id || p._id]">
-                  👁️ Ver
+                  <span class="material-symbols-outlined">visibility</span> Ver
                 </button>
               </div>
 
@@ -183,10 +184,10 @@
               <div class="management-row" *ngIf="isAdmin && isDesignerView" 
                    style="display: flex; gap: 0.5rem; border-top: 1px solid #f1f5f9; padding-top: 0.8rem;">
                 <button class="btn-manage clone-btn" (click)="clonarPolitica(p, $event)" title="Duplicar / Clonar Flujo">
-                  📋 Clonar
+                  <span class="material-symbols-outlined">content_copy</span> Clonar
                 </button>
                 <button class="btn-manage delete-btn" (click)="eliminarPolitica(p, $event)" title="Eliminar permanentemente">
-                  🗑️ Borrar
+                  <span class="material-symbols-outlined">delete</span> Borrar
                 </button>
               </div>
             </ng-container>
@@ -196,7 +197,7 @@
 
       <!-- Estado Vacío -->
       <div *ngIf="politicas.length === 0" class="empty-catalog">
-        <div class="icon">📦</div>
+        <div class="icon"><span class="material-symbols-outlined" style="font-size: 64px;">inventory_2</span></div>
         <h3>Sin Servicios Disponibles</h3>
         <p>Actualmente no existen políticas publicadas que coincidan con su perfil de acceso.</p>
       </div>
@@ -206,7 +207,9 @@
 <!-- Confirm Dialog (Iniciar Trámite) -->
 <div class="modal-overlay" *ngIf="showConfirmDialog">
   <div class="modal-content glass-premium animate-pop" style="max-width: 500px; padding: 2rem;">
-    <h3 style="margin-bottom: 0.5rem; color: var(--primary); text-align: center;">🚀 Iniciar Nuevo Trámite</h3>
+    <h3 style="margin-bottom: 0.5rem; color: var(--primary); text-align: center; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+      <span class="material-symbols-outlined">rocket_launch</span> Iniciar Nuevo Trámite
+    </h3>
     <p style="text-align: center; margin-bottom: 1.5rem; font-size: 0.9rem; color: var(--text-muted);">
       {{ isClient ? '¿Confirma la ejecución inmediata del flujo?' : 'Ingrese los datos del ciudadano que solicita el trámite.' }}
     </p>

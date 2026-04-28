@@ -145,14 +145,13 @@ class _ProcedureCard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
+            color: AppTheme.ambientShadow,
+            blurRadius: 10,
+            offset: Offset(0, 4),
           ),
         ],
       ),
@@ -162,7 +161,7 @@ class _ProcedureCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -170,25 +169,24 @@ class _ProcedureCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      tramite.codigoTramite,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
+                      'REF: ${tramite.codigoTramite}',
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
                             color: AppTheme.subtle,
+                            letterSpacing: 0.5,
                           ),
                     ),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: statusColor.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: statusColor.withValues(alpha: 0.3)),
+                        color: statusColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
                         tramite.estadoActual,
                         style: TextStyle(
                           color: statusColor,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w800,
                         ),
                       ),
                     ),
@@ -196,22 +194,24 @@ class _ProcedureCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  tramite.nombrePolitica,
+                  tramite.nombrePolitica.toUpperCase(),
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w800,
                         color: AppTheme.primary,
+                        fontSize: 15,
                       ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 Row(
                   children: [
-                    const Icon(Icons.business, size: 16, color: AppTheme.subtle),
-                    const SizedBox(width: 6),
+                    Icon(Icons.location_on_outlined, size: 14, color: statusColor),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        tramite.nombreDepartamentoActual ?? 'Sin departamento',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        tramite.nombreDepartamentoActual?.toUpperCase() ?? 'PENDIENTE',
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
                               color: AppTheme.subtle,
+                              fontSize: 10,
                             ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -239,7 +239,7 @@ class _EmptyProceduresState extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.inbox_outlined, size: 64, color: AppTheme.subtle.withValues(alpha: 0.5)),
+            Icon(Icons.inbox_outlined, size: 64, color: AppTheme.subtle.withOpacity(0.2)),
             const SizedBox(height: 16),
             Text(
               'No hay trámites para este filtro',

@@ -282,10 +282,36 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
               </div>`;
     }
 
-    // 2. Recomendaciones (Breves)
+    // 2. Recomendaciones de RRHH
+    if (data.recomendaciones_rrhh && Array.isArray(data.recomendaciones_rrhh)) {
+      html += `<div class="report-section mt-4" style="background: rgba(79, 70, 229, 0.03); padding: 1rem; border-radius: 12px; border-left: 4px solid #4f46e5;">
+                <h4 style="color: #4f46e5; margin-bottom: 0.8rem; font-size: 0.9rem;">👥 Reasignación de Personal</h4>
+                <ul style="padding-left: 1.2rem; margin: 0; color: #334155; font-size: 0.85rem;">`;
+      
+      data.recomendaciones_rrhh.forEach((rec: any) => {
+        html += `<li style="margin-bottom: 0.5rem;"><strong>${rec.origen} ➔ ${rec.destino}:</strong> ${rec.justificacion}</li>`;
+      });
+      
+      html += `</ul></div>`;
+    }
+
+    // 2b. Recomendaciones de Procesos
+    if (data.recomendaciones_procesos && Array.isArray(data.recomendaciones_procesos)) {
+      html += `<div class="report-section mt-4" style="background: rgba(16, 185, 129, 0.03); padding: 1rem; border-radius: 12px; border-left: 4px solid #10b981;">
+                <h4 style="color: #10b981; margin-bottom: 0.8rem; font-size: 0.9rem;">⚙️ Optimización de Procesos</h4>
+                <ul style="padding-left: 1.2rem; margin: 0; color: #334155; font-size: 0.85rem;">`;
+      
+      data.recomendaciones_procesos.forEach((rec: any) => {
+        html += `<li style="margin-bottom: 0.5rem;"><strong>${rec.politica}:</strong> ${rec.cambio_sugerido} <br><small>${rec.beneficio_esperado}</small></li>`;
+      });
+      
+      html += `</ul></div>`;
+    }
+
+    // Compatibilidad con recomendaciones antiguas (array simple)
     if (data.recomendaciones && Array.isArray(data.recomendaciones)) {
       html += `<div class="report-section mt-4" style="background: rgba(79, 70, 229, 0.03); padding: 1rem; border-radius: 12px; border-left: 4px solid #4f46e5;">
-                <h4 style="color: #4f46e5; margin-bottom: 0.8rem; font-size: 0.9rem;">🚀 Recomendaciones</h4>
+                <h4 style="color: #4f46e5; margin-bottom: 0.8rem; font-size: 0.9rem;">🚀 Recomendaciones Generales</h4>
                 <ul style="padding-left: 1.2rem; margin: 0; color: #334155; font-size: 0.85rem;">`;
       
       data.recomendaciones.slice(0, 3).forEach((rec: string) => {
@@ -486,9 +512,27 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
         this.projectingIA = false;
         this.cdr.detectChanges();
       },
-      error: () => {
-        alert('Error al generar la proyección. Verifique el microservicio de IA.');
+      error: (err: any) => {
         this.projectingIA = false;
+        const body = err?.error;
+        const errorType = body?.errorType || '';
+        let titulo = '❌ Error';
+        let mensaje = 'Error desconocido al generar la proyección.';
+
+        if (errorType === 'QUOTA_EXHAUSTED' || err.status === 429) {
+          titulo = '⚠️ Cuota de IA Agotada';
+          mensaje = 'La API de Google Gemini ha alcanzado su límite de uso. El microservicio funciona correctamente, pero se agotaron las peticiones disponibles.\n\nIntente nuevamente en unos minutos.';
+        } else if (errorType === 'SERVICE_DOWN') {
+          titulo = '🔌 Microservicio No Disponible';
+          mensaje = 'El servicio de IA no está en ejecución. Verifique que el contenedor ia-service esté activo con: docker ps';
+        } else if (errorType === 'TIMEOUT') {
+          titulo = '⏱️ Tiempo de Espera Agotado';
+          mensaje = 'El modelo de IA tardó demasiado en procesar la solicitud. Intente nuevamente.';
+        } else if (body?.error) {
+          mensaje = body.error + (body.details ? '\n\n' + body.details : '');
+        }
+
+        alert(titulo + '\n\n' + mensaje);
         this.cdr.detectChanges();
       }
     });

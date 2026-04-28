@@ -38,6 +38,7 @@ public class TramiteInstancia {
     
     // Todos los campos dinámicos acumulados en el formulario en tiempo real
     private Map<String, Object> datosAcumuladosFormulario;
+    private Map<String, String> archivosAdjuntos; // NUEVO: Gestión Documental (Requirement -> FileReference)
 
     private LocalDateTime fechaInicioNodoActual;
     private LocalDateTime fechaVencimientoSla;

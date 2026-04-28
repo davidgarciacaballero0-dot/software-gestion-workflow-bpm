@@ -14,21 +14,21 @@
       <button 
         class="tab-btn" 
         [class.active]="activeTab === 'personal'" 
-        (click)="switchTab('personal')">
-        📥 Mis Trámites
+        (click)="switchTab('personal')" style="display:flex; align-items:center; gap:0.4rem;">
+        <span class="material-symbols-outlined" style="font-size:18px;">inbox</span> Mis Trámites
       </button>
       <button 
         class="tab-btn" 
         [class.active]="activeTab === 'department'" 
-        (click)="switchTab('department')">
-        🏢 Bandeja Departamental
+        (click)="switchTab('department')" style="display:flex; align-items:center; gap:0.4rem;">
+        <span class="material-symbols-outlined" style="font-size:18px;">domain</span> Bandeja Departamental
       </button>
     </div>
 
     <!-- Barra de Búsqueda (Fase 4) -->
     <div class="search-bar-container" *ngIf="!isClient">
       <div class="search-box glass-premium">
-        <span class="search-icon">🔍</span>
+        <span class="search-icon material-symbols-outlined" style="opacity: 0.5;">search</span>
         <input 
           type="text" 
           placeholder="Buscar por CI del Cliente..." 
@@ -36,13 +36,13 @@
           (keyup.enter)="buscarPorCI()"
         />
         <button class="btn-search" (click)="buscarPorCI()">Buscar</button>
-        <button class="btn-clear" *ngIf="searchTerm" (click)="searchTerm = ''; buscarPorCI()">✕</button>
+        <button class="btn-clear material-symbols-outlined" *ngIf="searchTerm" (click)="searchTerm = ''; buscarPorCI()">close</button>
       </div>
     </div>
   </div>
 
   <!-- Contenido de Bandeja -->
-  <div class="grid-card monolith-surface shadow-ambient">
+  <div class="grid-card monolith-surface" style="padding: 1.5rem;">
     <div *ngIf="loading" class="loading-state">
       <span class="spinner"></span> Sincronizando trámites...
     </div>
@@ -60,21 +60,21 @@
               </span>
               <span class="badge" [ngClass]="'badge-' + t.estadoActual.toLowerCase()">{{ t.estadoActual }}</span>
             </div>
-            <div class="tramite-details">
-              <span class="detail-item">📅 {{ formatDate(t.createdAt) }}</span>
-              <span class="detail-item client-info">👤 {{ t.nombreSolicitante || 'Cliente Externo' }} (CI: {{ t.ciSolicitante || '---' }})</span>
-              <span class="detail-item text-secondary ml-1" *ngIf="activeTab === 'department' || resultsSearch.length > 0">📍 {{ t.nombreNodoActual }}</span>
+            <div class="tramite-details" style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+              <span class="detail-item" style="display:flex; align-items:center; gap:0.2rem;"><span class="material-symbols-outlined" style="font-size:14px;">calendar_month</span> {{ formatDate(t.createdAt) }}</span>
+              <span class="detail-item client-info" style="display:flex; align-items:center; gap:0.2rem;"><span class="material-symbols-outlined" style="font-size:14px;">person</span> {{ t.nombreSolicitante || 'Cliente Externo' }} (CI: {{ t.ciSolicitante || '---' }})</span>
+              <span class="detail-item text-secondary ml-1" *ngIf="activeTab === 'department' || resultsSearch.length > 0" style="display:flex; align-items:center; gap:0.2rem;"><span class="material-symbols-outlined" style="font-size:14px;">location_on</span> {{ t.nombreNodoActual }}</span>
             </div>
           </div>
 
-          <div class="tramite-actions">
-            <button *ngIf="t.estadoActual !== 'FINALIZADO'" class="btn btn-primary btn-sm" (click)="atenderTramite(t.id)">🛠️ Atender</button>
-            <button class="btn btn-secondary btn-sm" (click)="verHistorial(t.id)">📜 Historial</button>
+          <div class="tramite-actions" style="display:flex; gap:0.5rem;">
+            <button *ngIf="t.estadoActual !== 'FINALIZADO'" class="btn-premium btn-premium-primary" style="font-size: 0.8rem; padding: 0.5rem 1rem; display:flex; align-items:center; gap:0.3rem;" (click)="atenderTramite(t.id)"><span class="material-symbols-outlined" style="font-size:16px;">build</span> Atender</button>
+            <button class="btn-premium btn-premium-secondary" style="font-size: 0.8rem; padding: 0.5rem 1rem; display:flex; align-items:center; gap:0.3rem;" (click)="verHistorial(t.id)"><span class="material-symbols-outlined" style="font-size:16px;">history</span> Historial</button>
           </div>
         </div>
 
         <div *ngIf="tramites.length === 0" class="empty-state">
-          <div class="icon">✨</div>
+          <div class="icon"><span class="material-symbols-outlined" style="font-size:48px; opacity:0.5;">check_circle</span></div>
           <h3>Bandeja impecable</h3>
           <p>No tienes trámites pendientes {{ activeTab === 'personal' ? 'en tu despacho personal' : 'en la cola del departamento' }}.</p>
         </div>
@@ -85,7 +85,7 @@
         
         <!-- SECCIÓN ACTIVOS -->
         <div class="client-section-block animate-fade-in">
-          <h2 class="section-title">🚀 Trámites en Curso</h2>
+          <h2 class="section-title" style="display:flex; align-items:center; gap:0.5rem;"><span class="material-symbols-outlined">rocket_launch</span> Trámites en Curso</h2>
           <table class="supervision-table mini-table" *ngIf="tramitesActivos.length > 0">
             <thead>
               <tr>
@@ -107,11 +107,11 @@
                 <td>
                   <div class="workflow-info">
                     <span class="dept-label">{{ t.nombreDepartamentoActual || 'Pendiente' }}</span>
-                    <span class="step-label">📍 {{ t.nombreNodoActual }}</span>
+                    <span class="step-label" style="display:flex; align-items:center; gap:0.2rem;"><span class="material-symbols-outlined" style="font-size:14px;">location_on</span> {{ t.nombreNodoActual }}</span>
                   </div>
                 </td>
                 <td class="text-center">
-                  <button class="btn btn-secondary btn-sm" (click)="verHistorial(t.id)">📜 Trazabilidad</button>
+                  <button class="btn-premium btn-premium-secondary" style="font-size: 0.8rem; padding: 0.4rem 0.8rem; display:flex; align-items:center; gap:0.3rem;" (click)="verHistorial(t.id)"><span class="material-symbols-outlined" style="font-size:16px;">history</span> Trazabilidad</button>
                 </td>
               </tr>
             </tbody>
@@ -123,7 +123,7 @@
 
         <!-- SECCIÓN HISTORIAL -->
         <div class="client-section-block mt-4 animate-fade-in">
-          <h2 class="section-title">📂 Historial de Trámites Finalizados</h2>
+          <h2 class="section-title" style="display:flex; align-items:center; gap:0.5rem;"><span class="material-symbols-outlined">folder</span> Historial de Trámites Finalizados</h2>
           <table class="supervision-table mini-table historico" *ngIf="tramitesFinalizados.length > 0">
             <thead>
               <tr>
@@ -146,7 +146,7 @@
                 </td>
                 <td class="text-muted text-center">{{ formatDate(t.createdAt) }}</td>
                 <td class="text-center">
-                  <button class="btn btn-outline btn-sm" (click)="verHistorial(t.id)">📜 Ver Resumen</button>
+                  <button class="btn-premium btn-premium-secondary" style="font-size: 0.8rem; padding: 0.4rem 0.8rem; display:flex; align-items:center; gap:0.3rem; margin:0 auto;" (click)="verHistorial(t.id)"><span class="material-symbols-outlined" style="font-size:16px;">history</span> Ver Resumen</button>
                 </td>
               </tr>
             </tbody>

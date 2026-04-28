@@ -4,17 +4,17 @@
     <p class="page-subtitle">Tenants y clientes interconectados al Core BPM.</p>
   </div>
 
-  <div class="actions-bar">
-    <button class="btn-premium btn-premium-primary" (click)="toggleForm()">
-      {{ showForm ? '✕ Cerrar Formulario' : '+ Nueva Organización' }}
+  <div class="actions-bar" style="margin-bottom: 1.5rem;">
+    <button class="btn-premium btn-premium-primary" (click)="toggleForm()"
+      style="display:flex; align-items:center; gap:0.5rem; width:fit-content;">
+      <span class="material-symbols-outlined">{{ showForm ? 'close' : 'add_circle' }}</span>
+      {{ showForm ? 'Cerrar Formulario' : 'Nueva Organización' }}
     </button>
   </div>
 
   <!-- Formulario de Creación Embebido -->
   <div *ngIf="showForm" class="form-section animate-fade-in">
-    <app-organizacion-form 
-      (onCreated)="onOrganizacionCreated($event)" 
-      (onCancel)="onFormCancel()">
+    <app-organizacion-form (onCreated)="onOrganizacionCreated($event)" (onCancel)="onFormCancel()">
     </app-organizacion-form>
   </div>
 
@@ -40,10 +40,11 @@
           <td>{{ o.createdAt | date:'shortDate' }}</td>
           <td><span class="badge badge-success">Activo - Óptimo</span></td>
           <td>
-            <button class="btn-icon">Ir a Departamentos &rarr;</button>
+            <button class="btn-icon" style="display:flex; align-items:center; gap:0.3rem;">Ir a Departamentos <span
+                class="material-symbols-outlined" style="font-size:16px;">arrow_forward</span></button>
           </td>
         </tr>
-        
+
         <tr *ngIf="organizaciones.length === 0">
           <td colspan="5" class="empty-state">
             Base de datos vacía. No existen organizaciones en este clúster.

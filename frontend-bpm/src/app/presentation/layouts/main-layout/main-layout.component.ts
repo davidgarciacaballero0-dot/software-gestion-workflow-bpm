@@ -1,5 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../../data/services/auth.service';
 import { ChatbotWidgetComponent } from '../../shared/voice-assistant/chatbot-widget.component';
@@ -10,7 +10,121 @@ import { ChatbotWidgetComponent } from '../../shared/voice-assistant/chatbot-wid
   imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, ChatbotWidgetComponent],
   template: `
     <div class="app-layout">
-      <!-- Modal de Perfil (Fase 4 - Glassmorphism) -->
+      <!-- Top Navbar Global -->
+      <header class="top-navbar glass-premium shadow-ambient">
+        <div class="navbar-left">
+          <button class="back-btn-premium" (click)="goBack()" title="Volver Atrás">
+            <span class="material-symbols-outlined">arrow_back</span>
+          </button>
+          <div class="navbar-brand" routerLink="/app/catalog" style="cursor: pointer;">
+            <span class="brand-bold">Orquestador</span>BPM
+          </div>
+          <div class="search-box">
+            <span class="material-symbols-outlined search-icon">search</span>
+            <input type="text" placeholder="Buscar componentes...">
+          </div>
+        </div>
+        
+        <nav class="navbar-center" *ngIf="!isClient()">
+          <a routerLink="/app/catalog" routerLinkActive="active" class="nav-link">Panel de Control</a>
+          <a routerLink="/app/designer" routerLinkActive="active" class="nav-link">Flujos de Trabajo</a>
+          <a routerLink="/app/inbox" routerLinkActive="active" class="nav-link">Tareas</a>
+        </nav>
+        <nav class="navbar-center" *ngIf="isClient()">
+           <a routerLink="/app/inbox" routerLinkActive="active" class="nav-link">Mis Trámites</a>
+        </nav>
+
+        <div class="navbar-right">
+          <button class="icon-btn">
+            <span class="material-symbols-outlined">notifications</span>
+            <span class="notification-dot"></span>
+          </button>
+          <div class="avatar-clickable" (click)="toggleProfile()" *ngIf="authService.currentUser() as user">
+             {{ user.nombre.charAt(0).toUpperCase() }}
+          </div>
+        </div>
+      </header>
+
+      <!-- Layout Body -->
+      <div class="layout-body">
+        <!-- Sidebar de Navegación -->
+        <aside class="sidebar-container" [class.collapsed]="isCollapsed()">
+          <div class="sidebar-header">
+            <div class="logo-box"><span class="material-symbols-outlined">developer_board</span></div>
+            <div class="brand-text" *ngIf="!isCollapsed()">
+              <h2>BPM Core</h2>
+              <span>Suite Empresarial</span>
+            </div>
+            <button class="toggle-sidebar-btn" (click)="toggleSidebar()" [title]="isCollapsed() ? 'Expandir' : 'Colapsar'">
+              <span class="material-symbols-outlined">{{ isCollapsed() ? 'chevron_right' : 'chevron_left' }}</span>
+            </button>
+          </div>
+
+          <div class="sidebar-action" *ngIf="!isCollapsed() && isAdmin()">
+            <button class="btn-new-process" routerLink="/app/designer">
+              <span class="material-symbols-outlined">add</span> Nuevo Proceso
+            </button>
+          </div>
+
+          <nav class="sidebar-nav">
+            <a routerLink="/app/inbox" routerLinkActive="active" class="nav-item" [title]="isCollapsed() ? 'Bandeja' : ''">
+              <span class="material-symbols-outlined icon">inbox</span>
+              <span class="label" *ngIf="!isCollapsed()">{{ isClient() ? 'Mis Trámites' : 'Bandeja de Entrada' }}</span>
+            </a>
+            <a routerLink="/app/catalog" routerLinkActive="active" class="nav-item" *ngIf="!isClient()" [title]="isCollapsed() ? 'Políticas' : ''">
+              <span class="material-symbols-outlined icon">policy</span>
+              <span class="label" *ngIf="!isCollapsed()">Políticas</span>
+            </a>
+            <a routerLink="/app/users" routerLinkActive="active" class="nav-item" *ngIf="isAdmin()" [title]="isCollapsed() ? 'Usuarios' : ''">
+              <span class="material-symbols-outlined icon">group</span>
+              <span class="label" *ngIf="!isCollapsed()">Usuarios</span>
+            </a>
+            <a routerLink="/app/roles" routerLinkActive="active" class="nav-item" *ngIf="isAdmin()" [title]="isCollapsed() ? 'Roles' : ''">
+              <span class="material-symbols-outlined icon">admin_panel_settings</span>
+              <span class="label" *ngIf="!isCollapsed()">Roles</span>
+            </a>
+            <a routerLink="/app/organizations" routerLinkActive="active" class="nav-item" *ngIf="isAdmin()" [title]="isCollapsed() ? 'Organizaciones' : ''">
+              <span class="material-symbols-outlined icon">domain</span>
+              <span class="label" *ngIf="!isCollapsed()">Organizaciones</span>
+            </a>
+            <a routerLink="/app/departments" routerLinkActive="active" class="nav-item" *ngIf="isAdmin()" [title]="isCollapsed() ? 'Departamentos' : ''">
+              <span class="material-symbols-outlined icon">account_tree</span>
+              <span class="label" *ngIf="!isCollapsed()">Departamentos</span>
+            </a>
+            <a routerLink="/app/audit" routerLinkActive="active" class="nav-item" *ngIf="isAdmin()" [title]="isCollapsed() ? 'Auditoría' : ''">
+              <span class="material-symbols-outlined icon">history</span>
+              <span class="label" *ngIf="!isCollapsed()">Auditoría</span>
+            </a>
+            <a routerLink="/app/supervision" routerLinkActive="active" class="nav-item" *ngIf="isAdmin() || isJefe()" [title]="isCollapsed() ? 'Supervisión' : ''">
+              <span class="material-symbols-outlined icon">monitoring</span>
+              <span class="label" *ngIf="!isCollapsed()">Supervisión</span>
+            </a>
+            <a routerLink="/app/insights" routerLinkActive="active" class="nav-item" *ngIf="isAdmin()" [title]="isCollapsed() ? 'IA Insights' : ''">
+              <span class="material-symbols-outlined icon">smart_toy</span>
+              <span class="label" *ngIf="!isCollapsed()">Reportes IA</span>
+            </a>
+          </nav>
+
+          <div class="sidebar-footer">
+            <button class="logout-action" (click)="authService.logout()" [title]="isCollapsed() ? 'Cerrar Sesión' : ''">
+              <span class="material-symbols-outlined icon">logout</span>
+              <span class="label" *ngIf="!isCollapsed()">Cerrar Sesión</span>
+            </button>
+          </div>
+        </aside>
+
+        <!-- Main Workspace -->
+        <main class="workspace-viewport">
+          <section class="content-container animate-fade-in">
+            <router-outlet></router-outlet>
+          </section>
+        </main>
+      </div>
+
+      <!-- Chatbot Inteligente Global -->
+      <app-chatbot-widget></app-chatbot-widget>
+      
+      <!-- Modal de Perfil (Glassmorphism) -->
       <div class="profile-modal-overlay" *ngIf="showProfile()" (click)="toggleProfile()">
         <div class="profile-card-glass animate-pop" (click)="$event.stopPropagation()">
            <div class="profile-header">
@@ -19,11 +133,9 @@ import { ChatbotWidgetComponent } from '../../shared/voice-assistant/chatbot-wid
                <h3>{{ authService.currentUser()?.nombre }} {{ authService.currentUser()?.apellidos }}</h3>
                <span class="role-badge">{{ authService.currentUser()?.nombreRol }}</span>
              </div>
-             <button class="close-btn" (click)="toggleProfile()">✕</button>
+             <button class="close-btn" (click)="toggleProfile()"><span class="material-symbols-outlined">close</span></button>
            </div>
-
            <div class="profile-body">
-             <!-- Información Personal (Todos) -->
              <div class="profile-section">
                <h4 class="section-title">Información Personal</h4>
                <div class="info-grid">
@@ -45,8 +157,6 @@ import { ChatbotWidgetComponent } from '../../shared/voice-assistant/chatbot-wid
                  </div>
                </div>
              </div>
-
-             <!-- Información Organizacional (Funcionarios) -->
              <div class="profile-section" *ngIf="!isClient()">
                <h4 class="section-title">Detalles de Operación</h4>
                <div class="info-grid">
@@ -60,203 +170,257 @@ import { ChatbotWidgetComponent } from '../../shared/voice-assistant/chatbot-wid
                  </div>
                </div>
              </div>
-
              <div class="profile-footer">
                <span class="reg-date">Miembro desde: {{ formatDate(authService.currentUser()?.createdAt) }}</span>
              </div>
            </div>
         </div>
       </div>
-
-      <!-- Chatbot Inteligente Global -->
-      <app-chatbot-widget></app-chatbot-widget>
-      <!-- Sidebar de Navegación -->
-      <aside class="sidebar-container glass-premium" [class.collapsed]="isCollapsed()">
-        <div class="sidebar-header">
-          <div class="logo-box">BPM</div>
-          <div class="brand-text" *ngIf="!isCollapsed()">
-            <h2>Workflow</h2>
-            <span>Enterprise Edition</span>
-          </div>
-          <button class="toggle-sidebar-btn" (click)="toggleSidebar()" [title]="isCollapsed() ? 'Expandir' : 'Colapsar'">
-            {{ isCollapsed() ? '»' : '«' }}
-          </button>
-        </div>
-
-        <nav class="sidebar-nav">
-          <a routerLink="/app/catalog" routerLinkActive="active" class="nav-item" *ngIf="!isClient()" [title]="isCollapsed() ? 'Catálogo' : ''">
-            <span class="icon">🚀</span>
-            <span class="label" *ngIf="!isCollapsed()">Catálogo de Trámites</span>
-          </a>
-          <a routerLink="/app/inbox" routerLinkActive="active" class="nav-item" [title]="isCollapsed() ? 'Bandeja' : ''">
-            <span class="icon">📥</span>
-            <span class="label" *ngIf="!isCollapsed()">{{ isClient() ? 'Mis Trámites' : 'Bandeja' }}</span>
-          </a>
-          <a routerLink="/app/designer" routerLinkActive="active" class="nav-item" *ngIf="isAdmin()" [title]="isCollapsed() ? 'Diseñador' : ''">
-            <span class="icon">🎨</span>
-            <span class="label" *ngIf="!isCollapsed()">Diseñador BPM</span>
-          </a>
-          <a routerLink="/app/supervision" routerLinkActive="active" class="nav-item" *ngIf="isAdmin() || isJefe()" [title]="isCollapsed() ? 'Supervisión' : ''">
-            <span class="icon">📊</span>
-            <span class="label" *ngIf="!isCollapsed()">Métricas de Supervisión</span>
-          </a>
-
-          <div class="nav-divider" *ngIf="isAdmin() && !isCollapsed()">
-             <span>Gestión</span>
-          </div>
-          <a routerLink="/app/organizations" routerLinkActive="active" class="nav-item" *ngIf="isAdmin()" [title]="isCollapsed() ? 'Organizaciones' : ''">
-            <span class="icon">🏢</span>
-            <span class="label" *ngIf="!isCollapsed()">Organizaciones</span>
-          </a>
-          <a routerLink="/app/departments" routerLinkActive="active" class="nav-item" *ngIf="isAdmin()" [title]="isCollapsed() ? 'Departamentos' : ''">
-            <span class="icon">🏘️</span>
-            <span class="label" *ngIf="!isCollapsed()">Departamentos</span>
-          </a>
-          <a routerLink="/app/users" routerLinkActive="active" class="nav-item" *ngIf="isAdmin()" [title]="isCollapsed() ? 'Usuarios' : ''">
-            <span class="icon">👥</span>
-            <span class="label" *ngIf="!isCollapsed()">Usuarios</span>
-          </a>
-          <a routerLink="/app/roles" routerLinkActive="active" class="nav-item" *ngIf="isAdmin()" [title]="isCollapsed() ? 'Roles' : ''">
-            <span class="icon">🔐</span>
-            <span class="label" *ngIf="!isCollapsed()">Roles</span>
-          </a>
-          <a routerLink="/app/audit" routerLinkActive="active" class="nav-item" *ngIf="isAdmin()" [title]="isCollapsed() ? 'Auditoría' : ''">
-            <span class="icon">📋</span>
-            <span class="label" *ngIf="!isCollapsed()">Auditoría</span>
-          </a>
-          <a routerLink="/app/insights" routerLinkActive="active" class="nav-item" *ngIf="isAdmin()" [title]="isCollapsed() ? 'IA Insights' : ''">
-            <span class="icon">🤖</span>
-            <span class="label" *ngIf="!isCollapsed()">Reportes y Analítica IA</span>
-          </a>
-        </nav>
-
-        <div class="sidebar-footer">
-          <div class="user-profile-pill monolith-surface clickable-profile" 
-               *ngIf="authService.currentUser() as user"
-               (click)="toggleProfile()"
-               [title]="isCollapsed() ? user.nombre : ''">
-            <div class="avatar-gradient">
-              {{ user.nombre.charAt(0).toUpperCase() }}
-            </div>
-            <div class="user-details" *ngIf="!isCollapsed()">
-              <span class="name">{{ user.nombre }}</span>
-              <span class="role">{{ user.nombreRol }}</span>
-            </div>
-          </div>
-          
-          <button class="logout-action" (click)="authService.logout()" [title]="isCollapsed() ? 'Cerrar Sesión' : ''">
-            <span class="icon">🚪</span>
-            <span class="label" *ngIf="!isCollapsed()">Cerrar Sesión</span>
-          </button>
-        </div>
-      </aside>
-
-      <!-- Main Workspace -->
-      <main class="workspace-viewport">
-        <header class="workspace-header glass-premium shadow-ambient">
-          <div class="header-left">
-            <span class="breadcrumb">Sistema</span>
-            <span class="separator">/</span>
-            <span class="current-page">Workspace</span>
-          </div>
-          <div class="header-right">
-             <div class="alert-indicator">🔔</div>
-          </div>
-        </header>
-        
-        <section class="content-container animate-fade-in">
-          <router-outlet></router-outlet>
-        </section>
-      </main>
     </div>
   `,
   styles: [`
     .app-layout {
       display: flex;
+      flex-direction: column;
       height: 100vh;
       background: var(--surface);
       overflow: hidden;
       font-family: 'Inter', sans-serif;
     }
 
+    /* TOP NAVBAR */
+    .top-navbar {
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 2rem;
+      background: #ffffff;
+      border-bottom: 1px solid rgba(200, 197, 208, 0.3); /* very subtle */
+      z-index: 100;
+    }
+
+    .navbar-left {
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+    }
+
+    .navbar-brand {
+      font-size: 1.25rem;
+      color: var(--primary);
+    }
+    
+    .brand-bold {
+      font-weight: 800;
+    }
+
+    .search-box {
+      display: flex;
+      align-items: center;
+      background: #f1f5f9;
+      padding: 0.5rem 1rem;
+      border-radius: 9999px; /* Pill shape */
+      width: 250px;
+    }
+
+    .search-icon {
+      color: var(--text-muted);
+      font-size: 1.2rem;
+      margin-right: 0.5rem;
+    }
+
+    .search-box input {
+      border: none;
+      background: transparent;
+      outline: none;
+      font-size: 0.85rem;
+      color: var(--text-main);
+      width: 100%;
+    }
+
+    .back-btn-premium {
+      background: var(--surface-container-low);
+      border: 1px solid rgba(200, 197, 208, 0.3);
+      border-radius: 12px;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--primary);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .back-btn-premium:hover {
+      background: var(--primary);
+      color: white;
+      transform: translateX(-4px);
+      box-shadow: var(--shadow-ambient);
+    }
+
+    .back-btn-premium span {
+      font-size: 1.25rem;
+    }
+
+    .navbar-center {
+      display: flex;
+      gap: 2rem;
+    }
+
+    .nav-link {
+      text-decoration: none;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      font-weight: 600;
+      padding: 1.2rem 0;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+    }
+
+    .nav-link:hover, .nav-link.active {
+      color: var(--primary);
+      border-bottom: 2px solid var(--primary);
+    }
+
+    .navbar-right {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .icon-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-muted);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .icon-btn:hover { color: var(--primary); }
+
+    .notification-dot {
+      position: absolute;
+      top: 0px;
+      right: 0px;
+      width: 8px;
+      height: 8px;
+      background: #ef4444; /* red indicator */
+      border-radius: 50%;
+      border: 2px solid white;
+    }
+
+    .avatar-clickable {
+      width: 36px;
+      height: 36px;
+      background: #0d9488; /* Teal as per image avatar */
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: var(--shadow-ambient);
+    }
+
+    /* LAYOUT BODY */
+    .layout-body {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
     /* Sidebar Refined Styles - Orchestrated Monolith */
     .sidebar-container {
-      width: 280px;
+      width: 260px;
       height: 100%;
-      background: var(--surface-container-low);
-      /* "No-Line" rule: Removed border-right */
+      background: #ffffff;
+      border-right: 1px solid rgba(200, 197, 208, 0.3);
       display: flex;
       flex-direction: column;
-      padding: 1.5rem;
+      padding: 1.5rem 1rem;
       z-index: 50;
       transition: width 0.3s ease;
-      box-shadow: 1px 0 10px rgba(7, 2, 53, 0.03); /* Subtle lift */
     }
 
     .sidebar-container.collapsed {
-      width: 85px;
-      padding: 1.5rem 0.75rem;
+      width: 80px;
+      padding: 1.5rem 0.5rem;
     }
 
     .sidebar-header {
       display: flex;
       align-items: center;
       gap: 1rem;
-      margin-bottom: 2.5rem;
+      margin-bottom: 1.5rem;
       padding-left: 0.5rem;
       position: relative;
     }
 
     .toggle-sidebar-btn {
-      position: absolute;
-      right: -12px;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 24px;
-      height: 24px;
-      background: var(--primary);
+      background: none;
       border: none;
-      border-radius: 50%;
-      color: white;
+      color: var(--text-muted);
+      cursor: pointer;
       display: flex;
       align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      font-size: 0.8rem;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-      z-index: 100;
-      transition: all 0.3s ease;
+      position: absolute;
+      right: 0;
     }
-    .toggle-sidebar-btn:hover { background: var(--primary-container); scale: 1.1; }
-
-    .sidebar-container.collapsed .toggle-sidebar-btn {
-      right: 50%;
-      transform: translate(50%, -50%);
-      top: 110%;
-    }
+    .toggle-sidebar-btn:hover { color: var(--primary); }
 
     .logo-box {
-      width: 44px;
-      height: 44px;
-      background: linear-gradient(135deg, var(--primary), var(--primary-container));
-      border-radius: 0.5rem; /* rounded-lg */
+      width: 40px;
+      height: 40px;
+      background: var(--primary);
+      border-radius: 0.5rem;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-weight: 700;
       color: white;
-      box-shadow: var(--shadow-ambient);
-      font-size: 0.9rem;
     }
 
-    .brand-text h2 { font-size: 1.1rem; font-weight: 600; margin: 0; color: var(--primary); }
-    .brand-text span { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+    .brand-text h2 { font-size: 1rem; font-weight: 700; margin: 0; color: var(--primary); }
+    .brand-text span { font-size: 0.7rem; color: var(--text-muted); }
+
+    .sidebar-action {
+      margin-bottom: 1.5rem;
+      padding: 0 0.5rem;
+    }
+
+    .btn-new-process {
+      width: 100%;
+      padding: 0.75rem;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 0.5rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(30, 27, 75, 0.3);
+      transition: all 0.2s;
+    }
+    
+    .btn-new-process:hover {
+       transform: translateY(-2px);
+       box-shadow: 0 6px 15px rgba(30, 27, 75, 0.4);
+    }
 
     .sidebar-nav {
       flex: 1;
       display: flex;
       flex-direction: column;
-      gap: 0.35rem;
+      gap: 0.2rem;
       overflow-y: auto;
     }
 
@@ -264,12 +428,12 @@ import { ChatbotWidgetComponent } from '../../shared/voice-assistant/chatbot-wid
       display: flex;
       align-items: center;
       gap: 0.85rem;
-      padding: 0.7rem 1rem;
-      border-radius: 0.5rem; /* rounded-lg */
+      padding: 0.75rem 1rem;
+      border-radius: 0.5rem;
       color: var(--text-muted);
       text-decoration: none;
-      font-size: 0.85rem; /* body-md */
-      font-weight: 500;
+      font-size: 0.85rem;
+      font-weight: 600;
       transition: all 0.2s;
       white-space: nowrap;
       overflow: hidden;
@@ -277,36 +441,22 @@ import { ChatbotWidgetComponent } from '../../shared/voice-assistant/chatbot-wid
 
     .sidebar-container.collapsed .nav-item {
       justify-content: center;
-      padding: 0.7rem 0;
+      padding: 0.75rem 0;
       gap: 0;
     }
 
     .sidebar-container.collapsed .icon {
-      font-size: 1.2rem;
+      font-size: 1.3rem;
     }
 
     .nav-item:hover {
-      background: var(--surface-bright);
-      color: var(--primary-container);
-      transform: translateX(4px);
+      background: var(--surface);
+      color: var(--primary);
     }
 
     .nav-item.active {
-      background: var(--surface-container-lowest);
+      background: #f1f5f9; /* light blue-ish from image */
       color: var(--primary);
-      box-shadow: var(--shadow-ambient);
-    }
-
-    .nav-divider {
-      margin-top: 1rem;
-      margin-bottom: 0.5rem;
-      padding: 0 1rem;
-      font-size: 0.65rem;
-      font-weight: 700;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 1.5px;
-      opacity: 0.7;
     }
 
     /* Main Content Styles */
@@ -319,26 +469,37 @@ import { ChatbotWidgetComponent } from '../../shared/voice-assistant/chatbot-wid
       background: var(--surface);
     }
 
-    .workspace-header {
-      height: 64px;
-      padding: 0 2rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      /* "No-Line" rule: Removed border-bottom, relying on glass and shadow-ambient */
-      z-index: 40;
-    }
-
-    .header-left { display: flex; align-items: center; gap: 0.75rem; font-size: 0.85rem; }
-    .breadcrumb { color: var(--text-muted); font-weight: 500; }
-    .separator { color: var(--outline-variant); }
-    .current-page { color: var(--primary); font-weight: 600; }
-
     .content-container {
       flex: 1;
-      padding: 2rem;
-      overflow-y: auto;
-      background: radial-gradient(circle at top right, hsla(239, 84%, 95%, 0.5), transparent 40%);
+      padding: 0; /* Designer requires full width/height, child components handle padding */
+      overflow: auto;
+    }
+
+    .sidebar-footer {
+      margin-top: auto;
+      padding-top: 1rem;
+      border-top: 1px solid rgba(200, 197, 208, 0.3);
+    }
+
+    .logout-action {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      background: transparent;
+      border: none;
+      border-radius: 0.5rem;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .logout-action:hover {
+      background: #fee2e2;
+      color: #dc2626;
     }
 
     /* User Profile Footer */
@@ -476,8 +637,13 @@ import { ChatbotWidgetComponent } from '../../shared/voice-assistant/chatbot-wid
 })
 export class MainLayoutComponent {
   authService = inject(AuthService);
+  location = inject(Location);
   showProfile = signal(false);
   isCollapsed = signal(false);
+
+  goBack() {
+    this.location.back();
+  }
 
   toggleSidebar() {
     this.isCollapsed.update(v => !v);

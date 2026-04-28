@@ -52,6 +52,18 @@ export class PoliticaDesignerComponent implements OnInit {
   generatingIA: boolean = false;
   isLoaded: boolean = false; // Flag to force DOM recreation
   draggingPositions: Record<string, { x: number, y: number }> = {};
+
+  // Requisitos documentales predefinidos
+  documentRequirements = [
+    { id: 'doc_ci', label: 'Carnet de Identidad (CI)', fieldId: 'f_ci' },
+    { id: 'doc_boleta', label: 'Boleta de Pago', fieldId: 'f_boleta_pago' },
+    { id: 'doc_extracto', label: 'Extracto Bancario', fieldId: 'f_extracto_bancario' },
+    { id: 'doc_nacimiento', label: 'Certificado de Nacimiento', fieldId: 'f_cert_nacimiento' },
+    { id: 'doc_servicios', label: 'Factura de Servicios', fieldId: 'f_factura_servicios' },
+    { id: 'doc_trabajo', label: 'Certificado de Trabajo', fieldId: 'f_cert_trabajo' },
+    { id: 'doc_nit', label: 'NIT / Registro Tributario', fieldId: 'f_nit' }
+  ];
+  customDocLabel: string = '';
   
   // Soporte de Voz
   isListening: boolean = false;
@@ -130,8 +142,18 @@ export class PoliticaDesignerComponent implements OnInit {
       };
 
       this.recognition.onerror = (event: any) => {
-        console.error('Speech Recognition Error', event);
-        this.zone.run(() => this.isListening = false);
+        console.error('--- DEPURACIÓN DE VOZ ---');
+        console.error('Tipo de error:', event.error);
+        console.error('Evento completo:', event);
+        console.error('-------------------------');
+        
+        this.zone.run(() => {
+          this.isListening = false;
+          let msg = 'Error en reconocimiento de voz.';
+          if (event.error === 'not-allowed') msg = 'Permiso de micrófono denegado.';
+          if (event.error === 'network') msg = 'Error de red en reconocimiento de voz.';
+          this.notificationService.notify(msg, 'ERROR');
+        });
       };
 
       this.recognition.onend = () => {
@@ -169,8 +191,8 @@ export class PoliticaDesignerComponent implements OnInit {
           this.nodes = JSON.parse(JSON.stringify(rawNodes));
           this.edges = JSON.parse(JSON.stringify(policy.edges || []));
           
-          // Forzar redistribución si hay solapamiento (en cualquier parte del lienzo)
-          this.reorganizeNodesIfCrowded();
+          // Auto-layout jerárquico al cargar borradores
+          this.autoLayoutHierarchical();
 
           console.log('Política cargada:', id, 'Nodos:', this.nodes.length);
           
@@ -224,6 +246,7 @@ export class PoliticaDesignerComponent implements OnInit {
       type: type as NodeType,
       name: `Nuevo ${type}`,
       uiPosition: { x: 50, y: 50 },
+      slaHours: 24,
       formDefinition: []
     };
     this.nodes.push(newNode);
@@ -243,6 +266,37 @@ export class PoliticaDesignerComponent implements OnInit {
     this.draggingPositions[node.id] = { x: pos.x, y: pos.y };
     
     this.cd.detectChanges();
+  }
+
+  /**
+   * Obtiene los bordes que salen de un nodo específico (para Gateways)
+   */
+  getOutgoingEdges(nodeId: string): WorkflowEdge[] {
+    return this.edges.filter(e => e.sourceNodeId === nodeId);
+  }
+
+  /**
+   * Obtiene el nombre de un nodo por su ID
+   */
+  getNodeName(nodeId: string): string {
+    const node = this.nodes.find(n => n.id === nodeId);
+    return node ? node.name : 'Desconocido';
+  }
+
+  /**
+   * Actualiza la condición de un borde (SI/NO)
+   */
+  updateEdgeCondition(edge: WorkflowEdge, value: string) {
+    if (!value) {
+      edge.condition = undefined;
+    } else {
+      // Usamos f_aprobado como variable por defecto para decisiones booleanas
+      edge.condition = {
+        variable: 'f_aprobado',
+        operator: 'EQUALS',
+        value: value
+      };
+    }
   }
 
   onNodeMoved(event: CdkDragEnd, node: WorkflowNode): void {
@@ -271,7 +325,7 @@ export class PoliticaDesignerComponent implements OnInit {
 
     // Importante: Si este es el nodo seleccionado, forzamos que el panel de propiedades se entere
     if (this.selectedNode && this.selectedNode.id === node.id) {
-      this.selectedNode = { ...node }; // Trigger change detection for property panel
+      this.selectedNode = node; 
     }
 
     this.broadcastChange('NODE_MOVED', node);
@@ -321,35 +375,66 @@ export class PoliticaDesignerComponent implements OnInit {
     }
   }
 
-  private reorganizeNodesIfCrowded(): void {
+  autoLayoutHierarchical(): void {
     if (this.nodes.length < 2) return;
 
-    let isCrowded = false;
-    // Verificar si algún par de nodos choca en un área de 200x150
-    for (let i = 0; i < this.nodes.length; i++) {
-      for (let j = i + 1; j < this.nodes.length; j++) {
-        const dx = Math.abs(this.nodes[i].uiPosition.x - this.nodes[j].uiPosition.x);
-        const dy = Math.abs(this.nodes[i].uiPosition.y - this.nodes[j].uiPosition.y);
-        
-        // Cajas de colisión amplias (200px ancho x 160px alto)
-        if (dx < 200 && dy < 160) {
-          isCrowded = true;
-          break;
+    const V_GAP = 160;
+    const H_GAP = 220;
+    const INIT_Y = 80;
+
+    // Build adjacency list from edges
+    const adj: Map<string, string[]> = new Map();
+    const inDeg: Map<string, number> = new Map();
+    this.nodes.forEach(n => { adj.set(n.id, []); inDeg.set(n.id, 0); });
+    this.edges.forEach(e => {
+      adj.get(e.sourceNodeId)?.push(e.targetNodeId);
+      inDeg.set(e.targetNodeId, (inDeg.get(e.targetNodeId) || 0) + 1);
+    });
+
+    // Find root: START node or node with 0 in-degree
+    let root = this.nodes.find(n => n.type === NodeType.START);
+    if (!root) root = this.nodes.find(n => (inDeg.get(n.id) || 0) === 0);
+    if (!root) root = this.nodes[0];
+
+    // BFS to assign levels
+    const levels: Map<string, number> = new Map();
+    const queue: string[] = [root.id];
+    levels.set(root.id, 0);
+    while (queue.length > 0) {
+      const cur = queue.shift()!;
+      const curLvl = levels.get(cur)!;
+      for (const nb of (adj.get(cur) || [])) {
+        if (!levels.has(nb)) {
+          levels.set(nb, curLvl + 1);
+          queue.push(nb);
         }
       }
-      if (isCrowded) break;
     }
-    
-    if (isCrowded) {
-      console.log('Detectado amontonamiento de nodos. Auto-distribuyendo...');
-      this.nodes.forEach((node, index) => {
-        // Asignar una posición en cascada vertical limpia
-        node.uiPosition = { 
-          x: 200, 
-          y: 60 + (index * 220) // 220px de espacio vertical
-        };
+    // Assign unvisited nodes
+    const maxLvl = levels.size > 0 ? Math.max(...levels.values()) : 0;
+    this.nodes.forEach(n => { if (!levels.has(n.id)) levels.set(n.id, maxLvl + 1); });
+
+    // Group by level
+    const groups: Map<number, WorkflowNode[]> = new Map();
+    this.nodes.forEach(n => {
+      const lv = levels.get(n.id) || 0;
+      if (!groups.has(lv)) groups.set(lv, []);
+      groups.get(lv)!.push(n);
+    });
+
+    // Position nodes top-to-bottom, centered horizontally
+    const sortedLvls = Array.from(groups.keys()).sort((a, b) => a - b);
+    const canvasWidth = 800;
+    for (const lv of sortedLvls) {
+      const nodesInLvl = groups.get(lv)!;
+      const totalW = (nodesInLvl.length - 1) * H_GAP;
+      const startX = (canvasWidth / 2) - (totalW / 2);
+      nodesInLvl.forEach((node, i) => {
+        node.uiPosition = { x: startX + i * H_GAP, y: INIT_Y + lv * V_GAP };
       });
     }
+    console.log('Auto-layout jerárquico aplicado:', this.nodes.length, 'nodos en', sortedLvls.length, 'niveles');
+    this.cd.detectChanges();
   }
 
 
@@ -366,83 +451,93 @@ export class PoliticaDesignerComponent implements OnInit {
     }
   }
 
-  /**
-   * Calcula el punto exacto de conexión según el tipo y forma del nodo
-   * Sincronizado con las medidas exactas de politica-designer.component.css
-   */
-  getConnectionPoint(nodeId: string, side: 'left' | 'right'): { x: number, y: number } {
-    const node = this.nodes.find(n => n.id === nodeId);
-    if (!node) return { x: 0, y: 0 };
-
-    // PRIORIDAD: Si el nodo se está arrastrando, usamos la posición temporal
-    const pos = this.draggingPositions[nodeId] || node.uiPosition;
-
-    let width = 180;
-    let height = 100; // Altura estándar para tareas y gateways
-
-    // Ajustar dimensiones según el estándar visual definido en CSS (.node-item.START, .node-item.END)
-    if (node.type === NodeType.START || node.type === NodeType.END) {
-      width = 75;  // Sincronizado con CSS línea 220
-      height = 75; // Sincronizado con CSS línea 221
-    } else if (node.type === NodeType.EXCLUSIVE_GATEWAY) {
-      width = 180;
-      height = 100; // Sincronizado con CSS línea 271 (min-height)
+  /** Dimensiones CSS reales de cada tipo de nodo */
+  getNodeDimensions(node: WorkflowNode): { width: number, height: number } {
+    switch (node.type) {
+      case NodeType.START:
+      case NodeType.END:
+        return { width: 140, height: 56 };
+      case NodeType.EXCLUSIVE_GATEWAY:
+        return { width: 110, height: 110 };
+      case NodeType.USER_TASK:
+      default:
+        return { width: 180, height: 60 };
     }
-
-    const x = side === 'left' ? pos.x : pos.x + width;
-    const y = pos.y + (height / 2);
-
-    return { x, y };
   }
 
-  // Lógica de dibujo de conexiones (Curvas Bezier Suaves con detección de dirección)
+  /** Punto de conexión en 4 direcciones, sincronizado con las formas BPMN del CSS */
+  getConnectionPoint(nodeId: string, side: 'top' | 'bottom' | 'left' | 'right'): { x: number, y: number } {
+    const node = this.nodes.find(n => n.id === nodeId);
+    if (!node) return { x: 0, y: 0 };
+    const pos = this.draggingPositions[nodeId] || node.uiPosition;
+    const d = this.getNodeDimensions(node);
+    switch (side) {
+      case 'top':    return { x: pos.x + d.width / 2, y: pos.y };
+      case 'bottom': return { x: pos.x + d.width / 2, y: pos.y + d.height };
+      case 'left':   return { x: pos.x, y: pos.y + d.height / 2 };
+      case 'right':  return { x: pos.x + d.width, y: pos.y + d.height / 2 };
+    }
+  }
+
+  // Determinar la mejor dirección de salida/entrada entre dos nodos
+  private getBestSides(sNode: WorkflowNode, tNode: WorkflowNode): { src: 'top'|'bottom'|'left'|'right', tgt: 'top'|'bottom'|'left'|'right' } {
+    const sPos = this.draggingPositions[sNode.id] || sNode.uiPosition;
+    const tPos = this.draggingPositions[tNode.id] || tNode.uiPosition;
+    const sD = this.getNodeDimensions(sNode);
+    const tD = this.getNodeDimensions(tNode);
+    const dx = (tPos.x + tD.width/2) - (sPos.x + sD.width/2);
+    const dy = (tPos.y + tD.height/2) - (sPos.y + sD.height/2);
+
+    if (Math.abs(dy) >= Math.abs(dx) * 0.4) {
+      return dy > 0 ? { src: 'bottom', tgt: 'top' } : { src: 'top', tgt: 'bottom' };
+    } else {
+      return dx > 0 ? { src: 'right', tgt: 'left' } : { src: 'left', tgt: 'right' };
+    }
+  }
+
+  // Conectores Ortogonales Rectilíneos (90°)
   calculatePath(edge: WorkflowEdge): string {
-    const sourceNode = this.nodes.find(n => n.id === edge.sourceNodeId);
-    const targetNode = this.nodes.find(n => n.id === edge.targetNodeId);
-    if (!sourceNode || !targetNode) return '';
+    const sNode = this.nodes.find(n => n.id === edge.sourceNodeId);
+    const tNode = this.nodes.find(n => n.id === edge.targetNodeId);
+    if (!sNode || !tNode) return '';
 
-    const sPos = this.draggingPositions[sourceNode.id] || sourceNode.uiPosition;
-    const tPos = this.draggingPositions[targetNode.id] || targetNode.uiPosition;
+    const sides = this.getBestSides(sNode, tNode);
+    const s = this.getConnectionPoint(edge.sourceNodeId, sides.src);
+    const t = this.getConnectionPoint(edge.targetNodeId, sides.tgt);
+    if (!s || !t) return '';
 
-    // Decidir dinámicamente si conectar derecha->izquierda o viceversa para evitar bucles feos
-    const sourceIsLeft = sPos.x < tPos.x;
-    const sourceSide = sourceIsLeft ? 'right' : 'left';
-    const targetSide = sourceIsLeft ? 'left' : 'right';
+    const OFF = 25; // offset antes del primer giro
 
-    const source = this.getConnectionPoint(edge.sourceNodeId, sourceSide);
-    const target = this.getConnectionPoint(edge.targetNodeId, targetSide);
-
-    if (!source || !target) return '';
-
-    // Ajuste de suavizado según la distancia horizontal
-    const deltaX = Math.abs(target.x - source.x);
-    const curveIntensity = Math.min(deltaX / 2, 100); 
-
-    const cp1x = sourceIsLeft ? source.x + curveIntensity : source.x - curveIntensity;
-    const cp2x = sourceIsLeft ? target.x - curveIntensity : target.x + curveIntensity;
-
-    return `M ${source.x} ${source.y} C ${cp1x} ${source.y}, ${cp2x} ${target.y}, ${target.x} ${target.y}`;
+    if (sides.src === 'bottom' || sides.src === 'top') {
+      const signS = sides.src === 'bottom' ? 1 : -1;
+      const signT = sides.tgt === 'top' ? -1 : 1;
+      const midY = (s.y + signS * OFF + t.y + signT * OFF) / 2;
+      return `M ${s.x} ${s.y} L ${s.x} ${midY} L ${t.x} ${midY} L ${t.x} ${t.y}`;
+    } else {
+      const signS = sides.src === 'right' ? 1 : -1;
+      const signT = sides.tgt === 'left' ? -1 : 1;
+      const midX = (s.x + signS * OFF + t.x + signT * OFF) / 2;
+      return `M ${s.x} ${s.y} L ${midX} ${s.y} L ${midX} ${t.y} L ${t.x} ${t.y}`;
+    }
   }
 
   getEdgeLabelPosition(edge: WorkflowEdge): { x: number, y: number } {
-    const sourceNode = this.nodes.find(n => n.id === edge.sourceNodeId);
-    const targetNode = this.nodes.find(n => n.id === edge.targetNodeId);
-    if (!sourceNode || !targetNode) return { x: 0, y: 0 };
+    const sNode = this.nodes.find(n => n.id === edge.sourceNodeId);
+    const tNode = this.nodes.find(n => n.id === edge.targetNodeId);
+    if (!sNode || !tNode) return { x: 0, y: 0 };
 
-    // Usar posiciones en tiempo real si se están arrastrando
-    const sPos = this.draggingPositions[sourceNode.id] || sourceNode.uiPosition;
-    const tPos = this.draggingPositions[targetNode.id] || targetNode.uiPosition;
+    const sides = this.getBestSides(sNode, tNode);
+    const s = this.getConnectionPoint(edge.sourceNodeId, sides.src);
+    const t = this.getConnectionPoint(edge.targetNodeId, sides.tgt);
 
-    // Calcular el centro de la curva Bezier (aproximado al punto medio)
-    const startX = sPos.x + 180;
-    const startY = sPos.y + 40;
-    const endX = tPos.x;
-    const endY = tPos.y + 40;
-
-    return {
-      x: startX + (endX - startX) / 2,
-      y: startY + (endY - startY) / 2 - 10
-    };
+    // Posicionar la etiqueta en el punto medio de la ruta ortogonal
+    if (sides.src === 'bottom' || sides.src === 'top') {
+      const midY = (s.y + t.y) / 2;
+      return { x: (s.x + t.x) / 2 + 10, y: midY - 6 };
+    } else {
+      const midX = (s.x + t.x) / 2;
+      return { x: midX + 10, y: (s.y + t.y) / 2 - 6 };
+    }
   }
 
   // --- CU-14: IA Generativa ---
@@ -455,7 +550,8 @@ export class PoliticaDesignerComponent implements OnInit {
     const context = {
       prompt: this.aiPrompt,
       nodosActuales: this.nodes,
-      aristasActuales: this.edges
+      aristasActuales: this.edges,
+      departamentosDisponibles: this.departamentos.map(d => ({ id: d.id, nombre: d.nombre }))
     };
 
     this.workflowService.generarConIA(context).subscribe({
@@ -662,6 +758,55 @@ export class PoliticaDesignerComponent implements OnInit {
   selectEdge(edgeId: string, event: MouseEvent): void {
     event.stopPropagation();
     this.selectedEdge = edgeId;
+  }
+
+  // --- Requisitos Documentales ---
+
+  isDocRequired(node: WorkflowNode, docFieldId: string): boolean {
+    if (!node.formDefinition) return false;
+    return node.formDefinition.some(f => f.fieldId === docFieldId);
+  }
+
+  toggleDocRequirement(node: WorkflowNode, doc: { id: string, label: string, fieldId: string }): void {
+    if (!node.formDefinition) node.formDefinition = [];
+    const idx = node.formDefinition.findIndex(f => f.fieldId === doc.fieldId);
+    if (idx >= 0) {
+      node.formDefinition.splice(idx, 1);
+    } else {
+      node.formDefinition.push({
+        fieldId: doc.fieldId,
+        label: doc.label,
+        type: 'FILE' as any,
+        required: true
+      });
+    }
+  }
+
+  getRequiredDocsCount(node: WorkflowNode): number {
+    if (!node.formDefinition) return 0;
+    const docIds = this.documentRequirements.map(d => d.fieldId);
+    return node.formDefinition.filter(f => docIds.includes(f.fieldId) || (f.type === ('FILE' as any) && f.fieldId.startsWith('f_custom_'))).length;
+  }
+
+  addCustomDocRequirement(): void {
+    if (!this.selectedNode || !this.customDocLabel.trim()) return;
+    if (!this.selectedNode.formDefinition) this.selectedNode.formDefinition = [];
+    this.selectedNode.formDefinition.push({
+      fieldId: `f_custom_${Date.now()}`,
+      label: this.customDocLabel.trim(),
+      type: 'FILE' as any,
+      required: true
+    });
+    this.customDocLabel = '';
+  }
+
+  isPresetDoc(fieldId: string): boolean {
+    return this.documentRequirements.some(d => d.fieldId === fieldId);
+  }
+
+  removeEdge(edgeId: string): void {
+    this.edges = this.edges.filter(e => e.id !== edgeId);
+    this.selectedEdge = null;
   }
 }
 

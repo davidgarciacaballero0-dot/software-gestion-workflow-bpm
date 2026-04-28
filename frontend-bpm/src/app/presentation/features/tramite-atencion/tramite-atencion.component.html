@@ -15,7 +15,7 @@
     <!-- Formulario de Acción (Solo si no está FINALIZADO) -->
     <div class="form-section grid-card monolith-surface shadow-ambient" *ngIf="tramite?.estadoActual !== 'FINALIZADO'; else finalizadoMessage">
       <div class="section-title">
-        <h3>📄 Formulario de Acción</h3>
+        <h3 style="display:flex; align-items:center; gap:0.5rem;"><span class="material-symbols-outlined">description</span> Formulario de Acción</h3>
         <p>Complete la información requerida para avanzar al siguiente estado del proceso.</p>
       </div>
 
@@ -63,8 +63,8 @@
               [(ngModel)]="formData[field.fieldId]" 
               class="form-control">
               <option value="" disabled>Seleccione...</option>
-              <option value="true">✅ Sí</option>
-              <option value="false">❌ No</option>
+              <option value="true">Sí</option>
+              <option value="false">No</option>
             </select>
 
             <!-- Archivos -->
@@ -72,8 +72,8 @@
               <app-file-uploader 
                 (onUploadSuccess)="onFileUpload(field.fieldId, $event)">
               </app-file-uploader>
-              <div *ngIf="formData[field.fieldId]" class="file-success">
-                ✅ Archivo cargado (ID: {{ formData[field.fieldId] | slice:0:8 }}...)
+              <div *ngIf="formData[field.fieldId]" class="file-success" style="display:flex; align-items:center; gap:0.4rem;">
+                <span class="material-symbols-outlined" style="font-size:16px;">check_circle</span> Archivo cargado (ID: {{ formData[field.fieldId] | slice:0:8 }}...)
               </div>
             </div>
 
@@ -92,8 +92,9 @@
           <button 
             class="btn-premium btn-premium-primary w-full" 
             (click)="completarYEnviar()" 
-            [disabled]="submitting">
-            {{ submitting ? 'Enviando...' : '🚀 Procesar y Avanzar' }}
+            [disabled]="submitting" style="display:flex; justify-content:center; align-items:center; gap:0.5rem;">
+            <span class="material-symbols-outlined" *ngIf="!submitting">rocket_launch</span>
+            {{ submitting ? 'Enviando...' : 'Procesar y Avanzar' }}
           </button>
         </div>
       </div>
@@ -102,7 +103,9 @@
     <!-- Template para Trámite Finalizado -->
     <ng-template #finalizadoMessage>
       <div class="form-section grid-card glass-premium shadow-ambient text-center animate-fade-in">
-        <div class="status-icon" style="font-size: 4rem; margin-bottom: 1.5rem;">📁</div>
+        <div class="status-icon" style="margin-bottom: 1.5rem; display:flex; justify-content:center;">
+          <span class="material-symbols-outlined" style="font-size: 64px; color: var(--primary);">folder</span>
+        </div>
         <h2 class="text-gradient">Trámite Finalizado</h2>
         <p class="mt-1 text-secondary">
           Este trámite ha completado su ciclo de vida y se encuentra en estado de <strong>Archivo Histórico</strong>.
@@ -117,7 +120,7 @@
     <!-- Panel de Información Lateral -->
     <div class="info-sidebar">
       <div class="grid-card glass-premium shadow-ambient">
-        <h3>ℹ️ Información del Workflow</h3>
+        <h3 style="display:flex; align-items:center; gap:0.5rem;"><span class="material-symbols-outlined">info</span> Información del Workflow</h3>
         <p class="text-sm">Este trámite pertenece a la política <strong>{{ politica?.nombre }}</strong>.</p>
         <div class="workflow-stats mt-1">
           <div class="stat-row">
@@ -145,7 +148,9 @@
 <!-- Error State -->
 <div *ngIf="!loading && errorMessage" class="atencion-container animate-fade-in">
   <div class="grid-card glass-premium shadow-ambient text-center p-3">
-    <div class="error-icon" style="font-size: 3rem; margin-bottom: 1rem;">⚠️</div>
+    <div class="error-icon" style="margin-bottom: 1rem; display:flex; justify-content:center;">
+      <span class="material-symbols-outlined" style="font-size: 48px; color: var(--danger, #ef4444);">warning</span>
+    </div>
     <h2 class="text-danger">No se pudo cargar el entorno</h2>
     <p class="mt-1">{{ errorMessage }}</p>
     <button class="btn btn-primary mt-2" (click)="volver()">Volver a la Bandeja</button>
@@ -171,7 +176,7 @@
 
       <div class="derivation-flow-visual">
         <div class="flow-step current">
-          <div class="step-icon">👤</div>
+          <div class="step-icon"><span class="material-symbols-outlined">person</span></div>
           <div class="step-info">
             <span class="step-label">Paso Completado</span>
             <span class="step-value">{{ nodoActual?.name }}</span>
@@ -179,24 +184,24 @@
         </div>
         <div class="flow-connector">
           <div class="connector-line"></div>
-          <div class="connector-arrow">➔</div>
+          <div class="connector-arrow"><span class="material-symbols-outlined">arrow_forward</span></div>
         </div>
         <div class="flow-step next">
-          <div class="step-icon">🏢</div>
+          <div class="step-icon"><span class="material-symbols-outlined">domain</span></div>
           <div class="step-info">
             <span class="step-label">Derivado a</span>
             <span class="step-value">{{ targetDeptName }}</span>
-            <span class="step-subvalue">📍 {{ targetNodeName }}</span>
+            <span class="step-subvalue" style="display:flex; align-items:center; justify-content:center; gap:0.2rem;"><span class="material-symbols-outlined" style="font-size:14px;">location_on</span> {{ targetNodeName }}</span>
           </div>
         </div>
       </div>
 
       <div class="success-actions">
-        <button class="btn-premium btn-premium-secondary" (click)="volver()">
-          🏠 Volver a Bandeja
+        <button class="btn-premium btn-premium-secondary" (click)="volver()" style="display:flex; align-items:center; justify-content:center; gap:0.5rem;">
+          <span class="material-symbols-outlined">home</span> Volver a Bandeja
         </button>
-        <button class="btn-premium btn-premium-primary" (click)="volver()">
-          📋 Ver Historial
+        <button class="btn-premium btn-premium-primary" (click)="volver()" style="display:flex; align-items:center; justify-content:center; gap:0.5rem;">
+          <span class="material-symbols-outlined">history</span> Ver Historial
         </button>
       </div>
     </div>

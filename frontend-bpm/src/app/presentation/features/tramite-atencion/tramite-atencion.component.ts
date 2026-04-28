@@ -129,7 +129,23 @@ export class TramiteAtencionComponent implements OnInit {
       return;
     }
 
-    this.formFields = this.nodoActual.formDefinition || [];
+    this.formFields = [...(this.nodoActual.formDefinition || [])];
+    
+    // Inyectar requisitos documentales como campos de tipo FILE
+    if (this.nodoActual.requiredDocuments && this.nodoActual.requiredDocuments.length > 0) {
+      this.nodoActual.requiredDocuments.forEach((docName: string) => {
+        // Evitar duplicados si ya existe un campo con el mismo nombre
+        const fieldId = 'doc_' + docName.replace(/\s+/g, '_').toLowerCase();
+        if (!this.formFields.find(f => f.fieldId === fieldId)) {
+          this.formFields.push({
+            fieldId: fieldId,
+            label: docName,
+            type: 'FILE',
+            required: true
+          });
+        }
+      });
+    }
     
     // Inicializar formData: precargar con datos acumulados existentes del trámite
     // para que los gateways puedan evaluar las condiciones correctamente

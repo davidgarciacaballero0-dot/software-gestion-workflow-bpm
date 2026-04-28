@@ -108,19 +108,27 @@ class _ProfileGlassView extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         Text(
-          user.nombreCompleto,
-          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: AppTheme.primary),
+          user.nombreCompleto.toUpperCase(),
+          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+            fontWeight: FontWeight.w800,
+            color: AppTheme.primary,
+            fontSize: 20,
+          ),
         ),
         const SizedBox(height: 4),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: AppTheme.primary.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
+            color: AppTheme.primary.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(20),
           ),
           child: Text(
-            user.nombreRol,
-            style: const TextStyle(color: AppTheme.primary, fontWeight: FontWeight.bold, fontSize: 11),
+            user.nombreRol.toUpperCase(),
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: AppTheme.primary,
+              fontWeight: FontWeight.w800,
+              fontSize: 9,
+            ),
           ),
         ),
       ],
@@ -142,8 +150,8 @@ class _ProfileGlassView extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Información Personal', style: TextStyle(
-                fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.primary, letterSpacing: 1.2,
+              Text('INFORMACIÓN PERSONAL', style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                fontWeight: FontWeight.w800, color: AppTheme.primary, letterSpacing: 1.2,
               )),
               const SizedBox(height: 20),
               _buildInfoGrid(),
@@ -174,9 +182,9 @@ class _ProfileGlassView extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontSize: 11, color: AppTheme.subtle)),
-          const SizedBox(height: 4),
-          Text(value, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+          Text(label.toUpperCase(), style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 9, color: AppTheme.subtle)),
+          const SizedBox(height: 6),
+          Text(value, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700, color: AppTheme.primary)),
         ],
       ),
     );

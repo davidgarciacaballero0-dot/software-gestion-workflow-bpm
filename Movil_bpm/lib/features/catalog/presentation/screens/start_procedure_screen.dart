@@ -114,9 +114,9 @@ class _StartProcedureScreenState extends ConsumerState<StartProcedureScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    widget.policy.nombre,
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
+                    widget.policy.nombre.toUpperCase(),
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
                           color: AppTheme.primary,
                         ),
                   ),
@@ -137,16 +137,24 @@ class _StartProcedureScreenState extends ConsumerState<StartProcedureScreen> {
                   const SizedBox(height: 32),
                   SizedBox(
                     width: double.infinity,
-                    child: FilledButton(
-                      style: FilledButton.styleFrom(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
                         backgroundColor: AppTheme.primary,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        padding: const EdgeInsets.symmetric(vertical: 18),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                       ),
                       onPressed: () {
                         // El DynamicFormBuilder valida internamente y llama a onSaved
                         _dynamicFormKey.currentState?.saveForm();
                       },
-                      child: const Text('Comenzar y Enviar'),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text('COMENZAR Y ENVIAR', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.white)),
+                          const SizedBox(width: 12),
+                          const Icon(Icons.rocket_launch_outlined, size: 20),
+                        ],
+                      ),
                     ),
                   ),
                 ],

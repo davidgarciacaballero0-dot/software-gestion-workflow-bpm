@@ -108,5 +108,3 @@
 
 ---
 
-### 📎 TAREAS OPCIONALES (Post-Cierre)
-- ⚠️ **Extensión de Voz IA:** Integrar ElevenLabs en el Dashboard de Insights (Resumen Ejecutivo por voz).

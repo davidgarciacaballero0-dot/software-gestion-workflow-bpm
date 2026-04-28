@@ -53,6 +53,10 @@ services:
       - .env
     environment:
       - MONGO_URI=mongodb://mongodb_bpm:27017/bpm_workflow
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/gcp-creds.json
+    volumes:
+      - ${APPDATA}/gcloud/application_default_credentials.json:/app/gcp-creds.json:ro
+      - ./ia_microservice:/app
 
   # ============================================================
   # Frontend Angular - SPA

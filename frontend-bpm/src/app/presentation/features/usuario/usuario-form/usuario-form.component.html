@@ -1,4 +1,4 @@
-<div class="form-card">
+<div class="form-card monolith-surface shadow-ambient">
   <div class="form-header">
     <h3>Incorporación de Personal Corporativo</h3>
     <p>Alta de funcionario y asignación segura de credenciales de sistema.</p>
@@ -68,10 +68,11 @@
       <div class="help-text">Dato volátil: Será protegido irreversiblemente (Bcrypt) durante el tránsito al servidor.</div>
     </div>
 
-    <div class="form-actions mt-4">
+    <div class="form-actions mt-4" style="gap: 1rem;">
       <button type="button" class="btn btn-secondary" (click)="cancelar()">Descartar</button>
-      <button type="submit" class="btn btn-primary" [disabled]="userForm.invalid || isSubmitting">
+      <button type="submit" class="btn-premium btn-premium-primary" [disabled]="userForm.invalid || isSubmitting">
         <span *ngIf="isSubmitting" class="spinner"></span>
+        <span class="material-symbols-outlined" *ngIf="!isSubmitting">person_add</span>
         {{ isSubmitting ? 'Inyectando Políticas...' : 'Emitir Credenciales' }}
       </button>
     </div>

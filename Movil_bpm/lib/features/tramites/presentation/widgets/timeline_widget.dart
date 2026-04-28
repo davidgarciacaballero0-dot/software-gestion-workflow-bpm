@@ -66,45 +66,60 @@ class TimelineWidget extends StatelessWidget {
             // Contenido del evento
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.only(bottom: 24),
+                padding: const EdgeInsets.only(bottom: 32),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      event.nodoDestinoNombre ?? 'Paso del trámite',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
+                      (event.nodoDestinoNombre ?? 'SISTEMA').toUpperCase(),
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            color: AppTheme.primary,
+                            letterSpacing: 0.5,
                           ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Por: ${event.ejecutadoPorNombre ?? 'Sistema'}',
+                      'EJECUTADO POR: ${event.ejecutadoPorNombre ?? 'SISTEMA AUTOMÁTICO'}',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: AppTheme.subtle,
+                            fontSize: 10,
                           ),
                     ),
                     if (event.createdAt != null)
-                      Text(
-                        DateFormat('dd MMM yyyy, HH:mm').format(event.createdAt!),
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: AppTheme.subtle,
-                            ),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Text(
+                          DateFormat('dd/MM/yyyy · HH:mm').format(event.createdAt!),
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: AppTheme.subtle,
+                                fontSize: 10,
+                              ),
+                        ),
                       ),
                     if (event.motivo != null && event.motivo!.isNotEmpty) ...[
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 12),
                       Container(
-                        padding: const EdgeInsets.all(12),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.grey.shade300),
+                          color: AppTheme.surfaceContainerLow,
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        child: Text(
-                          'Nota: ${event.motivo}',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                fontStyle: FontStyle.italic,
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(Icons.edit_note_outlined, size: 16, color: AppTheme.subtle),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                event.motivo!,
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      fontStyle: FontStyle.italic,
+                                      color: AppTheme.subtle,
+                                    ),
                               ),
+                            ),
+                          ],
                         ),
                       ),
                     ]
@@ -121,34 +136,38 @@ class TimelineWidget extends StatelessWidget {
   Color _getColorForEventType(String type) {
     switch (type.toUpperCase()) {
       case 'INICIO':
-        return Colors.blue;
+      case 'CREACION':
+        return const Color(0xFF6366F1); // Indigo
       case 'AVANCE':
-        return Colors.green;
+        return const Color(0xFF10B981); // Emerald
       case 'RECHAZO':
-        return Colors.red;
+        return AppTheme.error;
       case 'INTERVENCION':
-        return Colors.orange;
+        return const Color(0xFFF59E0B); // Amber
       case 'FIN':
-        return Colors.purple;
-      default:
+      case 'FINALIZACION':
         return AppTheme.primary;
+      default:
+        return AppTheme.secondary;
     }
   }
 
   IconData _getIconForEventType(String type) {
     switch (type.toUpperCase()) {
       case 'INICIO':
-        return Icons.play_arrow_rounded;
+      case 'CREACION':
+        return Icons.star_outline_rounded;
       case 'AVANCE':
-        return Icons.check_rounded;
+        return Icons.arrow_forward_outlined;
       case 'RECHAZO':
-        return Icons.close_rounded;
+        return Icons.block_outlined;
       case 'INTERVENCION':
-        return Icons.warning_rounded;
+        return Icons.build_outlined;
       case 'FIN':
-        return Icons.flag_rounded;
+      case 'FINALIZACION':
+        return Icons.flag_outlined;
       default:
-        return Icons.circle;
+        return Icons.radio_button_checked_outlined;
     }
   }
 }

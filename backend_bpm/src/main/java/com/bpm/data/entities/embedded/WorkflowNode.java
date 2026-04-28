@@ -20,4 +20,5 @@ public class WorkflowNode {
     private Integer slaHours; // CU-19
     private UIPosition uiPosition;
     private List<FormFieldDefinition> formDefinition; // CU-06
+    private List<String> requiredDocuments; // NUEVO: Gestión Documental (DMS)
 }

@@ -10,7 +10,7 @@
        [style.border-left]="resultIsError ? '4px solid #ba1a1a' : '4px solid #10b981'"
        style="padding: 1rem 1.5rem; border-radius: 0.5rem;">
     <span>{{ resultMessage }}</span>
-    <button style="float:right; background:none; border:none; cursor:pointer; font-size:1.1rem;" (click)="resultMessage = null">✕</button>
+    <button style="float:right; background:none; border:none; cursor:pointer; font-size:1.1rem; display:flex; align-items:center;" (click)="resultMessage = null"><span class="material-symbols-outlined">close</span></button>
   </div>
 
   <!-- Dashboard Stats (Premium Widgets) -->
@@ -32,8 +32,8 @@
   <!-- Monitoreo de Carga Real-Time (Migrado de Insights) -->
   <div class="grid-card monolith-surface shadow-ambient mt-2" *ngIf="metricasDepartamentales.length > 0">
     <div style="display: flex; justify-content: space-between; align-items: center;">
-      <h3 class="section-title">📊 Carga Departamental Real-Time</h3>
-      <button class="btn btn-secondary btn-sm" (click)="cargarMetricas()">⟳ Refrescar</button>
+      <h3 class="section-title" style="display:flex; align-items:center; gap:0.5rem;"><span class="material-symbols-outlined">bar_chart</span> Carga Departamental Real-Time</h3>
+      <button class="btn btn-secondary btn-sm" (click)="cargarMetricas()" style="display:flex; align-items:center; gap:0.3rem;"><span class="material-symbols-outlined" style="font-size:16px;">refresh</span> Refrescar</button>
     </div>
     
     <div class="dept-bars">
@@ -47,10 +47,10 @@
                [class.ok]="getLoadPercent(m) <= 50">
           </div>
         </div>
-        <div class="dept-stats">
-          <span>⏱ {{ m.tiempoPromedioHoras | number:'1.0-1' }}h</span>
-          <span>⚙ {{ m.cantidadTramites }} trám.</span>
-          <span>👥 {{ m.capacidadPersonal }} pers.</span>
+        <div class="dept-stats" style="display:flex; gap:1rem;">
+          <span style="display:flex; align-items:center; gap:0.2rem;"><span class="material-symbols-outlined" style="font-size:14px;">timer</span> {{ m.tiempoPromedioHoras | number:'1.0-1' }}h</span>
+          <span style="display:flex; align-items:center; gap:0.2rem;"><span class="material-symbols-outlined" style="font-size:14px;">account_tree</span> {{ m.cantidadTramites }} trám.</span>
+          <span style="display:flex; align-items:center; gap:0.2rem;"><span class="material-symbols-outlined" style="font-size:14px;">group</span> {{ m.capacidadPersonal }} pers.</span>
         </div>
       </div>
     </div>
@@ -58,7 +58,7 @@
     <hr style="margin: 2rem 0; opacity: 0.1;">
 
     <!-- Consola de Reestructuración -->
-    <h3 class="section-title">🔄 Consola de Reestructuración</h3>
+    <h3 class="section-title" style="display:flex; align-items:center; gap:0.5rem;"><span class="material-symbols-outlined">sync</span> Consola de Reestructuración</h3>
     <div class="reassign-grid">
       <div class="reassign-source">
         <div class="form-row">
@@ -72,8 +72,8 @@
         <div class="users-box" *ngIf="usuariosOrigen.length">
           <label>Funcionarios ({{ selectedUserIds.length }} seleccionados)</label>
           <div class="users-scroll">
-            <div *ngFor="let u of usuariosOrigen" class="user-item" [class.selected]="selectedUserIds.includes(u.id)" (click)="toggleUser(u.id)">
-              <span class="check-icon">{{ selectedUserIds.includes(u.id) ? '☑' : '☐' }}</span>
+            <div *ngFor="let u of usuariosOrigen" class="user-item" [class.selected]="selectedUserIds.includes(u.id)" (click)="toggleUser(u.id)" style="display:flex; align-items:center; gap:0.5rem;">
+              <span class="check-icon material-symbols-outlined" style="font-size:18px;">{{ selectedUserIds.includes(u.id) ? 'check_box' : 'check_box_outline_blank' }}</span>
               <span>{{ u.nombre }} — {{ u.cargo }}</span>
             </div>
           </div>
@@ -96,8 +96,10 @@
 
         <button class="btn-execute-transfer"
                 [disabled]="!reassignForm.idDestino || selectedUserIds.length === 0 || executingAction"
-                (click)="ejecutarTransferencia()">
-          {{ executingAction ? '⏳ Ejecutando...' : '🚀 Aplicar Transferencia Masiva' }}
+                (click)="ejecutarTransferencia()" style="display:flex; align-items:center; justify-content:center; gap:0.5rem;">
+          <span class="material-symbols-outlined" *ngIf="executingAction">hourglass_empty</span>
+          <span class="material-symbols-outlined" *ngIf="!executingAction">rocket_launch</span>
+          {{ executingAction ? 'Ejecutando...' : 'Aplicar Transferencia Masiva' }}
         </button>
       </div>
     </div>
@@ -106,11 +108,11 @@
   <!-- Lista de Supervisión -->
   <div class="grid-card monolith-surface shadow-ambient mt-2">
     <div class="supervision-header-flex">
-      <h3 class="section-title">📋 Registro de Trámites en Supervisión</h3>
+      <h3 class="section-title" style="display:flex; align-items:center; gap:0.5rem;"><span class="material-symbols-outlined">assignment</span> Registro de Trámites en Supervisión</h3>
       
       <!-- Barra de Búsqueda (Fase 4) -->
       <div class="search-box glass-premium search-small">
-        <span class="search-icon">🔍</span>
+        <span class="search-icon material-symbols-outlined" style="opacity:0.5;">search</span>
         <input 
           type="text" 
           placeholder="Buscar por CI del Cliente..." 
@@ -150,15 +152,15 @@
             <span class="badge" [ngClass]="'badge-' + t.estadoActual.toLowerCase()">{{ t.estadoActual }}</span>
           </td>
           <td>
-            <div class="workflow-step">
-              <span class="step-icon">📍</span> {{ t.nombreNodoActual }}
+            <div class="workflow-step" style="display:flex; align-items:center; gap:0.3rem;">
+              <span class="step-icon material-symbols-outlined" style="font-size:16px;">location_on</span> {{ t.nombreNodoActual }}
             </div>
           </td>
           <td>
              <span class="dept-tag">{{ t.nombreDepartamentoActual || 'Sin Asignar' }}</span>
           </td>
           <td class="text-center">
-            <button class="btn btn-warning btn-sm" (click)="abrirIntervencion(t)">🛠️ Intervenir</button>
+            <button class="btn btn-warning btn-sm" (click)="abrirIntervencion(t)" style="display:flex; align-items:center; gap:0.3rem; margin:0 auto;"><span class="material-symbols-outlined" style="font-size:16px;">build</span> Intervenir</button>
           </td>
         </tr>
         <tr *ngIf="tramites.length === 0">
@@ -172,8 +174,8 @@
   <div class="modal-overlay" *ngIf="showModal">
     <div class="modal-content glass-premium animate-pop">
       <div class="modal-header">
-        <h2>🛠️ Intervención Administrativa</h2>
-        <button class="close-btn" (click)="cerrarModal()">✕</button>
+        <h2 style="display:flex; align-items:center; gap:0.5rem;"><span class="material-symbols-outlined">build</span> Intervención Administrativa</h2>
+        <button class="close-btn material-symbols-outlined" (click)="cerrarModal()">close</button>
       </div>
       <div class="modal-body">
         <p class="modal-hint">Ajuste forzado de flujo para el trámite <strong>{{ selectedTramite.codigoTramite }}</strong>.</p>

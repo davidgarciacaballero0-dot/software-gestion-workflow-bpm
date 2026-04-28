@@ -128,20 +128,21 @@ class _PolicyCard extends StatelessWidget {
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: AppTheme.primary.withOpacity(0.05),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(14),
                       ),
                       child: const Icon(
-                        Icons.account_balance_wallet_outlined,
+                        Icons.account_tree_outlined,
                         color: AppTheme.primary,
+                        size: 22,
                       ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
                       child: Text(
-                        policyName,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
+                        policyName.toUpperCase(),
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
                           color: AppTheme.primary,
                         ),
                       ),
@@ -158,19 +159,25 @@ class _PolicyCard extends StatelessWidget {
                 const SizedBox(height: 16),
                 Align(
                   alignment: Alignment.centerRight,
-                  child: ElevatedButton.icon(
+                  child: ElevatedButton(
                     onPressed: onTap,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.primary,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                       minimumSize: Size.zero,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    icon: const Icon(Icons.play_arrow_rounded, size: 18),
-                    label: const Text('Iniciar Trámite', style: TextStyle(fontSize: 12)),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text('INICIAR TRÁMITE', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.white, fontSize: 10)),
+                        const SizedBox(width: 8),
+                        const Icon(Icons.arrow_forward_rounded, size: 14),
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -194,7 +201,7 @@ class _EmptyCatalogState extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.inventory_2_outlined, size: 64, color: AppTheme.subtle.withValues(alpha: 0.5)),
+            Icon(Icons.inventory_2_outlined, size: 64, color: AppTheme.subtle.withOpacity(0.2)),
             const SizedBox(height: 16),
             Text(
               'No hay trámites disponibles',

@@ -1,13 +1,9 @@
-/* ESTILOS DE FORMA TIPO SAP ENTERPRISE (Evitar Glassmorphism) */
 .form-card {
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
   padding: 2.5rem 3.5rem;
-  max-width: 900px; /* Formulario mucho mas ancho que el de organizaciones */
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+  max-width: 900px;
   font-family: 'Inter', 'Segoe UI', Roboto, sans-serif;
   margin: 2rem auto;
+  border: none;
 }
 
 .form-header h3 {

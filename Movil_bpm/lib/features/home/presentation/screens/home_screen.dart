@@ -55,12 +55,17 @@ class HomeScreen extends ConsumerWidget {
                     children: [
                       Text(
                         'Hola, ${user?.nombre ?? 'Cliente'}',
-                        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: AppTheme.primary),
+                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          color: AppTheme.primary,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                       const SizedBox(height: 4),
-                      const Text(
-                        'Bienvenido a su portal de gestión inteligente.',
-                        style: TextStyle(color: AppTheme.subtle, fontSize: 14),
+                      Text(
+                        'GESTIÓN INTELIGENTE DE TRÁMITES',
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: AppTheme.subtle,
+                        ),
                       ),
                     ],
                   ),
@@ -85,9 +90,12 @@ class HomeScreen extends ConsumerWidget {
                 // ── Título Sección ────────────────────────────────
                 FadeInLeft(
                   delay: const Duration(milliseconds: 300),
-                  child: const Text(
-                    'Actividad Reciente',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.primary),
+                  child: Text(
+                    'ACTIVIDAD RECIENTE',
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: AppTheme.primary,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -129,43 +137,58 @@ class _ResumenPremiumCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
-        color: AppTheme.primary,
+        gradient: const LinearGradient(
+          colors: [AppTheme.primary, AppTheme.primaryContainer],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(24),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
-            color: AppTheme.primary.withOpacity(0.2),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+            color: AppTheme.ambientShadow,
+            blurRadius: 30,
+            offset: Offset(0, 15),
           ),
         ],
       ),
       child: Stack(
         children: [
           Positioned(
-            right: -20,
-            top: -20,
-            child: Icon(Icons.auto_awesome, color: Colors.white.withOpacity(0.1), size: 100),
+            right: -10,
+            top: -10,
+            child: Icon(Icons.blur_on, color: Colors.white.withOpacity(0.05), size: 120),
           ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Estado Actual',
-                style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500),
+              Text(
+                'ESTADO OPERATIVO',
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: Colors.white.withOpacity(0.6),
+                  letterSpacing: 1.5,
+                ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
                 children: [
                   Text(
                     '$activos',
-                    style: const TextStyle(color: Colors.white, fontSize: 42, fontWeight: FontWeight.w800),
+                    style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                      color: Colors.white,
+                      height: 1,
+                    ),
                   ),
                   const SizedBox(width: 12),
-                  const Text(
-                    'Trámites en\nproceso',
-                    style: TextStyle(color: Colors.white, fontSize: 14, height: 1.2),
+                  Text(
+                    'TRÁMITES EN CURSO',
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w400,
+                    ),
                   ),
                 ],
               ),
@@ -191,39 +214,54 @@ class _TramitePremiumItem extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.ghostBorder),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x08070235),
+            blurRadius: 8,
+            offset: Offset(0, 4),
+          ),
+        ],
       ),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         leading: Container(
-          padding: const EdgeInsets.all(10),
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: statusColor.withOpacity(0.05),
-            borderRadius: BorderRadius.circular(12),
+            color: statusColor.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(14),
           ),
-          child: Icon(Icons.article_outlined, color: statusColor, size: 24),
+          child: Icon(Icons.description_outlined, color: statusColor, size: 22),
         ),
         title: Text(
-          tramite.nombrePolitica,
-          style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primary, fontSize: 15),
+          tramite.nombrePolitica.toUpperCase(),
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            fontWeight: FontWeight.w800,
+            color: AppTheme.primary,
+          ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        subtitle: Text(
-          'Código: ${tramite.codigoTramite}',
-          style: const TextStyle(fontSize: 12, color: AppTheme.subtle),
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Text(
+            'REF: ${tramite.codigoTramite}',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: AppTheme.subtle,
+              letterSpacing: 0.5,
+            ),
+          ),
         ),
         trailing: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
             color: statusColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(20),
           ),
           child: Text(
             tramite.estadoActual,
-            style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.bold),
+            style: TextStyle(color: statusColor, fontSize: 9, fontWeight: FontWeight.w800),
           ),
         ),
         onTap: () {

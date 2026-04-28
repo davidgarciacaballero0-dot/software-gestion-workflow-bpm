@@ -4,19 +4,19 @@
     <div class="header-tools" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
       <h3>Organigrama de Áreas</h3>
       <div class="btn-group">
-        <button *ngIf="!needsOrgSelection" class="btn-premium btn-premium-secondary" (click)="toggleReassignPanel()" style="margin-right: 0.5rem;">
-          🔄 Transferir Personal
+        <button *ngIf="!needsOrgSelection" class="btn-premium btn-premium-secondary" (click)="toggleReassignPanel()" style="margin-right: 0.5rem; display:flex; align-items:center; gap:0.5rem;">
+          <span class="material-symbols-outlined">move_up</span> Transferir Personal
         </button>
-        <button *ngIf="!needsOrgSelection && idOrganizacion" class="btn-icon" (click)="cambiarOrganizacion()" style="font-size:0.8rem; cursor:pointer;">
-          🏢 Cambiar Organización
+        <button *ngIf="!needsOrgSelection && idOrganizacion" class="btn-icon" (click)="cambiarOrganizacion()" style="font-size:0.8rem; cursor:pointer; display:flex; align-items:center; gap:0.5rem;">
+          <span class="material-symbols-outlined">domain</span> Cambiar Organización
         </button>
       </div>
     </div>
 
     <!-- Panel de Reasignación Manual -->
     <div *ngIf="showReassignPanel" class="reassign-panel monolith-surface animate-slide-in" style="margin-bottom: 2rem; padding: 1.5rem; border-left: 4px solid var(--primary);">
-      <div style="display:flex; justify-content:space-between;">
-        <h4>🛠️ Consola de Transferencia de Funcionarios</h4>
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h4 style="display:flex; align-items:center; gap:0.5rem;"><span class="material-symbols-outlined">build</span> Consola de Transferencia de Funcionarios</h4>
         <button class="btn-close" (click)="toggleReassignPanel()">✕</button>
       </div>
       
@@ -31,8 +31,8 @@
           <div *ngIf="usuariosOrigen.length > 0" class="mt-1">
             <label class="text-sm">Seleccione Funcionarios:</label>
             <div class="user-selection-list" style="max-height: 150px; overflow-y: auto; background: rgba(255,255,255,0.05); padding: 0.5rem; border-radius: 4px;">
-              <div *ngFor="let u of usuariosOrigen" style="margin-bottom: 0.3rem;">
-                <input type="checkbox" (change)="toggleUserSelection(u.id, $event)"> 👤 {{ u.nombre }} {{ u.apellidos }}
+              <div *ngFor="let u of usuariosOrigen" style="margin-bottom: 0.3rem; display:flex; align-items:center; gap:0.3rem;">
+                <input type="checkbox" (change)="toggleUserSelection(u.id, $event)"> <span class="material-symbols-outlined" style="font-size:16px;">person</span> {{ u.nombre }} {{ u.apellidos }}
               </div>
             </div>
           </div>
@@ -100,7 +100,7 @@
   </div>
 
   <!-- Módulo Derecho: Formulario Embebido Angular Reactive -->
-  <div class="form-module form-card" *ngIf="!needsOrgSelection">
+  <div class="form-module form-card monolith-surface shadow-ambient" *ngIf="!needsOrgSelection">
     <h3>Designar Nuevo Departamento</h3>
     <form [formGroup]="depForm" (ngSubmit)="onSubmit()">
       
@@ -120,8 +120,9 @@
       </div>
 
       <div class="form-actions mt-cmd">
-        <button type="submit" class="btn btn-primary" [disabled]="depForm.invalid || isSubmitting || !idOrganizacion">
+        <button type="submit" class="btn-premium btn-premium-primary" [disabled]="depForm.invalid || isSubmitting || !idOrganizacion">
           <span *ngIf="isSubmitting" class="spinner"></span>
+          <span class="material-symbols-outlined" *ngIf="!isSubmitting">add_circle</span>
           {{ isSubmitting ? 'Bifurcando Datos...' : 'Crear Jerarquía' }}
         </button>
       </div>

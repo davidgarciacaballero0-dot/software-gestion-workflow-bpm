@@ -16,8 +16,9 @@ import { Rol } from '../../../../data/models/rol.model';
     </div>
 
     <div style="margin-bottom:1.5rem;">
-      <button class="btn-premium btn-premium-primary" (click)="toggleForm()">
-        {{ showForm ? '✕ Cerrar Formulario' : '+ Nuevo Rol' }}
+      <button class="btn-premium btn-premium-primary" (click)="toggleForm()" style="display:flex; align-items:center; gap:0.5rem; width:fit-content;">
+        <span class="material-symbols-outlined">{{ showForm ? 'close' : 'add' }}</span>
+        {{ showForm ? 'Cerrar Formulario' : 'Nuevo Rol' }}
       </button>
     </div>
 

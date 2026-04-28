@@ -3,22 +3,26 @@
     "target": "http://backend-spring:8080",
     "secure": false,
     "changeOrigin": true,
-    "logLevel": "debug"
+    "logLevel": "debug",
+    "proxyTimeout": 120000
   },
   "/optimization": {
     "target": "http://backend-spring:8080",
     "secure": false,
-    "changeOrigin": true
+    "changeOrigin": true,
+    "proxyTimeout": 120000
   },
   "/ia": {
     "target": "http://ia-service:8000",
     "secure": false,
-    "changeOrigin": true
+    "changeOrigin": true,
+    "proxyTimeout": 120000
   },
   "/ws-bpm": {
     "target": "http://backend-spring:8080",
     "secure": false,
     "ws": true,
-    "changeOrigin": true
+    "changeOrigin": true,
+    "proxyTimeout": 120000
   }
 }

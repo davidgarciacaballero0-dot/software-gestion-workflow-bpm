@@ -164,14 +164,16 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private PoliticaWorkflow getOrCreatePoliticaVacaciones(String idOrg, String idDepRRHH) {
-        return politicaRepository.findByNombre("Solicitud de Vacaciones Anuales")
-                .orElseGet(() -> politicaRepository.save(createPoliticaVacaciones(idOrg, idDepRRHH)));
+        List<PoliticaWorkflow> existing = politicaRepository.findByIdOrganizacionAndNombre(idOrg, "Solicitud de Vacaciones Anuales");
+        if (!existing.isEmpty()) return existing.get(0);
+        return politicaRepository.save(createPoliticaVacaciones(idOrg, idDepRRHH));
     }
 
     private PoliticaWorkflow getOrCreatePoliticaFibra(String idOrg, String idVentas, String idIT, String idFin,
             String idOp) {
-        return politicaRepository.findByNombre("Instalación de Fibra Óptica (Residencial)")
-                .orElseGet(() -> politicaRepository.save(createPoliticaFibra(idOrg, idVentas, idIT, idFin, idOp)));
+        List<PoliticaWorkflow> existing = politicaRepository.findByIdOrganizacionAndNombre(idOrg, "Instalación de Fibra Óptica (Residencial)");
+        if (!existing.isEmpty()) return existing.get(0);
+        return politicaRepository.save(createPoliticaFibra(idOrg, idVentas, idIT, idFin, idOp));
     }
 
     private Usuario createUsuario(String nombre, String apellidos, String ci, String celular, String email, String pass,
@@ -318,8 +320,9 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private PoliticaWorkflow getOrCreatePoliticaPrueba2026(String idOrg, String idVentas, String idIT) {
-        return politicaRepository.findByNombre("Prueba 2026")
-                .orElseGet(() -> politicaRepository.save(createPoliticaPrueba2026(idOrg, idVentas, idIT)));
+        List<PoliticaWorkflow> existing = politicaRepository.findByIdOrganizacionAndNombre(idOrg, "Prueba 2026");
+        if (!existing.isEmpty()) return existing.get(0);
+        return politicaRepository.save(createPoliticaPrueba2026(idOrg, idVentas, idIT));
     }
 
     private PoliticaWorkflow createPoliticaPrueba2026(String idOrg, String idVentas, String idIT) {

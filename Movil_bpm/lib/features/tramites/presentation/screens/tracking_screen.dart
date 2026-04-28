@@ -123,43 +123,55 @@ class _ProcedureTrackingScreenState extends ConsumerState<ProcedureTrackingScree
                 children: [
                   // --- Encabezado ---
                   Text(
-                    widget.tramite.nombrePolitica,
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
+                    widget.tramite.nombrePolitica.toUpperCase(),
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
                           color: AppTheme.primary,
+                          letterSpacing: 0.5,
                         ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Código: ${widget.tramite.codigoTramite}',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    'REFERENCIA: ${widget.tramite.codigoTramite}',
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
                           color: AppTheme.subtle,
                         ),
                   ),
                   const SizedBox(height: 16),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                     decoration: BoxDecoration(
-                      color: isObservado ? Colors.red.shade50 : Colors.blue.shade50,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isObservado ? Colors.red.shade200 : Colors.blue.shade200,
-                      ),
+                      color: isObservado ? AppTheme.error.withOpacity(0.05) : AppTheme.primary.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(16),
                     ),
                     child: Row(
                       children: [
                         Icon(
-                          isObservado ? Icons.warning_rounded : Icons.info_outline_rounded,
-                          color: isObservado ? Colors.red : Colors.blue,
+                          isObservado ? Icons.report_problem_outlined : Icons.info_outlined,
+                          color: isObservado ? AppTheme.error : AppTheme.primary,
+                          size: 24,
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 16),
                         Expanded(
-                          child: Text(
-                            'Estado Actual: ${widget.tramite.estadoActual}\nUbicación: ${widget.tramite.nombreDepartamentoActual}',
-                            style: TextStyle(
-                              color: isObservado ? Colors.red.shade900 : Colors.blue.shade900,
-                              fontWeight: FontWeight.w600,
-                            ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'ESTADO: ${widget.tramite.estadoActual}',
+                                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                  color: isObservado ? AppTheme.error : AppTheme.primary,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'UBICACIÓN: ${widget.tramite.nombreDepartamentoActual}',
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: AppTheme.subtle,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
@@ -169,18 +181,25 @@ class _ProcedureTrackingScreenState extends ConsumerState<ProcedureTrackingScree
 
                   // --- Timeline ---
                   Text(
-                    'Línea de Tiempo',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
+                    'LÍNEA DE TIEMPO',
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: AppTheme.primary,
                         ),
                   ),
                   const SizedBox(height: 16),
                   Container(
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.grey.shade200),
+                      color: AppTheme.surfaceContainerLowest,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: AppTheme.ambientShadow,
+                          blurRadius: 20,
+                          offset: Offset(0, 8),
+                        ),
+                      ],
                     ),
                     child: historialAsync.when(
                       data: (events) => TimelineWidget(events: events),
@@ -193,10 +212,10 @@ class _ProcedureTrackingScreenState extends ConsumerState<ProcedureTrackingScree
                   if (isObservado) ...[
                     const SizedBox(height: 32),
                     Text(
-                      'Subsanar Observación',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.red.shade700,
+                      'SUBSANAR OBSERVACIÓN',
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            color: AppTheme.error,
                           ),
                     ),
                     const SizedBox(height: 8),
@@ -266,16 +285,23 @@ class _ProcedureTrackingScreenState extends ConsumerState<ProcedureTrackingScree
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
-              child: FilledButton.icon(
-                style: FilledButton.styleFrom(
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.primary,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 ),
                 onPressed: () {
                   _dynamicFormKey.currentState?.saveForm();
                 },
-                icon: const Icon(Icons.send),
-                label: const Text('Enviar Subsanación'),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('ENVIAR SUBSANACIÓN', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.white)),
+                    const SizedBox(width: 12),
+                    const Icon(Icons.send_outlined, size: 20),
+                  ],
+                ),
               ),
             ),
           ],

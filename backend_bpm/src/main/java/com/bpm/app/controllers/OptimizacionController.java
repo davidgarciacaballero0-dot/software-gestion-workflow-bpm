@@ -4,6 +4,7 @@ import com.bpm.domain.services.AnaliticaService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
@@ -18,7 +19,16 @@ import java.util.stream.Collectors;
 public class OptimizacionController {
 
     private final AnaliticaService analiticaService;
-    private final RestTemplate restTemplate = new RestTemplate();
+
+    // Timeout de 120 segundos para dar tiempo al modelo Pro de Gemini
+    private final RestTemplate restTemplate = createRestTemplate();
+
+    private static RestTemplate createRestTemplate() {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(15_000);  // 15 seg para conectar
+        factory.setReadTimeout(120_000);    // 120 seg para leer respuesta
+        return new RestTemplate(factory);
+    }
 
     @org.springframework.beans.factory.annotation.Value("${ia.service.url:http://localhost:8000/ia}")
     private String IA_URL;
@@ -200,10 +210,34 @@ public class OptimizacionController {
             ResponseEntity<Map<String, Object>> response = restTemplate.postForEntity(IA_URL + "/proyectar-demanda",
                     request, responseType);
             return ResponseEntity.ok(response.getBody());
+        } catch (HttpStatusCodeException e) {
+            Map<String, Object> error = new HashMap<>();
+            if (e.getStatusCode().value() == 429) {
+                error.put("error", "⚠️ Cuota de IA agotada");
+                error.put("details", "La API de Google Gemini ha alcanzado su límite de uso. Intente nuevamente en unos minutos o actualice su plan de API.");
+                error.put("errorType", "QUOTA_EXHAUSTED");
+                return ResponseEntity.status(429).body(error);
+            }
+            error.put("error", "Error interno en el microservicio de IA.");
+            error.put("details", e.getResponseBodyAsString());
+            error.put("errorType", "IA_INTERNAL_ERROR");
+            return ResponseEntity.status(e.getStatusCode()).body(error);
         } catch (Exception e) {
             Map<String, Object> error = new HashMap<>();
-            error.put("error", "Error al generar proyecciones con IA.");
-            error.put("details", e.getMessage());
+            String msg = e.getMessage() != null ? e.getMessage() : "";
+            if (msg.contains("Connection refused")) {
+                error.put("error", "🔌 Microservicio de IA no disponible");
+                error.put("details", "El servicio de inteligencia artificial no está en ejecución. Verifique que el contenedor ia-service esté activo.");
+                error.put("errorType", "SERVICE_DOWN");
+            } else if (msg.contains("Read timed out")) {
+                error.put("error", "⏱️ Tiempo de espera agotado");
+                error.put("details", "El modelo de IA tardó demasiado en responder. Intente nuevamente.");
+                error.put("errorType", "TIMEOUT");
+            } else {
+                error.put("error", "Error inesperado al generar proyecciones.");
+                error.put("details", msg);
+                error.put("errorType", "UNKNOWN");
+            }
             return ResponseEntity.status(503).body(error);
         }
     }

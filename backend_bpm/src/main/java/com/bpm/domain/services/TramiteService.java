@@ -391,8 +391,11 @@ public class TramiteService {
     private Usuario autoRegistrarUsuario(Map<String, Object> datos, String ci) {
         String nombre = (String) datos.getOrDefault("f_nombre", datos.getOrDefault("nombre", "Usuario"));
         String apellidos = (String) datos.getOrDefault("f_apellidos", datos.getOrDefault("apellidos", "Nuevo"));
-        String email = (String) datos.getOrDefault("f_email", datos.getOrDefault("email", ci + "@bpm.temp"));
-        String celular = (String) datos.getOrDefault("f_celular", datos.getOrDefault("celular", ""));
+        String email = (String) datos.getOrDefault("f_email", datos.getOrDefault("email", null));
+        if (email == null || email.isEmpty()) {
+            email = "cliente." + ci + "@bpm.local"; // Email generado por sistema
+        }
+        String celular = (String) datos.getOrDefault("f_celular", datos.getOrDefault("celular", "00000000"));
 
         // Lógica de Password: iniciales + "." + CI
         String iniciales = "";

@@ -29,5 +29,7 @@ Thumbs.db
 
 # Variables de entorno y secretos (CRÍTICO: nunca subir)
 .env
+ia_microservice/gcp-creds.json
+scratch/
 !.env.example
 !.env.template

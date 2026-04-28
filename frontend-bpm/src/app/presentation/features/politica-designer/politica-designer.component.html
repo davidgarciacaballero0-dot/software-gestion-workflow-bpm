@@ -3,22 +3,25 @@
   <header class="designer-header glass-premium shadow-ambient">
     <div class="policy-info">
       <h2>{{ currentPolicy.nombre }}</h2>
-      <span class="badge" [class]="currentPolicy.status">{{ currentPolicy.status }}</span>
+      <span class="chip" [ngClass]="{'neutral': currentPolicy.status === 'DRAFT', 'error': currentPolicy.status === 'PUBLISHED'}">{{ currentPolicy.status }}</span>
       <div class="version-box">
         <span>v</span>
         <input type="text" [(ngModel)]="currentPolicy.version" [disabled]="!canEdit()" class="version-input" title="Número de Versión">
       </div>
     </div>
     <div class="header-actions">
-      <button *ngIf="currentPolicy.status === 'PUBLISHED' && isAdmin" class="btn-premium btn-premium-primary ghost-border"
+      <button *ngIf="canEdit()" class="btn-premium btn-premium-secondary" (click)="autoLayoutHierarchical()" title="Reorganizar nodos automáticamente">
+        <span class="material-symbols-outlined">auto_fix_high</span> Auto-Organizar
+      </button>
+      <button *ngIf="currentPolicy.status === 'PUBLISHED' && isAdmin" class="btn-premium btn-premium-secondary"
         (click)="onNewVersion()">
-        + Nueva Versión
+        <span class="material-symbols-outlined">add_box</span> Nueva Versión
       </button>
       <button *ngIf="currentPolicy.status === 'DRAFT' && isAdmin" class="btn-premium btn-premium-primary" (click)="onPublish()">
-        🚀 Publicar
+        <span class="material-symbols-outlined">rocket_launch</span> Publicar
       </button>
       <button class="btn-premium btn-premium-primary" (click)="saveWorkflow()" [disabled]="!canEdit()">
-        {{ currentPolicy.id ? 'Actualizar' : 'Guardar' }}
+        <span class="material-symbols-outlined">save</span> {{ currentPolicy.id ? 'Actualizar' : 'Guardar' }}
       </button>
     </div>
   </header>
@@ -29,19 +32,19 @@
       <div class="tool-section">
         <h4>Nodos de Control</h4>
         <div class="node-tool tool-start" (click)="addNode('START')">
-          <div class="tool-color"></div>
+          <span class="material-symbols-outlined tool-icon">play_circle</span>
           <span>Inicio (Evento)</span>
         </div>
         <div class="node-tool tool-task" (click)="addNode('USER_TASK')">
-          <div class="tool-color"></div>
+          <span class="material-symbols-outlined tool-icon">task</span>
           <span>Tarea de Usuario</span>
         </div>
         <div class="node-tool tool-decision" (click)="addNode('EXCLUSIVE_GATEWAY')">
-          <div class="tool-color"></div>
+          <span class="material-symbols-outlined tool-icon">call_split</span>
           <span>Decisión / Gateway</span>
         </div>
         <div class="node-tool tool-end" (click)="addNode('END')">
-          <div class="tool-color"></div>
+          <span class="material-symbols-outlined tool-icon">stop_circle</span>
           <span>Fin (Evento)</span>
         </div>
       </div>
@@ -49,25 +52,25 @@
       <div class="tool-section">
         <h4>Gestión de Carriles</h4>
         <div class="lane-controls d-flex gap-2 mb-3">
-          <button class="btn btn-sm btn-outline-primary w-100" (click)="addLane()" [disabled]="activeLanes.length >= 10">
-            ➕ Agregar
+          <button class="btn btn-sm btn-outline-primary w-100 d-flex align-items-center justify-content-center gap-1" (click)="addLane()" [disabled]="activeLanes.length >= 10">
+            <span class="material-symbols-outlined" style="font-size: 16px;">add</span> Agregar
           </button>
-          <button class="btn btn-sm btn-outline-danger w-100" (click)="removeLane()" [disabled]="activeLanes.length <= 1">
-            ➖ Quitar
+          <button class="btn btn-sm btn-outline-danger w-100 d-flex align-items-center justify-content-center gap-1" (click)="removeLane()" [disabled]="activeLanes.length <= 1">
+            <span class="material-symbols-outlined" style="font-size: 16px;">remove</span> Quitar
           </button>
         </div>
       </div>
 
       <!-- CU-14: Diseño Asistido por IA -->
       <div class="tool-section ai-section mt-1" *ngIf="canEdit()">
-        <h4>✨ Generar/Modificar con IA</h4>
+        <h4><span class="material-symbols-outlined" style="vertical-align: middle; font-size: 18px;">auto_awesome</span> Generar con IA</h4>
         <div class="ai-prompt-box">
           <div class="textarea-wrapper">
             <textarea [(ngModel)]="aiPrompt"
-              placeholder="Ej: 'Agrega un paso de aprobación al final' o 'Conecta Inicio con Auditoría'..."
+              placeholder="Ej: 'Agrega un paso de aprobación al final'..."
               class="form-control ai-textarea" rows="4"></textarea>
             <button class="btn-voice" [class.listening]="isListening" (click)="toggleVoiceInput()" title="Dictar comando">
-              <span class="icon">{{ isListening ? '🛑' : '🎤' }}</span>
+              <span class="material-symbols-outlined">{{ isListening ? 'stop_circle' : 'mic' }}</span>
             </button>
           </div>
           <div *ngIf="isListening" class="listening-indicator">
@@ -75,7 +78,8 @@
           </div>
           <button class="btn-premium btn-premium-primary w-full mt-1" (click)="solicitarGeneracionIA()"
             [disabled]="generatingIA || !aiPrompt">
-            {{ generatingIA ? '🚀 Procesando...' : 'Aplicar Cambios' }}
+            <span class="material-symbols-outlined" *ngIf="!generatingIA">magic_button</span>
+            {{ generatingIA ? 'Procesando...' : 'Aplicar Cambios' }}
           </button>
         </div>
       </div>
@@ -105,56 +109,82 @@
       <!-- Capa SVG para Aristas -->
       <svg class="connections-svg">
         <defs>
-          <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-            <polygon points="0 0, 10 3.5, 0 7" fill="var(--outline-variant)" />
+          <marker id="arrowhead" markerWidth="12" markerHeight="8" refX="11" refY="4" orient="auto">
+            <polygon points="0 0, 12 4, 0 8" fill="#555" />
           </marker>
-          <marker id="arrowhead-active" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-            <polygon points="0 0, 10 3.5, 0 7" fill="var(--primary)" />
+          <marker id="arrowhead-active" markerWidth="12" markerHeight="8" refX="11" refY="4" orient="auto">
+            <polygon points="0 0, 12 4, 0 8" fill="var(--primary)" />
           </marker>
         </defs>
 
         <!-- Conectores Ortogonales 90° -->
         <path *ngFor="let edge of edges" class="connector-line" [class.active]="selectedEdge === edge.id"
-          [attr.d]="calculatePath(edge)" marker-end="url(#arrowhead)" (click)="selectEdge(edge.id, $event)"
-          style="pointer-events: stroke;">
-        </path>
+          [attr.d]="calculatePath(edge)" [attr.marker-end]="selectedEdge === edge.id ? 'url(#arrowhead-active)' : 'url(#arrowhead)'" (click)="selectEdge(edge.id, $event)"
+          style="pointer-events: stroke;"></path>
 
         <!-- Etiqueta de Condición (TRUE/FALSE) para bifurcaciones -->
-        <text *ngFor="let edge of edges" [attr.x]="getEdgeLabelPosition(edge).x" [attr.y]="getEdgeLabelPosition(edge).y"
-          class="edge-label" text-anchor="middle" fill="var(--primary)" font-size="12" font-weight="bold">
-          {{ edge.condition?.value | uppercase }}
-        </text>
+        <ng-container *ngFor="let edge of edges">
+          <text *ngIf="edge.condition?.value" [attr.x]="getEdgeLabelPosition(edge).x" [attr.y]="getEdgeLabelPosition(edge).y"
+            class="edge-label" text-anchor="middle" font-size="11" font-weight="700">
+            {{ edge.condition?.value === 'true' ? 'VERDADERO' : edge.condition?.value === 'false' ? 'FALSO' : (edge.condition?.value | uppercase) }}
+          </text>
+        </ng-container>
       </svg>
 
       <!-- Capa de Nodos Con Arrastre del CDK -->
       <div *ngFor="let node of nodes" class="node-item" [class.selected]="selectedNode?.id === node.id"
-        [class]="node.type" [cdkDragFreeDragPosition]="node.uiPosition" cdkDrag
+        [ngClass]="node.type" [cdkDragFreeDragPosition]="node.uiPosition" cdkDrag
         [cdkDragDisabled]="!canEdit()" 
         (cdkDragStarted)="onNodeDragStarted(node)"
         (cdkDragMoved)="onNodeDragMoved($event, node)"
         (cdkDragEnded)="onNodeMoved($event, node)" (click)="selectNode(node)">
 
-        <div class="node-content-wrapper">
-          <div class="node-header">
-            <span>{{ node.name }}</span>
-          </div>
-          <div class="node-sub">
-            <ng-container [ngSwitch]="node.type">
-              <span *ngSwitchCase="'START'">INICIO</span>
-              <span *ngSwitchCase="'END'">FIN</span>
-              <span *ngSwitchCase="'EXCLUSIVE_GATEWAY'">?</span>
-              <span *ngSwitchCase="'PARALLEL_GATEWAY'">II</span>
-              <span *ngSwitchDefault class="dept-badge">
-                {{ getDepartmentName(node.departmentId) || 'SIN ASIGNAR' }}
-              </span>
-            </ng-container>
-            <span *ngIf="node.type === 'USER_TASK' && node.slaHours" class="sla-badge">
-              ⏱ {{ node.slaHours }}h
-            </span>
-          </div>
+        <!-- Badge de documentos requeridos -->
+        <div class="doc-count-badge" *ngIf="node.type === 'USER_TASK' && getRequiredDocsCount(node) > 0">
+          {{ getRequiredDocsCount(node) }}
         </div>
 
-        <!-- Puntos de Conexión (Visuales e Interactivos) -->
+        <!-- START / END: solo texto grande -->
+        <ng-container *ngIf="node.type === 'START' || node.type === 'END'">
+          <div class="node-capsule-text">
+            {{ node.type === 'START' ? 'INICIO' : 'FIN' }}
+          </div>
+        </ng-container>
+
+        <!-- USER_TASK: layout con icono + texto -->
+        <ng-container *ngIf="node.type === 'USER_TASK'">
+          <div class="node-content-wrapper">
+            <div class="node-icon-sidebar">
+              <span class="material-symbols-outlined">task</span>
+            </div>
+            <div class="node-text-content">
+              <div class="node-header">
+                <span>{{ node.name }}</span>
+              </div>
+              <div class="node-sub">
+                <span class="dept-badge">
+                  {{ getDepartmentName(node.departmentId) || 'SIN ASIGNAR' }}
+                </span>
+                <span *ngIf="node.slaHours" class="sla-badge" title="SLA Horas">
+                  <span class="material-symbols-outlined" style="font-size: 12px; vertical-align: middle;">schedule</span> {{ node.slaHours }}h
+                </span>
+              </div>
+            </div>
+          </div>
+        </ng-container>
+
+        <!-- EXCLUSIVE_GATEWAY: texto de decisión -->
+        <ng-container *ngIf="node.type === 'EXCLUSIVE_GATEWAY'">
+          <div class="gateway-content">
+            <span class="gateway-label">{{ node.name }}</span>
+          </div>
+        </ng-container>
+
+        <!-- Puntos de Conexión (4 direcciones) -->
+        <div class="anchor-point top" [class.highlight]="isConnecting() && connectingSourceNode?.id !== node.id"
+          (click)="finishConnecting(node, $event)"></div>
+        <div class="anchor-point bottom" [class.connecting-origin]="connectingSourceNode?.id === node.id"
+          (click)="startConnecting(node, $event)"></div>
         <div class="anchor-point left" [class.highlight]="isConnecting() && connectingSourceNode?.id !== node.id"
           (click)="finishConnecting(node, $event)"></div>
         <div class="anchor-point right" [class.connecting-origin]="connectingSourceNode?.id === node.id"
@@ -162,72 +192,174 @@
       </div>
     </main>
 
-    <!-- Panel de Propiedades Glass -->
-    <aside class="properties-panel" [class.open]="selectedNode">
-      <div *ngIf="selectedNode">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h3>Propiedades</h3>
-          <button class="btn-remove-tiny" (click)="selectedNode = null" style="margin-left:auto;">✕</button>
+    <!-- Panel de Propiedades -->
+    <aside class="properties-panel" [class.open]="selectedNode || selectedEdge">
+      <!-- Propiedades de Nodo -->
+      <div *ngIf="selectedNode" class="properties-content">
+        <div class="panel-header d-flex justify-content-between align-items-center mb-3">
+          <h3>Propiedades del Nodo</h3>
+          <div class="d-flex gap-2">
+            <button class="btn-icon-danger" (click)="removeNode(selectedNode)" *ngIf="canEdit()" title="Eliminar Nodo">
+              <span class="material-symbols-outlined">delete</span>
+            </button>
+            <button class="btn-remove-tiny" (click)="selectedNode = null"><span class="material-symbols-outlined">close</span></button>
+          </div>
         </div>
 
         <fieldset [disabled]="!canEdit()" class="border-0 p-0 m-0">
-          <div class="form-group">
-            <label>Nombre del Paso</label>
-            <input type="text" [(ngModel)]="selectedNode.name" class="form-control">
+          
+          <!-- Sección 1: IDENTIFICACIÓN -->
+          <div class="property-section">
+            <h4>IDENTIFICACIÓN</h4>
+            <div class="form-group">
+              <label>Nombre del Paso</label>
+              <input type="text" [(ngModel)]="selectedNode.name" class="form-control" placeholder="Ej: Revisión Técnica">
+            </div>
+            <div class="form-group mt-2">
+              <label>Tipo de Nodo</label>
+              <input type="text" [value]="selectedNode.type" class="form-control" disabled>
+            </div>
           </div>
 
-          <div *ngIf="selectedNode.type === 'USER_TASK'">
+          <!-- Sección 2: CONFIGURACIÓN (solo USER_TASK) -->
+          <div class="property-section" *ngIf="selectedNode.type === 'USER_TASK'">
+            <h4>CONFIGURACIÓN</h4>
             <div class="form-group">
               <label>Departamento Responsable</label>
               <select [(ngModel)]="selectedNode.departmentId" class="form-control">
+                <option value="" disabled>Seleccione...</option>
                 <option *ngFor="let d of departamentos" [value]="d.id">{{ d.nombre }}</option>
               </select>
             </div>
-            <div class="form-group">
+            <div class="form-group mt-2">
               <label>Tiempo Límite (SLA Horas)</label>
-              <input type="number" [(ngModel)]="selectedNode.slaHours" class="form-control" placeholder="Ej: 48"
-                min="0">
-              <small class="text-error" *ngIf="!selectedNode.slaHours">⚠️ Requerido para publicar</small>
+              <input type="number" [(ngModel)]="selectedNode.slaHours" class="form-control" placeholder="Ej: 48" min="1">
+              <small class="text-error" *ngIf="!selectedNode.slaHours"><span class="material-symbols-outlined" style="font-size:12px;">warning</span> Requerido (mín. 1h)</small>
+            </div>
+          </div>
+
+          <!-- Sección: LÓGICA DE DECISIÓN (solo EXCLUSIVE_GATEWAY) -->
+          <div class="property-section" *ngIf="selectedNode.type === 'EXCLUSIVE_GATEWAY'">
+            <h4>LÓGICA DE DECISIÓN</h4>
+            <p class="section-hint">Configura qué respuesta (Verdadero/Falso) activa cada camino.</p>
+            
+            <div *ngFor="let edge of getOutgoingEdges(selectedNode.id)" class="gateway-edge-item">
+              <div class="edge-dest-info">
+                Hacia: <strong>{{ getNodeName(edge.targetNodeId) }}</strong>
+              </div>
+              <div class="form-group mt-1">
+                <label>Respuesta requerida</label>
+                <select [ngModel]="edge.condition?.value" (ngModelChange)="updateEdgeCondition(edge, $event)" class="form-control">
+                  <option value="">(Sin condición)</option>
+                  <option value="true">SI / VERDADERO</option>
+                  <option value="false">NO / FALSO</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sección 3: REQUISITOS DOCUMENTALES (solo USER_TASK) -->
+          <div class="property-section" *ngIf="selectedNode.type === 'USER_TASK'">
+            <h4>REQUISITOS DOCUMENTALES</h4>
+            <p class="section-hint">Seleccione los documentos que el ciudadano debe presentar en este paso.</p>
+            
+            <div class="doc-checklist">
+              <label *ngFor="let doc of documentRequirements" class="doc-check-item" [class.checked]="isDocRequired(selectedNode, doc.fieldId)">
+                <input type="checkbox" [checked]="isDocRequired(selectedNode, doc.fieldId)"
+                  (change)="toggleDocRequirement(selectedNode, doc)">
+                <span class="doc-check-icon material-symbols-outlined">{{ isDocRequired(selectedNode, doc.fieldId) ? 'check_box' : 'check_box_outline_blank' }}</span>
+                <span class="doc-check-label">{{ doc.label }}</span>
+              </label>
             </div>
 
-            <!-- Constructor de Formularios CU-06 -->
-            <div class="form-builder-section mt-4">
-              <div class="header-action-row mb-2">
-                <h4 class="m-0 text-sm uppercase">Formulario Dinámico</h4>
-                <button *ngIf="canEdit()" class="btn-icon-add" (click)="addField()">+</button>
-              </div>
+            <!-- Requisito personalizado -->
+            <div class="custom-doc-row mt-2">
+              <input type="text" [(ngModel)]="customDocLabel" class="form-control" placeholder="Otro documento...">
+              <button class="btn-icon-add" (click)="addCustomDocRequirement()" [disabled]="!customDocLabel.trim()" title="Agregar documento personalizado">
+                <span class="material-symbols-outlined">add</span>
+              </button>
+            </div>
 
-              <div class="field-list">
-                <div *ngFor="let field of selectedNode.formDefinition; let i = index"
-                  class="field-card monolith-surface">
+            <!-- Documentos personalizados añadidos -->
+            <div class="custom-docs-list mt-2" *ngIf="selectedNode.formDefinition">
+              <div *ngFor="let field of selectedNode.formDefinition; let i = index" class="custom-doc-item"
+                   [class.is-preset]="isPresetDoc(field.fieldId)">
+                <ng-container *ngIf="field.type === 'FILE' && !isPresetDoc(field.fieldId)">
+                  <span class="material-symbols-outlined" style="font-size: 14px; color: #f59e0b;">description</span>
+                  <span class="custom-doc-name">{{ field.label }}</span>
+                  <button class="btn-remove-tiny" (click)="removeField(i)" *ngIf="canEdit()">
+                    <span class="material-symbols-outlined" style="font-size:14px;">close</span>
+                  </button>
+                </ng-container>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sección 4: FORMULARIO DINÁMICO (solo USER_TASK) -->
+          <div class="property-section" *ngIf="selectedNode.type === 'USER_TASK'">
+            <div class="header-action-row mb-2">
+              <h4>CAMPOS ADICIONALES</h4>
+              <button *ngIf="canEdit()" class="btn-icon-add" (click)="addField()" title="Añadir Campo">
+                <span class="material-symbols-outlined">add</span>
+              </button>
+            </div>
+
+            <div class="field-list">
+              <ng-container *ngFor="let field of selectedNode.formDefinition; let i = index">
+                <div *ngIf="field.type !== 'FILE'" class="field-card monolith-surface">
                   <div class="field-row">
-                    <input type="text" [(ngModel)]="field.label" class="field-input" placeholder="Etiqueta">
-                    <button *ngIf="canEdit()" class="btn-remove-tiny" (click)="removeField(i)">×</button>
+                    <input type="text" [(ngModel)]="field.label" class="field-input" placeholder="Etiqueta del campo">
+                    <button *ngIf="canEdit()" class="btn-remove-tiny" (click)="removeField(i)"><span class="material-symbols-outlined" style="font-size:14px;">close</span></button>
                   </div>
                   <div class="field-row mt-1">
                     <select [(ngModel)]="field.type" class="field-select">
                       <option value="TEXT">Texto</option>
                       <option value="NUMBER">Número</option>
                       <option value="DATE">Fecha</option>
-                      <option value="FILE">Documento</option>
+                      <option value="BOOLEAN">Sí/No</option>
                       <option value="DROPDOWN">Selección</option>
                     </select>
-                    <label class="check-label">
+                    <label class="check-label d-flex align-items-center gap-1">
                       <input type="checkbox" [(ngModel)]="field.required"> Req.
                     </label>
                   </div>
                 </div>
-              </div>
+              </ng-container>
             </div>
+          </div>
+          
+          <!-- Sección 5: AVANZADO (solo USER_TASK) -->
+          <div class="property-section" *ngIf="selectedNode.type === 'USER_TASK'">
+             <h4>AVANZADO</h4>
+             <label class="toggle-switch-container mt-2">
+                <span class="toggle-label">Registrar ejecución</span>
+                <input type="checkbox" checked disabled>
+                <span class="toggle-slider"></span>
+             </label>
           </div>
         </fieldset>
 
-        <div *ngIf="canEdit()"
-          style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid rgba(200,197,208,0.2);">
-          <button class="btn-remove-tiny" (click)="removeNode(selectedNode)"
-            style="width: 100%; display:flex; align-items:center; justify-content:center; gap:0.5rem; padding:0.6rem; border-radius:0.5rem; font-size:0.8rem;">
-            🗑️ Eliminar Nodo
+        <div class="panel-footer" *ngIf="canEdit()">
+          <button class="btn-premium btn-premium-primary w-full" (click)="saveWorkflow()">
+            Guardar Cambios
           </button>
+        </div>
+      </div>
+
+      <!-- Propiedades de Arista -->
+      <div *ngIf="!selectedNode && selectedEdge" class="properties-content">
+        <div class="panel-header d-flex justify-content-between align-items-center mb-3">
+          <h3>Conexión</h3>
+          <div class="d-flex gap-2">
+            <button class="btn-icon-danger" (click)="removeEdge(selectedEdge)" *ngIf="canEdit()" title="Eliminar Conexión">
+              <span class="material-symbols-outlined">delete</span>
+            </button>
+            <button class="btn-remove-tiny" (click)="selectedEdge = null"><span class="material-symbols-outlined">close</span></button>
+          </div>
+        </div>
+        <div class="property-section">
+          <h4>INFORMACIÓN</h4>
+          <p class="section-hint">Seleccione una conexión para editarla o eliminarla.</p>
         </div>
       </div>
     </aside>

@@ -26,7 +26,7 @@ class BpmButton extends StatelessWidget {
             height: 22,
             child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
           )
-        : Text(label);
+        : Text(label.toUpperCase(), style: Theme.of(context).textTheme.labelSmall?.copyWith(color: isOutlined ? null : Colors.white));
 
     if (isOutlined) {
       return OutlinedButton(onPressed: isLoading ? null : onPressed, child: child);

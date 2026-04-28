@@ -9,12 +9,12 @@ public class UsuarioResponseDTO {
     private String idOrganizacion;
     private String idDepartamento;
     private String idRol;
-    
+
     private String nombre;
     private String ci;
     private String celular;
     private String email;
     // IMPORTANTE: Por normativa de seguridad NO SE DEVUELVE JAMÁS EL PASSWORD HASH
-    
+
     private LocalDateTime createdAt;
 }

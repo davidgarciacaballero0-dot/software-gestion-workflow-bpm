@@ -7,7 +7,7 @@
       <h1>Línea de Tiempo del Trámite</h1>
       <p class="subtitle">Bitácora completa y trazabilidad de eventos del flujo de trabajo.</p>
       <div class="sla-current-banner glass-premium" *ngIf="tramite?.fechaVencimientoSla" style="margin-top: 1rem; padding: 0.75rem 1rem; border-radius: 10px; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.2); display: inline-flex; align-items: center; gap: 0.75rem; color: #4338ca; font-weight: 500;">
-        <span class="icon">⌛</span>
+        <span class="icon material-symbols-outlined" style="font-size:20px;">hourglass_empty</span>
         <span>Límite de atención actual: <strong>{{ formatDate(tramite.fechaVencimientoSla) }}</strong></span>
       </div>
     </div>
@@ -20,7 +20,7 @@
 
     <div *ngFor="let evento of eventos" class="timeline-item">
       <div class="timeline-marker" [style.background-color]="getEventColor(evento.tipoEvento)">
-        <span class="marker-icon">{{ getEventIcon(evento.tipoEvento) }}</span>
+        <span class="marker-icon material-symbols-outlined" style="font-size:16px;">{{ getEventIcon(evento.tipoEvento) }}</span>
       </div>
       
       <div class="timeline-content monolith-surface shadow-ambient animate-slide-in">
@@ -33,32 +33,34 @@
 
         <div class="event-body">
           <div class="detail-row" *ngIf="evento.ejecutadoPorNombre && evento.ejecutadoPorNombre !== 'Funcionario de Departamento'">
-            <span class="label">👤 Ejecutado por:</span>
+            <span class="label" style="display:flex; align-items:center; gap:0.3rem;"><span class="material-symbols-outlined" style="font-size:16px;">person</span> Ejecutado por:</span>
             <span class="value">{{ evento.ejecutadoPorNombre }}</span>
           </div>
 
           <div class="detail-row" *ngIf="evento.nodoDestinoId">
-            <span class="label">📍 Ubicación:</span>
+            <span class="label" style="display:flex; align-items:center; gap:0.3rem;"><span class="material-symbols-outlined" style="font-size:16px;">location_on</span> Ubicación:</span>
             <span class="value">{{ evento.nodoDestinoNombre || evento.nodoDestinoId }}</span>
           </div>
 
           <div class="detail-row sla-row" *ngIf="evento.slaVencimientoEsperado">
-            <span class="label">⏱️ SLA Esperado:</span>
+            <span class="label" style="display:flex; align-items:center; gap:0.3rem;"><span class="material-symbols-outlined" style="font-size:16px;">timer</span> SLA Esperado:</span>
             <span class="value">{{ formatDate(evento.slaVencimientoEsperado) }}</span>
-            <span class="sla-badge" [class.delayed]="evento.excedioSLA" [class.on-time]="!evento.excedioSLA">
-              {{ evento.excedioSLA ? '⚠️ RETRASADO' : '✅ A TIEMPO' }}
+            <span class="sla-badge" [class.delayed]="evento.excedioSLA" [class.on-time]="!evento.excedioSLA" style="display:flex; align-items:center; gap:0.3rem;">
+              <span class="material-symbols-outlined" style="font-size:14px;">{{ evento.excedioSLA ? 'warning' : 'check_circle' }}</span>
+              {{ evento.excedioSLA ? 'RETRASADO' : 'A TIEMPO' }}
             </span>
           </div>
 
           <div class="motivo-box" *ngIf="evento.motivo">
-            <span class="label">📝 Motivo/Observación:</span>
+            <span class="label" style="display:flex; align-items:center; gap:0.3rem;"><span class="material-symbols-outlined" style="font-size:16px;">edit_note</span> Motivo/Observación:</span>
             <p>{{ evento.motivo }}</p>
           </div>
         </div>
 
         <div class="event-snapshot" *ngIf="evento.snapshotDatos && (evento.snapshotDatos | keyvalue)?.length">
-          <button class="btn-toggle-snapshot" (click)="evento.showSnapshot = !evento.showSnapshot">
-            {{ evento.showSnapshot ? '🔼 Ocultar Datos' : '🔽 Ver Datos en este punto' }}
+          <button class="btn-toggle-snapshot" (click)="evento.showSnapshot = !evento.showSnapshot" style="display:flex; align-items:center; gap:0.3rem;">
+            <span class="material-symbols-outlined" style="font-size:18px;">{{ evento.showSnapshot ? 'expand_less' : 'expand_more' }}</span>
+            {{ evento.showSnapshot ? 'Ocultar Datos' : 'Ver Datos en este punto' }}
           </button>
           
           <div class="snapshot-grid" *ngIf="evento.showSnapshot">

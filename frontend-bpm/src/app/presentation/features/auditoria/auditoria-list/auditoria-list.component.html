@@ -16,8 +16,12 @@
           placeholder="Pegue el ID del usuario (ej: 64b1f...)"
           (keyup.enter)="buscarPorUsuario()"
         >
-        <button class="btn btn-primary" (click)="buscarPorUsuario()">🔍 Buscar</button>
-        <button class="btn btn-secondary" (click)="limpiarFiltro()" *ngIf="filtroUsuarioId">✕ Limpiar</button>
+        <button class="btn btn-primary" (click)="buscarPorUsuario()" style="display:flex; align-items:center; gap:0.4rem;">
+          <span class="material-symbols-outlined" style="font-size:18px;">search</span> Buscar
+        </button>
+        <button class="btn btn-secondary" (click)="limpiarFiltro()" *ngIf="filtroUsuarioId" style="display:flex; align-items:center; gap:0.4rem;">
+          <span class="material-symbols-outlined" style="font-size:18px;">close</span> Limpiar
+        </button>
       </div>
     </div>
   </div>

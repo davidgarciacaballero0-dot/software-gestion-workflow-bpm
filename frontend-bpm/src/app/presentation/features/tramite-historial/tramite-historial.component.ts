@@ -88,12 +88,12 @@ export class TramiteHistorialComponent implements OnInit {
 
   getEventIcon(tipo: string): string {
     switch (tipo) {
-      case 'CREACION': return '🌟';
-      case 'AVANCE': return '➡️';
-      case 'INTERVENCION': return '🛠️';
-      case 'FINALIZACION': return '🏁';
-      case 'RECHAZO': return '🛑';
-      default: return '📍';
+      case 'CREACION': return 'star';
+      case 'AVANCE': return 'arrow_forward';
+      case 'INTERVENCION': return 'build';
+      case 'FINALIZACION': return 'flag';
+      case 'RECHAZO': return 'block';
+      default: return 'location_on';
     }
   }
 

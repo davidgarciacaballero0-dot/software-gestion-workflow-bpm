@@ -12,15 +12,18 @@ class AppTheme {
 
   // ── Colores de marca (Sincronizados con la Web) ───────────────────
   static const Color primary   = Color(0xFF070235); // Azul profundo (Orchestrated Monolith)
-  static const Color secondary = Color(0xFF1E1B4B); // Contenedor primario
-  static const Color error     = Color(0xFFBA1A1A); // Rojo Material Web
-  static const Color surface   = Color(0xFFF7F9FB); // Fondo claro web
-  static const Color onSurface = Color(0xFF191C1E); // Texto principal
-  static const Color subtle    = Color(0xFF47464F); // Texto secundario
+  static const Color primaryContainer = Color(0xFF1E1B4B); // Nesting
+  static const Color secondary = Color(0xFF515F74); 
+  static const Color error     = Color(0xFFBA1A1A); 
+  static const Color surface   = Color(0xFFF7F9FB); 
+  static const Color surfaceContainerLow = Color(0xFFF2F4F6);
+  static const Color surfaceContainerLowest = Color(0xFFFFFFFF);
+  static const Color onSurface = Color(0xFF191C1E); 
+  static const Color subtle    = Color(0xFF47464F); 
 
-  // Vidrio/Glassmorphism tokens
-  static const Color glassBackground = Color(0xCCF7F9FB); // 80% opacidad del surface
-  static const Color ghostBorder = Color(0x26C8C5D0);    // outline-variant 15%
+  // Tokens de Diseño Específicos
+  static const Color ghostBorder = Color(0x26C8C5D0);    // outline-variant 15% (the "felt not seen" rule)
+  static const Color ambientShadow = Color(0x0F070235);  // Shadow tinted with primary (6% opacity)
 
   static ThemeData get light {
     final base = ColorScheme.fromSeed(
@@ -34,17 +37,22 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       colorScheme: base,
-      textTheme: GoogleFonts.interTextTheme().apply(
-        bodyColor: onSurface,
-        displayColor: onSurface,
+      scaffoldBackgroundColor: surface,
+      textTheme: GoogleFonts.interTextTheme().copyWith(
+        displayLarge: GoogleFonts.inter(fontSize: 48, fontWeight: FontWeight.w700, letterSpacing: -1.5, color: onSurface),
+        headlineMedium: GoogleFonts.inter(fontSize: 24, fontWeight: FontWeight.w600, color: onSurface),
+        titleMedium: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w500, color: onSurface),
+        bodyMedium: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w400, color: subtle),
+        labelSmall: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 1.0, color: subtle),
       ),
       appBarTheme: AppBarTheme(
         elevation: 0,
         centerTitle: false,
-        backgroundColor: Colors.transparent, // Glass effect usually transparent
+        backgroundColor: surface.withOpacity(0.8),
         foregroundColor: onSurface,
+        surfaceTintColor: Colors.transparent,
         titleTextStyle: GoogleFonts.inter(
-          fontSize: 20,
+          fontSize: 18,
           fontWeight: FontWeight.w600,
           color: onSurface,
         ),
@@ -53,41 +61,44 @@ class AppTheme {
         style: ElevatedButton.styleFrom(
           backgroundColor: primary,
           foregroundColor: Colors.white,
-          minimumSize: const Size(double.infinity, 52),
+          minimumSize: const Size(double.infinity, 54),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          textStyle: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600),
+          textStyle: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600),
           elevation: 0,
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: const Color(0xFFF1F3F4),
+        fillColor: surfaceContainerLowest,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
+          borderSide: const BorderSide(color: ghostBorder, width: 1),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
+          borderSide: const BorderSide(color: ghostBorder, width: 1),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: primary, width: 1.5),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        labelStyle: GoogleFonts.inter(color: subtle),
-        hintStyle: GoogleFonts.inter(color: subtle),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+        labelStyle: GoogleFonts.inter(color: subtle, fontSize: 13),
+        floatingLabelStyle: GoogleFonts.inter(color: primary, fontWeight: FontWeight.w600),
       ),
       cardTheme: CardThemeData(
         elevation: 0,
-        color: Colors.white,
+        color: surfaceContainerLowest,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: Color(0x26C8C5D0)), // Ghost border
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: ghostBorder, width: 1),
         ),
-        margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
+        margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 10),
       ),
-      scaffoldBackgroundColor: surface,
+      iconTheme: const IconThemeData(
+        color: primary,
+        size: 24,
+      ),
     );
   }
 }
