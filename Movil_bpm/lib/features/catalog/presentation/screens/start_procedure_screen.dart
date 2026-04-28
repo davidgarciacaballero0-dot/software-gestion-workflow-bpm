@@ -152,7 +152,7 @@ class _StartProcedureScreenState extends ConsumerState<StartProcedureScreen> {
                         children: [
                           Text('COMENZAR Y ENVIAR', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.white)),
                           const SizedBox(width: 12),
-                          const Icon(Icons.rocket_launch_outlined, size: 20),
+                          const Icon(Icons.send_rounded, size: 20),
                         ],
                       ),
                     ),

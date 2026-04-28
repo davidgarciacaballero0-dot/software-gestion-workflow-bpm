@@ -574,7 +574,7 @@ export class PoliticaDesignerComponent implements OnInit {
             edges: this.edges 
           });
 
-          alert('✨ Flujo actualizado exitosamente por Gemini.');
+          alert('✨ Flujo actualizado exitosamente por Asistente IA.');
         }
         this.generatingIA = false;
         this.aiPrompt = ''; // Limpiar después de éxito

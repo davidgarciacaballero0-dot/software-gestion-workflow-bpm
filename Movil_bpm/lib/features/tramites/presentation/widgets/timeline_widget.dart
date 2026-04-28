@@ -156,7 +156,7 @@ class TimelineWidget extends StatelessWidget {
     switch (type.toUpperCase()) {
       case 'INICIO':
       case 'CREACION':
-        return Icons.star_outline_rounded;
+        return Icons.play_circle_outline;
       case 'AVANCE':
         return Icons.arrow_forward_outlined;
       case 'RECHAZO':
@@ -165,7 +165,7 @@ class TimelineWidget extends StatelessWidget {
         return Icons.build_outlined;
       case 'FIN':
       case 'FINALIZACION':
-        return Icons.flag_outlined;
+        return Icons.check_circle_outline;
       default:
         return Icons.radio_button_checked_outlined;
     }

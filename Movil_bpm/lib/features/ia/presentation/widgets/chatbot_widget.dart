@@ -89,7 +89,7 @@ class _ChatbotWidgetState extends ConsumerState<ChatbotWidget> {
           child: FloatingActionButton(
             onPressed: _toggleChat,
             backgroundColor: _isOpen ? AppTheme.subtle : AppTheme.primary,
-            child: Icon(_isOpen ? Icons.close : Icons.smart_toy_rounded, color: Colors.white),
+            child: Icon(_isOpen ? Icons.close : Icons.auto_awesome_rounded, color: Colors.white),
           ),
         ),
 
@@ -139,7 +139,7 @@ class _ChatbotWidgetState extends ConsumerState<ChatbotWidget> {
                             padding: EdgeInsets.only(left: 16, bottom: 8),
                             child: Align(
                               alignment: Alignment.centerLeft,
-                              child: Text('IA escribiendo...', style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic)),
+                              child: Text('Asistente IA escribiendo...', style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic)),
                             ),
                           ),
                         // Input Area
@@ -173,7 +173,7 @@ class _ChatbotWidgetState extends ConsumerState<ChatbotWidget> {
           const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Asistente BPM', style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primary)),
+              Text('Asistente IA', style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primary)),
               Text('Atención al Cliente', style: TextStyle(fontSize: 10, color: AppTheme.subtle)),
             ],
           ),

@@ -1,6 +1,10 @@
 package com.bpm.app.controllers;
 
+import com.bpm.app.dto.TramiteResponseDTO;
+import com.bpm.data.entities.Usuario;
+import com.bpm.data.repositories.UsuarioRepository;
 import com.bpm.domain.services.AnaliticaService;
+import com.bpm.domain.services.TramiteService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,6 +23,8 @@ import java.util.stream.Collectors;
 public class OptimizacionController {
 
     private final AnaliticaService analiticaService;
+    private final TramiteService tramiteService;
+    private final UsuarioRepository usuarioRepository;
 
     // Timeout de 120 segundos para dar tiempo al modelo Pro de Gemini
     private final RestTemplate restTemplate = createRestTemplate();
@@ -155,18 +161,106 @@ public class OptimizacionController {
     @PostMapping("/asistente")
     public ResponseEntity<Map<String, Object>> chatAssistant(@RequestBody Map<String, String> request) {
         try {
-            // REQ-14: Inyectar rol si falta para compatibilidad con microservicio IA
-            Map<String, String> iaRequest = new HashMap<>(request);
+            Map<String, Object> iaRequest = new HashMap<>(request);
+            
+            // Inyectar rol si falta
             if (!iaRequest.containsKey("rol")) {
                 org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
                         .getContext().getAuthentication();
-                String rol = "CLIENTE"; // Default
+                String rol = "CLIENTE";
                 if (auth != null) {
                     rol = auth.getAuthorities().stream()
                             .map(r -> r.getAuthority().replace("ROLE_", ""))
                             .findFirst().orElse("CLIENTE");
                 }
                 iaRequest.put("rol", rol);
+            }
+
+            // Inyectar contexto real de la empresa para que el chatbot sea específico
+            try {
+                StringBuilder contexto = new StringBuilder();
+                String email = "anonimo";
+                org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
+                        .getContext().getAuthentication();
+                if (auth != null) {
+                    email = auth.getName();
+                }
+
+                String rol = "CLIENTE";
+                if (iaRequest.containsKey("rol")) {
+                    rol = iaRequest.get("rol").toString();
+                }
+
+                // SI ES CLIENTE: Inyectar sus trámites personales + Catálogo disponible
+                if ("CLIENTE".equals(rol)) {
+                    Usuario user = usuarioRepository.findByEmail(email).orElse(null);
+                    if (user != null) {
+                        List<TramiteResponseDTO> misTramites = tramiteService.listarBandejaPersonal(user.getId());
+                        if (misTramites != null && !misTramites.isEmpty()) {
+                            contexto.append("MIS TRÁMITES ACTUALES E HISTÓRICOS:\n");
+                            for (TramiteResponseDTO t : misTramites) {
+                                contexto.append(String.format("- Código: %s, Trámite: %s, Estado: %s, Fecha: %s\n",
+                                        t.getCodigoTramite(), t.getNombrePolitica(), t.getEstadoActual(), t.getCreatedAt()));
+                            }
+                        } else {
+                            contexto.append("El cliente no tiene trámites registrados aún.\n");
+                        }
+                    }
+                    
+                    // También inyectar el catálogo para que pueda consultar requisitos de nuevos trámites
+                    List<com.bpm.data.entities.PoliticaWorkflow> politicas = analiticaService.obtenerTodasLasPoliticas();
+                    if (politicas != null && !politicas.isEmpty()) {
+                        contexto.append("\nTRÁMITES QUE PUEDES INICIAR Y SUS REQUISITOS:\n");
+                        for (com.bpm.data.entities.PoliticaWorkflow p : politicas) {
+                            contexto.append(String.format("- %s: %s\n", p.getNombre(), p.getDescription()));
+                            if (p.getNodes() != null) {
+                                for (com.bpm.data.entities.embedded.WorkflowNode n : p.getNodes()) {
+                                    if (n.getRequiredDocuments() != null && !n.getRequiredDocuments().isEmpty()) {
+                                        contexto.append(String.format("  * Requisitos en %s: %s\n", n.getName(), String.join(", ", n.getRequiredDocuments())));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } 
+                // SI ES FUNCIONARIO O ADMIN: Inyectar contexto de procesos y métricas
+                else {
+                    // Políticas activas con detalle de flujo y requisitos
+                    List<com.bpm.data.entities.PoliticaWorkflow> politicas = analiticaService.obtenerTodasLasPoliticas();
+                    if (politicas != null && !politicas.isEmpty()) {
+                        contexto.append("CATÁLOGO DE TRÁMITES Y FLUJOS DETALLADOS:\n");
+                        for (com.bpm.data.entities.PoliticaWorkflow p : politicas) {
+                            contexto.append(String.format("### TRÁMITE: %s\n", p.getNombre()));
+                            contexto.append(String.format("Descripción: %s\n", p.getDescription() != null ? p.getDescription() : "Sin descripción"));
+                            contexto.append("Pasos del flujo:\n");
+                            if (p.getNodes() != null) {
+                                for (com.bpm.data.entities.embedded.WorkflowNode n : p.getNodes()) {
+                                    if (n.getType() == com.bpm.data.entities.enums.NodeType.START) continue;
+                                    contexto.append(String.format("  - Tarea: %s\n", n.getName()));
+                                    if (n.getRequiredDocuments() != null && !n.getRequiredDocuments().isEmpty()) {
+                                        contexto.append(String.format("    Requisitos: %s\n", String.join(", ", n.getRequiredDocuments())));
+                                    }
+                                }
+                            }
+                            contexto.append("\n");
+                        }
+                    }
+                    
+                    // Métricas departamentales
+                    List<AnaliticaService.MetricDataDTO> metricas = analiticaService.calcularMetricasDepartamentales();
+                    if (metricas != null && !metricas.isEmpty()) {
+                        contexto.append("\nESTADO DE CARGA POR DEPARTAMENTO:\n");
+                        for (AnaliticaService.MetricDataDTO m : metricas) {
+                            contexto.append(String.format("- %s: %d trámites, tiempo promedio %.1fh, capacidad %d personas\n",
+                                    m.getNombreDepartamento(), m.getCantidadTramites(),
+                                    m.getTiempoPromedioHoras(), m.getCapacidadPersonal()));
+                        }
+                    }
+                }
+                
+                iaRequest.put("contexto_empresa", contexto.toString());
+            } catch (Exception ctxErr) {
+                System.err.println("Warning: No se pudo cargar contexto empresarial: " + ctxErr.getMessage());
             }
 
             @SuppressWarnings("unchecked")

@@ -238,14 +238,15 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
       idDepartamento: this.filtros.idDepartamento 
     }).subscribe({
       next: (res: any) => {
-        this.aiReport = res.reporte || res.respuesta || JSON.stringify(res);
-        this.formattedReport = this.formatReport(this.aiReport);
+        // Guardar el reporte completo (puede ser un objeto profundo de la IA)
+        this.aiReport = JSON.stringify(res);
+        this.formattedReport = this.formatReport(res);
         this.analyzingIA = false;
         this.cdr.detectChanges();
       },
       error: () => {
         this.aiReport = '⚠️ El Cerebro IA (Puerto 8000) no respondió. Inicie el servicio Python.';
-        this.formattedReport = this.formatReport(this.aiReport);
+        this.formattedReport = this.sanitizer.bypassSecurityTrustHtml('<p style="color:#ef4444;">' + this.aiReport + '</p>');
         this.analyzingIA = false;
         this.cdr.detectChanges();
       }
@@ -255,83 +256,107 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
   private aiDetailedReport: string = '';
 
   private formatReport(input: any): SafeHtml {
-    let html = '';
     let data: any = {};
 
     try {
       data = typeof input === 'string' ? JSON.parse(input) : input;
     } catch (e) {
-      return this.sanitizer.bypassSecurityTrustHtml(input.replace(/\n/g, '<br>'));
+      const text = typeof input === 'string' ? input : JSON.stringify(input);
+      return this.sanitizer.bypassSecurityTrustHtml('<p style="line-height:1.6; color:#334155;">' + text.replace(/\n/g, '<br>') + '</p>');
     }
 
-    // Guardar versión detallada para el PDF (si existe)
-    if (data.analisis_detallado) {
-      this.aiDetailedReport = `REPORTE DETALLADO DE CONSULTORÍA IA\n\n` + 
-                              `ANÁLISIS PROFUNDO:\n${data.analisis_detallado}\n\n` +
-                              `RECOMENDACIONES:\n${(data.recomendaciones || []).join('\n')}`;
-    }
+    // Guardar versión plana para PDF
+    this.aiDetailedReport = JSON.stringify(data, null, 2);
 
-    // 1. Mostrar Versión Breve (Analisis)
-    const analisis = data.analisis_breve || data.analisis || '';
-    if (analisis) {
-      html += `<div class="report-section mb-4">
-                <h4 style="color: #4f46e5; border-bottom: 2px solid #eef2ff; padding-bottom: 0.5rem; margin-bottom: 1rem;">
-                  🔍 Análisis de Rendimiento
-                </h4>
-                <p style="line-height: 1.6; color: #334155; font-weight: 500;">${analisis}</p>
-              </div>`;
-    }
-
-    // 2. Recomendaciones de RRHH
-    if (data.recomendaciones_rrhh && Array.isArray(data.recomendaciones_rrhh)) {
-      html += `<div class="report-section mt-4" style="background: rgba(79, 70, 229, 0.03); padding: 1rem; border-radius: 12px; border-left: 4px solid #4f46e5;">
-                <h4 style="color: #4f46e5; margin-bottom: 0.8rem; font-size: 0.9rem;">👥 Reasignación de Personal</h4>
-                <ul style="padding-left: 1.2rem; margin: 0; color: #334155; font-size: 0.85rem;">`;
-      
-      data.recomendaciones_rrhh.forEach((rec: any) => {
-        html += `<li style="margin-bottom: 0.5rem;"><strong>${rec.origen} ➔ ${rec.destino}:</strong> ${rec.justificacion}</li>`;
-      });
-      
-      html += `</ul></div>`;
-    }
-
-    // 2b. Recomendaciones de Procesos
-    if (data.recomendaciones_procesos && Array.isArray(data.recomendaciones_procesos)) {
-      html += `<div class="report-section mt-4" style="background: rgba(16, 185, 129, 0.03); padding: 1rem; border-radius: 12px; border-left: 4px solid #10b981;">
-                <h4 style="color: #10b981; margin-bottom: 0.8rem; font-size: 0.9rem;">⚙️ Optimización de Procesos</h4>
-                <ul style="padding-left: 1.2rem; margin: 0; color: #334155; font-size: 0.85rem;">`;
-      
-      data.recomendaciones_procesos.forEach((rec: any) => {
-        html += `<li style="margin-bottom: 0.5rem;"><strong>${rec.politica}:</strong> ${rec.cambio_sugerido} <br><small>${rec.beneficio_esperado}</small></li>`;
-      });
-      
-      html += `</ul></div>`;
-    }
-
-    // Compatibilidad con recomendaciones antiguas (array simple)
-    if (data.recomendaciones && Array.isArray(data.recomendaciones)) {
-      html += `<div class="report-section mt-4" style="background: rgba(79, 70, 229, 0.03); padding: 1rem; border-radius: 12px; border-left: 4px solid #4f46e5;">
-                <h4 style="color: #4f46e5; margin-bottom: 0.8rem; font-size: 0.9rem;">🚀 Recomendaciones Generales</h4>
-                <ul style="padding-left: 1.2rem; margin: 0; color: #334155; font-size: 0.85rem;">`;
-      
-      data.recomendaciones.slice(0, 3).forEach((rec: string) => {
-        html += `<li style="margin-bottom: 0.5rem;">${rec}</li>`;
-      });
-      
-      html += `</ul></div>`;
-    }
-
-    // 3. Nivel de Alerta
-    if (data.nivel_alerta) {
-      const color = data.nivel_alerta.toLowerCase().includes('alto') ? '#ef4444' : '#f59e0b';
-      html = `<div style="display:flex; justify-content: flex-end; margin-bottom: 0.5rem;">
-                <span style="background: ${color}22; color: ${color}; padding: 2px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 700; border: 1px solid ${color}44;">
-                  ${data.nivel_alerta.toUpperCase()}
-                </span>
-              </div>` + html;
-    }
-
+    // Renderizar recursivamente cualquier estructura JSON de la IA
+    const html = this.renderJsonToHtml(data, 0);
     return this.sanitizer.bypassSecurityTrustHtml(html);
+  }
+
+  /**
+   * Renderiza CUALQUIER estructura JSON de la IA en HTML cards bonitas.
+   * Convierte claves camelCase/snake_case en títulos legibles.
+   */
+  private renderJsonToHtml(obj: any, depth: number): string {
+    if (obj === null || obj === undefined) return '';
+    if (typeof obj === 'string') return `<p style="line-height:1.6; color:#334155; margin:0.3rem 0;">${obj}</p>`;
+    if (typeof obj === 'number' || typeof obj === 'boolean') return `<span style="font-weight:600; color:#4f46e5;">${obj}</span>`;
+
+    const colors = ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
+    const icons = ['🔍', '📊', '💡', '⚙️', '📋', '🚀', '👥', '📈'];
+    let html = '';
+
+    if (Array.isArray(obj)) {
+      if (obj.length === 0) return '';
+      // Si es un array de strings simples, renderizar como lista
+      if (typeof obj[0] === 'string') {
+        html += '<ul style="padding-left:1.2rem; margin:0.3rem 0; color:#334155; font-size:0.85rem;">';
+        obj.forEach((item: string) => { html += `<li style="margin-bottom:0.4rem;">${item}</li>`; });
+        html += '</ul>';
+      } else {
+        // Array de objetos: renderizar cada uno como sub-card
+        obj.forEach((item: any, i: number) => {
+          html += `<div style="background:rgba(99,102,241,0.03); padding:0.6rem 0.8rem; border-radius:8px; margin-bottom:0.5rem; border-left:3px solid ${colors[i % colors.length]};">`;
+          html += this.renderJsonToHtml(item, depth + 1);
+          html += '</div>';
+        });
+      }
+      return html;
+    }
+
+    // Es un objeto: renderizar cada clave como sección
+    const keys = Object.keys(obj);
+    // Filtrar claves de status/error/metadata
+    const skipKeys = ['status', 'error'];
+
+    keys.forEach((key, idx) => {
+      if (skipKeys.includes(key)) return;
+      const val = obj[key];
+      if (val === null || val === undefined || val === '') return;
+
+      const label = this.formatKeyLabel(key);
+      const color = colors[idx % colors.length];
+      const icon = icons[idx % icons.length];
+
+      if (typeof val === 'string') {
+        // String directo: mostrar como párrafo con título
+        if (depth === 0) {
+          html += `<div style="margin-bottom:0.8rem;">
+                    <h4 style="color:${color}; font-size:0.85rem; margin-bottom:0.3rem; display:flex; align-items:center; gap:0.3rem;">${icon} ${label}</h4>
+                    <p style="line-height:1.6; color:#334155; font-size:0.85rem; margin:0;">${val}</p>
+                  </div>`;
+        } else {
+          html += `<p style="margin:0.2rem 0; font-size:0.83rem; color:#334155;"><strong style="color:#475569;">${label}:</strong> ${val}</p>`;
+        }
+      } else if (typeof val === 'number' || typeof val === 'boolean') {
+        html += `<p style="margin:0.2rem 0; font-size:0.83rem;"><strong style="color:#475569;">${label}:</strong> <span style="font-weight:600; color:${color};">${val}</span></p>`;
+      } else if (typeof val === 'object') {
+        // Objeto o Array anidado
+        if (depth === 0) {
+          html += `<div style="background:rgba(99,102,241,0.02); padding:0.8rem; border-radius:12px; border-left:4px solid ${color}; margin-bottom:0.8rem;">
+                    <h4 style="color:${color}; margin-bottom:0.5rem; font-size:0.88rem; display:flex; align-items:center; gap:0.3rem;">${icon} ${label}</h4>
+                    ${this.renderJsonToHtml(val, depth + 1)}
+                  </div>`;
+        } else {
+          html += `<div style="margin:0.3rem 0 0.3rem 0.5rem;">
+                    <strong style="color:#475569; font-size:0.82rem;">${label}:</strong>
+                    ${this.renderJsonToHtml(val, depth + 1)}
+                  </div>`;
+        }
+      }
+    });
+
+    return html;
+  }
+
+  /** Convierte claves como 'analisis_bpm' o 'resumenEjecutivo' en 'Análisis Bpm' / 'Resumen Ejecutivo' */
+  private formatKeyLabel(key: string): string {
+    // snake_case a spaces
+    let label = key.replace(/_/g, ' ');
+    // camelCase a spaces
+    label = label.replace(/([a-z])([A-Z])/g, '$1 $2');
+    // Capitalizar primera letra de cada palabra
+    return label.replace(/\b\w/g, c => c.toUpperCase());
   }
 
   // ========================================
@@ -502,13 +527,128 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
   projectionData: any = null;
   projectionReport = '';
 
+  // Chart de Proyección
+  public projectionChartData: any = { labels: [], datasets: [] };
+  public projectionChartOptions: any = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: true, labels: { color: '#64748b', font: { family: 'Inter', size: 12 } } }
+    },
+    scales: {
+      y: { beginAtZero: true, ticks: { color: '#94a3b8' }, grid: { color: 'rgba(0,0,0,0.04)' } },
+      x: { ticks: { color: '#64748b' }, grid: { display: false } }
+    }
+  };
+
+  /**
+   * Extrae datos de proyección mensual de cualquier estructura JSON de la IA
+   * y construye el gráfico de línea.
+   */
+  private buildProjectionChart(data: any): void {
+    // Buscar el array de proyección mensual en cualquier nivel del JSON
+    let items: any[] = [];
+    const findArray = (obj: any): any[] => {
+      if (!obj || typeof obj !== 'object') return [];
+      if (Array.isArray(obj)) return obj;
+      for (const key of Object.keys(obj)) {
+        if (Array.isArray(obj[key]) && obj[key].length > 0 && typeof obj[key][0] === 'object') {
+          return obj[key];
+        }
+      }
+      // Buscar en un nivel más profundo
+      for (const key of Object.keys(obj)) {
+        if (typeof obj[key] === 'object' && !Array.isArray(obj[key])) {
+          const found = findArray(obj[key]);
+          if (found.length > 0) return found;
+        }
+      }
+      return [];
+    };
+    items = findArray(data);
+
+    if (items.length === 0) return;
+
+    // Extraer labels (mes) y valores (demanda estimada)
+    const labels = items.map((item: any) => {
+      return item.mes || item.month || item.periodo || item.label || `Mes ${items.indexOf(item) + 1}`;
+    });
+
+    const values = items.map((item: any) => {
+      return item.demanda_estimada || item.total_estimado || item.valor || item.value || item.demanda || 0;
+    });
+
+    const upperBound = items.map((item: any) => {
+      return item.limite_superior || item.upper_bound || item.maximo || null;
+    });
+
+    const lowerBound = items.map((item: any) => {
+      return item.limite_inferior || item.lower_bound || item.minimo || null;
+    });
+
+    const datasets: any[] = [
+      {
+        data: values,
+        label: 'Demanda Estimada',
+        borderColor: '#6366f1',
+        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+        fill: true,
+        tension: 0.4,
+        pointRadius: 5,
+        pointBackgroundColor: '#6366f1',
+        borderWidth: 2
+      }
+    ];
+
+    // Agregar bandas de confianza si existen
+    if (upperBound.some((v: any) => v !== null)) {
+      datasets.push({
+        data: upperBound,
+        label: 'Límite Superior',
+        borderColor: 'rgba(16, 185, 129, 0.5)',
+        backgroundColor: 'rgba(16, 185, 129, 0.05)',
+        borderDash: [5, 5],
+        fill: false,
+        tension: 0.4,
+        pointRadius: 0,
+        borderWidth: 1
+      });
+    }
+    if (lowerBound.some((v: any) => v !== null)) {
+      datasets.push({
+        data: lowerBound,
+        label: 'Límite Inferior',
+        borderColor: 'rgba(239, 68, 68, 0.5)',
+        backgroundColor: 'rgba(239, 68, 68, 0.05)',
+        borderDash: [5, 5],
+        fill: false,
+        tension: 0.4,
+        pointRadius: 0,
+        borderWidth: 1
+      });
+    }
+
+    this.projectionChartData = { labels, datasets };
+    this.cdr.detectChanges();
+  }
+
   solicitarProyeccion() {
     this.projectingIA = true;
     this.projectionData = null;
+    this.projectionReport = '';
     this.http.post<any>('/api/v1/optimization/projections', { meses: this.horizonteMeses }).subscribe({
       next: (res: any) => {
         this.projectionData = res;
-        this.projectionReport = res.analisis_predictivo || '';
+        // Construir el gráfico de línea con los datos de proyección
+        this.buildProjectionChart(res);
+        // Manejar que analisis_predictivo puede ser string, objeto, o estar anidado
+        const pred = res.analisis_predictivo || res.respuesta || res;
+        if (typeof pred === 'string') {
+          this.projectionReport = pred;
+        } else {
+          // Es un objeto: renderizarlo como HTML bonito
+          this.projectionReport = this.renderJsonToHtml(pred, 0);
+        }
         this.projectingIA = false;
         this.cdr.detectChanges();
       },
@@ -521,7 +661,7 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
 
         if (errorType === 'QUOTA_EXHAUSTED' || err.status === 429) {
           titulo = '⚠️ Cuota de IA Agotada';
-          mensaje = 'La API de Google Gemini ha alcanzado su límite de uso. El microservicio funciona correctamente, pero se agotaron las peticiones disponibles.\n\nIntente nuevamente en unos minutos.';
+          mensaje = 'La API del Asistente IA ha alcanzado su límite de uso. El microservicio funciona correctamente, pero se agotaron las peticiones disponibles.\n\nIntente nuevamente en unos minutos.';
         } else if (errorType === 'SERVICE_DOWN') {
           titulo = '🔌 Microservicio No Disponible';
           mensaje = 'El servicio de IA no está en ejecución. Verifique que el contenedor ia-service esté activo con: docker ps';

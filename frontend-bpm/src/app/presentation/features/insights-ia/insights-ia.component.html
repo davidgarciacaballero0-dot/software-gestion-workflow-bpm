@@ -5,7 +5,7 @@
       <div class="header-icon"><span class="material-symbols-outlined" style="font-size:32px;">security</span></div>
       <div>
         <h1>Reportes y Analítica IA</h1>
-        <p>Análisis predictivo de cuellos de botella y proyecciones de demanda asistidas por Gemini.</p>
+        <p>Análisis predictivo de cuellos de botella y proyecciones de demanda asistidas por Asistente IA.</p>
       </div>
     </div>
   </header>
@@ -75,7 +75,7 @@
 
         <div *ngIf="analyzingIA" class="report-loading-state">
           <div class="loader-ring"></div>
-          <p>Gemini está analizando los datos...</p>
+          <p>El Asistente IA está analizando los datos...</p>
         </div>
 
         <div *ngIf="aiReport && !analyzingIA" class="report-result">
@@ -122,9 +122,15 @@
             <h3>Curva de Demanda Proyectada</h3>
           </div>
           <div class="chart-wrapper">
-             <div class="projection-empty">
+             <canvas *ngIf="projectionChartData.labels.length > 0"
+                     baseChart
+                     [data]="projectionChartData"
+                     [options]="projectionChartOptions"
+                     type="line">
+             </canvas>
+             <div *ngIf="projectionChartData.labels.length === 0" class="projection-empty">
                <p>Visualización de tendencia para los próximos {{ horizonteMeses }} meses.</p>
-               <div class="trend-indicator" [class.up]="true" style="display:flex; align-items:center; justify-content:center; gap:0.4rem;"><span class="material-symbols-outlined" style="font-size:16px;">trending_up</span> Crecimiento proyectado detectado</div>
+               <div class="trend-indicator" [class.up]="true" style="display:flex; align-items:center; justify-content:center; gap:0.4rem;"><span class="material-symbols-outlined" style="font-size:16px;">trending_up</span> Genera una proyección para ver la curva</div>
              </div>
           </div>
         </div>
