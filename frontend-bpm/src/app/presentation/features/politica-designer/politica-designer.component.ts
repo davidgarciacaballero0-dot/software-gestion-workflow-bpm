@@ -125,19 +125,28 @@ export class PoliticaDesignerComponent implements OnInit {
     this.initVoiceRecognition();
   }
 
+  private silenceTimeout: any = null;
+
   private initVoiceRecognition(): void {
     const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
     if (SpeechRecognition) {
       this.recognition = new SpeechRecognition();
       this.recognition.lang = 'es-ES';
-      this.recognition.continuous = false;
-      this.recognition.interimResults = false;
+      this.recognition.continuous = true;
+      this.recognition.interimResults = true;
 
       this.recognition.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
+        let transcript = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript;
+        }
+        
         this.zone.run(() => {
-          this.aiPrompt = transcript;
-          this.isListening = false;
+          if (transcript.trim()) {
+             // Si ya había texto anterior, lo combinamos (simplificado reemplazando por ahora para que no repita en interim)
+             this.aiPrompt = transcript;
+             this.resetSilenceTimeout();
+          }
         });
       };
 
@@ -157,8 +166,40 @@ export class PoliticaDesignerComponent implements OnInit {
       };
 
       this.recognition.onend = () => {
-        this.zone.run(() => this.isListening = false);
+        this.zone.run(() => {
+           if (this.isListening) {
+             // Si el navegador cortó por alguna razón, detener formalmente
+             this.stopVoiceAndSubmit();
+           }
+        });
       };
+    }
+  }
+
+  private resetSilenceTimeout(): void {
+    if (this.silenceTimeout) {
+      clearTimeout(this.silenceTimeout);
+    }
+    // 5 segundos de silencio
+    this.silenceTimeout = setTimeout(() => {
+      this.zone.run(() => {
+        this.stopVoiceAndSubmit();
+      });
+    }, 5000);
+  }
+
+  private stopVoiceAndSubmit(): void {
+    this.isListening = false;
+    if (this.silenceTimeout) {
+      clearTimeout(this.silenceTimeout);
+    }
+    if (this.recognition) {
+      try { this.recognition.stop(); } catch(e) {}
+    }
+    
+    // Auto-ejecución si hay texto
+    if (this.aiPrompt && this.aiPrompt.trim().length > 0 && !this.generatingIA) {
+      this.solicitarGeneracionIA();
     }
   }
 
@@ -169,10 +210,17 @@ export class PoliticaDesignerComponent implements OnInit {
     }
 
     if (this.isListening) {
-      this.recognition.stop();
+      this.stopVoiceAndSubmit();
     } else {
+      this.aiPrompt = ''; // Limpiar al iniciar
       this.isListening = true;
-      this.recognition.start();
+      try {
+        this.recognition.start();
+        this.resetSilenceTimeout();
+      } catch (e) {
+        console.error("Error al iniciar reconocimiento:", e);
+        this.isListening = false;
+      }
     }
   }
 
@@ -762,46 +810,40 @@ export class PoliticaDesignerComponent implements OnInit {
 
   // --- Requisitos Documentales ---
 
-  isDocRequired(node: WorkflowNode, docFieldId: string): boolean {
-    if (!node.formDefinition) return false;
-    return node.formDefinition.some(f => f.fieldId === docFieldId);
+  isDocRequired(node: WorkflowNode, docLabel: string): boolean {
+    if (!node.requiredDocuments) return false;
+    return node.requiredDocuments.includes(docLabel);
   }
 
   toggleDocRequirement(node: WorkflowNode, doc: { id: string, label: string, fieldId: string }): void {
-    if (!node.formDefinition) node.formDefinition = [];
-    const idx = node.formDefinition.findIndex(f => f.fieldId === doc.fieldId);
+    if (!node.requiredDocuments) node.requiredDocuments = [];
+    const idx = node.requiredDocuments.indexOf(doc.label);
     if (idx >= 0) {
-      node.formDefinition.splice(idx, 1);
+      node.requiredDocuments.splice(idx, 1);
     } else {
-      node.formDefinition.push({
-        fieldId: doc.fieldId,
-        label: doc.label,
-        type: 'FILE' as any,
-        required: true
-      });
+      node.requiredDocuments.push(doc.label);
     }
   }
 
   getRequiredDocsCount(node: WorkflowNode): number {
-    if (!node.formDefinition) return 0;
-    const docIds = this.documentRequirements.map(d => d.fieldId);
-    return node.formDefinition.filter(f => docIds.includes(f.fieldId) || (f.type === ('FILE' as any) && f.fieldId.startsWith('f_custom_'))).length;
+    return node.requiredDocuments ? node.requiredDocuments.length : 0;
   }
 
   addCustomDocRequirement(): void {
     if (!this.selectedNode || !this.customDocLabel.trim()) return;
-    if (!this.selectedNode.formDefinition) this.selectedNode.formDefinition = [];
-    this.selectedNode.formDefinition.push({
-      fieldId: `f_custom_${Date.now()}`,
-      label: this.customDocLabel.trim(),
-      type: 'FILE' as any,
-      required: true
-    });
+    if (!this.selectedNode.requiredDocuments) this.selectedNode.requiredDocuments = [];
+    this.selectedNode.requiredDocuments.push(this.customDocLabel.trim());
     this.customDocLabel = '';
   }
 
-  isPresetDoc(fieldId: string): boolean {
-    return this.documentRequirements.some(d => d.fieldId === fieldId);
+  removeCustomDocRequirement(index: number): void {
+    if (this.selectedNode?.requiredDocuments) {
+       this.selectedNode.requiredDocuments.splice(index, 1);
+    }
+  }
+
+  isPresetDoc(label: string): boolean {
+    return this.documentRequirements.some(d => d.label === label);
   }
 
   removeEdge(edgeId: string): void {

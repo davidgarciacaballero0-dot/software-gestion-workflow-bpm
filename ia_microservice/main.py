@@ -1,5 +1,6 @@
 import os
 import json
+from datetime import datetime
 from typing import List, Optional, Any
 from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel
@@ -137,6 +138,7 @@ async def generar_flujo(request: Request):
             "REGLAS OBLIGATORIAS:\n"
             "- Tipos válidos: START, USER_TASK, EXCLUSIVE_GATEWAY, END\n"
             "- Solo un nodo START y al menos un END\n"
+            "- REGLA DE CONVERGENCIA: Si un flujo tiene bifurcaciones, todos los caminos que terminen el proceso deben converger en un ÚNICO nodo de tipo END, a menos que existan estados de finalización lógicamente distintos (ej: Aprobado vs Rechazado).\n"
             "- Las USER_TASK deben tener departmentId y slaHours (en horas)\n"
             "- Los EXCLUSIVE_GATEWAY bifurcan con edges que tienen condition\n"
             "- Las condiciones usan: {variable: 'f_aprobado', operator: 'EQUALS', value: 'true'/'false'}\n"
@@ -203,9 +205,10 @@ async def proyectar_demanda(request: Request):
     try:
         body = await request.json()
         meses = body.get("meses", 3)
+        fecha_actual = datetime.now().strftime("%B %Y")
         response = client.models.generate_content(
             model=MODEL_FLASH,
-            contents=f"Proyecta la demanda de trámites para {meses} meses en JSON con proyeccion_mensual y analisis_predictivo."
+            contents=f"Proyecta la demanda de trámites para {meses} meses a partir de {fecha_actual} en JSON con proyeccion_mensual y analisis_predictivo."
         )
         text = response.text
         if "```json" in text:

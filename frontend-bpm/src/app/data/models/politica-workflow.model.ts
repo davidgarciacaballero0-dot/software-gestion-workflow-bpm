@@ -43,6 +43,7 @@ export interface WorkflowNode {
   slaHours?: number;
   uiPosition: UIPosition;
   formDefinition?: FormFieldDefinition[];
+  requiredDocuments?: string[];
 }
 
 export interface Condition {

@@ -68,16 +68,24 @@
           <div class="textarea-wrapper">
             <textarea [(ngModel)]="aiPrompt"
               placeholder="Ej: 'Agrega un paso de aprobación al final'..."
-              class="form-control ai-textarea" rows="4"></textarea>
-            <button class="btn-voice" [class.listening]="isListening" (click)="toggleVoiceInput()" title="Dictar comando">
-              <span class="material-symbols-outlined">{{ isListening ? 'stop_circle' : 'mic' }}</span>
+              class="form-control ai-textarea" rows="4" [disabled]="isListening"></textarea>
+          </div>
+          
+          <div class="voice-controls mt-2 d-flex flex-column gap-2">
+            <button *ngIf="!isListening" class="btn-premium btn-premium-secondary w-100 d-flex justify-content-center align-items-center gap-2" (click)="toggleVoiceInput()" title="Empezar a Escuchar">
+              <span class="material-symbols-outlined">mic</span> Empezar a Escuchar
+            </button>
+            <button *ngIf="isListening" class="btn-premium btn-danger w-100 d-flex justify-content-center align-items-center gap-2" style="background-color: #ef4444; color: white;" (click)="toggleVoiceInput()" title="Detener y Procesar">
+              <span class="material-symbols-outlined pulse">stop_circle</span> Detener y Procesar
             </button>
           </div>
-          <div *ngIf="isListening" class="listening-indicator">
-            <span class="pulse"></span> Escuchando...
+          
+          <div *ngIf="isListening" class="listening-indicator text-center mt-1 text-primary" style="font-size: 0.8rem;">
+            Escuchando... (auto-envío en 5s de silencio)
           </div>
-          <button class="btn-premium btn-premium-primary w-full mt-1" (click)="solicitarGeneracionIA()"
-            [disabled]="generatingIA || !aiPrompt">
+
+          <button class="btn-premium btn-premium-primary w-full mt-2" (click)="solicitarGeneracionIA()"
+            [disabled]="generatingIA || !aiPrompt || isListening">
             <span class="material-symbols-outlined" *ngIf="!generatingIA">magic_button</span>
             {{ generatingIA ? 'Procesando...' : 'Aplicar Cambios' }}
           </button>
@@ -264,10 +272,10 @@
             <p class="section-hint">Seleccione los documentos que el ciudadano debe presentar en este paso.</p>
             
             <div class="doc-checklist">
-              <label *ngFor="let doc of documentRequirements" class="doc-check-item" [class.checked]="isDocRequired(selectedNode, doc.fieldId)">
-                <input type="checkbox" [checked]="isDocRequired(selectedNode, doc.fieldId)"
+              <label *ngFor="let doc of documentRequirements" class="doc-check-item" [class.checked]="isDocRequired(selectedNode, doc.label)">
+                <input type="checkbox" [checked]="isDocRequired(selectedNode, doc.label)"
                   (change)="toggleDocRequirement(selectedNode, doc)">
-                <span class="doc-check-icon material-symbols-outlined">{{ isDocRequired(selectedNode, doc.fieldId) ? 'check_box' : 'check_box_outline_blank' }}</span>
+                <span class="doc-check-icon material-symbols-outlined">{{ isDocRequired(selectedNode, doc.label) ? 'check_box' : 'check_box_outline_blank' }}</span>
                 <span class="doc-check-label">{{ doc.label }}</span>
               </label>
             </div>
@@ -281,13 +289,13 @@
             </div>
 
             <!-- Documentos personalizados añadidos -->
-            <div class="custom-docs-list mt-2" *ngIf="selectedNode.formDefinition">
-              <div *ngFor="let field of selectedNode.formDefinition; let i = index" class="custom-doc-item"
-                   [class.is-preset]="isPresetDoc(field.fieldId)">
-                <ng-container *ngIf="field.type === 'FILE' && !isPresetDoc(field.fieldId)">
+            <div class="custom-docs-list mt-2" *ngIf="selectedNode.requiredDocuments">
+              <div *ngFor="let docLabel of selectedNode.requiredDocuments; let i = index" class="custom-doc-item"
+                   [class.is-preset]="isPresetDoc(docLabel)">
+                <ng-container *ngIf="!isPresetDoc(docLabel)">
                   <span class="material-symbols-outlined" style="font-size: 14px; color: #f59e0b;">description</span>
-                  <span class="custom-doc-name">{{ field.label }}</span>
-                  <button class="btn-remove-tiny" (click)="removeField(i)" *ngIf="canEdit()">
+                  <span class="custom-doc-name">{{ docLabel }}</span>
+                  <button class="btn-remove-tiny" (click)="removeCustomDocRequirement(i)" *ngIf="canEdit()">
                     <span class="material-symbols-outlined" style="font-size:14px;">close</span>
                   </button>
                 </ng-container>
