@@ -42,3 +42,9 @@ scratch/
 # Firebase & Android builds
 .firebase/
 Movil_bpm/android/build/
+
+# Archivos temporales y de pruebas locales
+temp_*.txt
+test_*.js
+test*.js
+
