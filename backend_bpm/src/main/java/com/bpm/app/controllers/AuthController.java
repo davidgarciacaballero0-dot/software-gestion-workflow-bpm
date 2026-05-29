@@ -33,7 +33,8 @@ public class AuthController {
     // ─────────────────────────────────────────────────────────────────────────
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody AuthRequestDTO request) {
-        Usuario usuario = usuarioRepository.findByEmail(request.getEmail()).orElse(null);
+        java.util.List<Usuario> usuarios = usuarioRepository.findByEmail(request.getEmail());
+        Usuario usuario = usuarios.isEmpty() ? null : usuarios.get(0);
 
         if (usuario == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
@@ -56,16 +57,17 @@ public class AuthController {
     public ResponseEntity<?> register(@RequestBody RegisterRequestDTO request) {
 
         // 1. Verificar que el email no esté ya registrado
-        if (usuarioRepository.findByEmail(request.getEmail()).isPresent()) {
+        if (!usuarioRepository.findByEmail(request.getEmail()).isEmpty()) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body("{\"error\": \"El email ya está registrado en el sistema.\"}");
         }
 
-        // 2. Obtener el rol CLIENTE de la base de datos (consistente con DataInitializer)
-        Rol clienteRol = rolRepository.findByNombre("CLIENTE").orElse(null);
+        // 2. Obtener el rol CLIENTE de la base de datos
+        java.util.List<Rol> roles = rolRepository.findByNombre("CLIENTE");
+        Rol clienteRol = roles.isEmpty() ? null : roles.get(0);
         if (clienteRol == null) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("{\"error\": \"El rol CLIENTE no está configurado en el sistema.\"}");
+                    .body("{\"error\": \"El rol CLIENTE no está configurado.\"}");
         }
 
         // 3. Parsear fecha de nacimiento si viene en el request
@@ -135,4 +137,3 @@ public class AuthController {
                 usuario.getIdDepartamento());
     }
 }
-

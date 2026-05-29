@@ -53,29 +53,30 @@ public class AnaliticaService {
         LocalDateTime desde = LocalDateTime.now().minusMonths(meses);
 
         return departamentoRepository.findAll().stream()
-            .filter(d -> departamentoId == null || d.getId().equals(departamentoId))
-            .map(dept -> {
-                // Cantidad de trámites creados en el periodo
-                long total = tramiteRepository.findAll().stream()
-                    .filter(t -> t.getDepartamentoActualId() != null && t.getDepartamentoActualId().equals(dept.getId()))
-                    .filter(t -> t.getCreatedAt() != null && t.getCreatedAt().isAfter(desde))
-                    .count();
+                .filter(d -> departamentoId == null || d.getId().equals(departamentoId))
+                .map(dept -> {
+                    // Cantidad de trámites creados en el periodo
+                    long total = tramiteRepository.findAll().stream()
+                            .filter(t -> t.getDepartamentoActualId() != null
+                                    && t.getDepartamentoActualId().equals(dept.getId()))
+                            .filter(t -> t.getCreatedAt() != null && t.getCreatedAt().isAfter(desde))
+                            .count();
 
-                // Cantidad de retrasos detectados en el historial
-                long retrasos = historialRepository.findByExcedioSLATrueAndCreatedAtAfter(desde).stream()
-                    .filter(e -> dept.getNombre().equals(e.getNodoDestinoNombre()))
-                    .count();
+                    // Cantidad de retrasos detectados en el historial
+                    long retrasos = historialRepository.findByExcedioSLATrueAndCreatedAtAfter(desde).stream()
+                            .filter(e -> dept.getNombre().equals(e.getNodoDestinoNombre()))
+                            .count();
 
-                List<Usuario> personal = usuarioRepository.findByIdDepartamento(dept.getId());
+                    List<Usuario> personal = usuarioRepository.findByIdDepartamento(dept.getId());
 
-                return MetricDataDTO.builder()
-                    .departamentoId(dept.getId())
-                    .nombreDepartamento(dept.getNombre())
-                    .cantidadTramites((int) total)
-                    .retrasosSla((int) retrasos)
-                    .capacidadPersonal(personal.size())
-                    .build();
-            }).collect(Collectors.toList());
+                    return MetricDataDTO.builder()
+                            .departamentoId(dept.getId())
+                            .nombreDepartamento(dept.getNombre())
+                            .cantidadTramites((int) total)
+                            .retrasosSla((int) retrasos)
+                            .capacidadPersonal(personal.size())
+                            .build();
+                }).collect(Collectors.toList());
     }
 
     public void reasignarPersonal(String idDestino, List<String> userIds) {
@@ -90,7 +91,7 @@ public class AnaliticaService {
     public byte[] exportarMetricasExcel() {
         try (org.apache.poi.xssf.usermodel.XSSFWorkbook workbook = new org.apache.poi.xssf.usermodel.XSSFWorkbook()) {
             org.apache.poi.ss.usermodel.Sheet sheet = workbook.createSheet("Métricas de Gestión");
-            
+
             // Header
             org.apache.poi.ss.usermodel.Row header = sheet.createRow(0);
             header.createCell(0).setCellValue("Departamento");
@@ -124,21 +125,27 @@ public class AnaliticaService {
 
             // Título
             document.add(new com.itextpdf.layout.element.Paragraph("INFORME ESTRATÉGICO DE OPTIMIZACIÓN BPM")
-                .setBold().setFontSize(18).setTextAlignment(com.itextpdf.layout.properties.TextAlignment.CENTER));
-            
-            document.add(new com.itextpdf.layout.element.Paragraph("\nGenerado por el Motor de Inteligencia Artificial (Gemini)\n")
-                .setItalic().setFontSize(10).setTextAlignment(com.itextpdf.layout.properties.TextAlignment.CENTER));
+                    .setBold().setFontSize(18).setTextAlignment(com.itextpdf.layout.properties.TextAlignment.CENTER));
+
+            document.add(
+                    new com.itextpdf.layout.element.Paragraph("\nGenerado por el Modelo de Inteligencia Artificial \n")
+                            .setItalic().setFontSize(10)
+                            .setTextAlignment(com.itextpdf.layout.properties.TextAlignment.CENTER));
 
             // Tabla de Resumen Dinámica
             com.itextpdf.layout.element.Table table = new com.itextpdf.layout.element.Table(4);
-            table.addCell(new com.itextpdf.layout.element.Cell().add(new com.itextpdf.layout.element.Paragraph("Departamento").setBold()));
-            table.addCell(new com.itextpdf.layout.element.Cell().add(new com.itextpdf.layout.element.Paragraph("Carga").setBold()));
-            table.addCell(new com.itextpdf.layout.element.Cell().add(new com.itextpdf.layout.element.Paragraph("Tiempo Prom.").setBold()));
-            table.addCell(new com.itextpdf.layout.element.Cell().add(new com.itextpdf.layout.element.Paragraph("Personal").setBold()));
+            table.addCell(new com.itextpdf.layout.element.Cell()
+                    .add(new com.itextpdf.layout.element.Paragraph("Departamento").setBold()));
+            table.addCell(new com.itextpdf.layout.element.Cell()
+                    .add(new com.itextpdf.layout.element.Paragraph("Carga").setBold()));
+            table.addCell(new com.itextpdf.layout.element.Cell()
+                    .add(new com.itextpdf.layout.element.Paragraph("Tiempo Prom.").setBold()));
+            table.addCell(new com.itextpdf.layout.element.Cell()
+                    .add(new com.itextpdf.layout.element.Paragraph("Personal").setBold()));
 
-            List<MetricDataDTO> data = (customMetrics != null && !customMetrics.isEmpty()) 
-                ? customMetrics 
-                : calcularMetricasDepartamentales();
+            List<MetricDataDTO> data = (customMetrics != null && !customMetrics.isEmpty())
+                    ? customMetrics
+                    : calcularMetricasDepartamentales();
 
             for (MetricDataDTO m : data) {
                 table.addCell(m.getNombreDepartamento());
@@ -150,7 +157,10 @@ public class AnaliticaService {
 
             // Análisis Narrativo
             document.add(new com.itextpdf.layout.element.Paragraph("\nANÁLISIS Y JUSTIFICACIÓN DE LA IA:\n").setBold());
-            document.add(new com.itextpdf.layout.element.Paragraph(analysisText).setFontSize(11));
+            String cleanText = analysisText != null ? analysisText : "Sin análisis disponible.";
+            // Limpiar posibles artefactos markdown del texto de la IA
+            cleanText = cleanText.replaceAll("\\*\\*", "").replaceAll("##\\s*", "").replaceAll("#\\s*", "");
+            document.add(new com.itextpdf.layout.element.Paragraph(cleanText).setFontSize(11));
 
             // Agregar el gráfico generado si existe
             if (chartImageBase64 != null && !chartImageBase64.isEmpty()) {
@@ -161,10 +171,12 @@ public class AnaliticaService {
                         base64Data = base64Data.split(",")[1];
                     }
                     byte[] imageBytes = java.util.Base64.getDecoder().decode(base64Data);
-                    com.itextpdf.io.image.ImageData imageData = com.itextpdf.io.image.ImageDataFactory.create(imageBytes);
+                    com.itextpdf.io.image.ImageData imageData = com.itextpdf.io.image.ImageDataFactory
+                            .create(imageBytes);
                     com.itextpdf.layout.element.Image pdfImage = new com.itextpdf.layout.element.Image(imageData);
                     pdfImage.setAutoScale(true); // Ajustar el tamaño a la página
-                    document.add(new com.itextpdf.layout.element.Paragraph("\nGráfico de Tendencia de Carga:\n").setBold());
+                    document.add(
+                            new com.itextpdf.layout.element.Paragraph("\nGráfico de Tendencia de Carga:\n").setBold());
                     document.add(pdfImage);
                 } catch (Exception e) {
                     System.err.println("No se pudo insertar el gráfico en el PDF: " + e.getMessage());

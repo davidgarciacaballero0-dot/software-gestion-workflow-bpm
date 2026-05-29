@@ -6,5 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface RolRepository extends MongoRepository<Rol, String> {
-    java.util.Optional<Rol> findByNombre(String nombre);
+    java.util.List<Rol> findByNombre(String nombre);
 }

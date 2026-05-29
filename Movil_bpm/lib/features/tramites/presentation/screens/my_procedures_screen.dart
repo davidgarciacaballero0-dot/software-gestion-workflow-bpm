@@ -2,6 +2,8 @@
 // lib/features/tramites/presentation/screens/my_procedures_screen.dart
 // ─────────────────────────────────────────────────────────────
 
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -18,7 +20,13 @@ class MyProceduresScreen extends ConsumerStatefulWidget {
 
 class _MyProceduresScreenState extends ConsumerState<MyProceduresScreen> {
   String _selectedFilter = 'Todos';
-  final List<String> _filters = ['Todos', 'PENDIENTE', 'EN_PROCESO', 'OBSERVADO', 'FINALIZADO'];
+  final List<String> _filters = [
+    'Todos',
+    'PENDIENTE',
+    'EN_PROCESO',
+    'OBSERVADO',
+    'FINALIZADO',
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +40,7 @@ class _MyProceduresScreenState extends ConsumerState<MyProceduresScreen> {
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () => ref.invalidate(misTramitesProvider),
-          )
+          ),
         ],
       ),
       body: Column(
@@ -51,14 +59,18 @@ class _MyProceduresScreenState extends ConsumerState<MyProceduresScreen> {
                       filter,
                       style: TextStyle(
                         color: isSelected ? Colors.white : AppTheme.subtle,
-                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.w400,
                       ),
                     ),
                     selected: isSelected,
                     selectedColor: AppTheme.primary,
                     backgroundColor: Colors.white,
                     side: BorderSide(
-                      color: isSelected ? AppTheme.primary : Colors.grey.shade300,
+                      color: isSelected
+                          ? AppTheme.primary
+                          : Colors.grey.shade300,
                     ),
                     onSelected: (selected) {
                       if (selected) {
@@ -72,13 +84,18 @@ class _MyProceduresScreenState extends ConsumerState<MyProceduresScreen> {
               }).toList(),
             ),
           ),
-          
+
           Expanded(
             child: tramitesAsync.when(
               data: (tramites) {
                 final filteredTramites = _selectedFilter == 'Todos'
                     ? tramites
-                    : tramites.where((t) => t.estadoActual.toUpperCase() == _selectedFilter).toList();
+                    : tramites
+                          .where(
+                            (t) =>
+                                t.estadoActual.toUpperCase() == _selectedFilter,
+                          )
+                          .toList();
 
                 if (filteredTramites.isEmpty) {
                   return _EmptyProceduresState();
@@ -107,7 +124,10 @@ class _MyProceduresScreenState extends ConsumerState<MyProceduresScreen> {
               },
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (err, stack) => Center(
-                child: Text('Error: $err', style: TextStyle(color: Colors.red.shade800)),
+                child: Text(
+                  'Error: $err',
+                  style: TextStyle(color: Colors.red.shade800),
+                ),
               ),
             ),
           ),
@@ -171,12 +191,15 @@ class _ProcedureCard extends StatelessWidget {
                     Text(
                       'REF: ${tramite.codigoTramite}',
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: AppTheme.subtle,
-                            letterSpacing: 0.5,
-                          ),
+                        color: AppTheme.subtle,
+                        letterSpacing: 0.5,
+                      ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: statusColor.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(20),
@@ -196,23 +219,28 @@ class _ProcedureCard extends StatelessWidget {
                 Text(
                   tramite.nombrePolitica.toUpperCase(),
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        color: AppTheme.primary,
-                        fontSize: 15,
-                      ),
+                    fontWeight: FontWeight.w800,
+                    color: AppTheme.primary,
+                    fontSize: 15,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    Icon(Icons.location_on_outlined, size: 14, color: statusColor),
+                    Icon(
+                      Icons.location_on_outlined,
+                      size: 14,
+                      color: statusColor,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        tramite.nombreDepartamentoActual?.toUpperCase() ?? 'PENDIENTE',
+                        tramite.nombreDepartamentoActual?.toUpperCase() ??
+                            'PENDIENTE',
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: AppTheme.subtle,
-                              fontSize: 10,
-                            ),
+                          color: AppTheme.subtle,
+                          fontSize: 10,
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -239,13 +267,17 @@ class _EmptyProceduresState extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.inbox_outlined, size: 64, color: AppTheme.subtle.withOpacity(0.2)),
+            Icon(
+              Icons.inbox_outlined,
+              size: 64,
+              color: AppTheme.subtle.withOpacity(0.2),
+            ),
             const SizedBox(height: 16),
             Text(
               'No hay trámites para este filtro',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: AppTheme.subtle,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(color: AppTheme.subtle),
             ),
           ],
         ),

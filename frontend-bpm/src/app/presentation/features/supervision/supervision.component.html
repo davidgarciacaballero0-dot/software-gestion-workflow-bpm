@@ -1,16 +1,19 @@
 <div class="supervision-container animate-fade-in">
   <div class="header">
     <h1 class="page-title">Panel de Supervisión Operativa</h1>
-    <p class="page-subtitle">Monitoreo en tiempo real de trámites y ejecución de facultades de intervención administrativa.</p>
+    <p class="page-subtitle">Monitoreo en tiempo real de trámites y ejecución de facultades de intervención
+      administrativa.</p>
   </div>
 
   <!-- Result Banner -->
-  <div *ngIf="resultMessage" class="grid-card shadow-ambient mb-2" 
-       [style.background]="resultIsError ? 'rgba(186,26,26,0.08)' : 'rgba(16,185,129,0.08)'"
-       [style.border-left]="resultIsError ? '4px solid #ba1a1a' : '4px solid #10b981'"
-       style="padding: 1rem 1.5rem; border-radius: 0.5rem;">
+  <div *ngIf="resultMessage" class="grid-card shadow-ambient mb-2"
+    [style.background]="resultIsError ? 'rgba(186,26,26,0.08)' : 'rgba(16,185,129,0.08)'"
+    [style.border-left]="resultIsError ? '4px solid #ba1a1a' : '4px solid #10b981'"
+    style="padding: 1rem 1.5rem; border-radius: 0.5rem;">
     <span>{{ resultMessage }}</span>
-    <button style="float:right; background:none; border:none; cursor:pointer; font-size:1.1rem; display:flex; align-items:center;" (click)="resultMessage = null"><span class="material-symbols-outlined">close</span></button>
+    <button
+      style="float:right; background:none; border:none; cursor:pointer; font-size:1.1rem; display:flex; align-items:center;"
+      (click)="resultMessage = null"><span class="material-symbols-outlined">close</span></button>
   </div>
 
   <!-- Dashboard Stats (Premium Widgets) -->
@@ -32,25 +35,28 @@
   <!-- Monitoreo de Carga Real-Time (Migrado de Insights) -->
   <div class="grid-card monolith-surface shadow-ambient mt-2" *ngIf="metricasDepartamentales.length > 0">
     <div style="display: flex; justify-content: space-between; align-items: center;">
-      <h3 class="section-title" style="display:flex; align-items:center; gap:0.5rem;"><span class="material-symbols-outlined">bar_chart</span> Carga Departamental Real-Time</h3>
-      <button class="btn btn-secondary btn-sm" (click)="cargarMetricas()" style="display:flex; align-items:center; gap:0.3rem;"><span class="material-symbols-outlined" style="font-size:16px;">refresh</span> Refrescar</button>
+      <h3 class="section-title" style="display:flex; align-items:center; gap:0.5rem;"><span
+          class="material-symbols-outlined">bar_chart</span> Carga Departamental Real-Time</h3>
+      <button class="btn btn-secondary btn-sm" (click)="cargarMetricas()"
+        style="display:flex; align-items:center; gap:0.3rem;"><span class="material-symbols-outlined"
+          style="font-size:16px;">refresh</span> Refrescar</button>
     </div>
-    
+
     <div class="dept-bars">
       <div class="dept-row" *ngFor="let m of metricasDepartamentales">
         <div class="dept-name">{{ m.nombreDepartamento }}</div>
         <div class="dept-progress-track">
-          <div class="dept-progress-fill"
-               [style.width.%]="getLoadPercent(m)"
-               [class.critical]="getLoadPercent(m) > 80"
-               [class.warning]="getLoadPercent(m) > 50 && getLoadPercent(m) <= 80"
-               [class.ok]="getLoadPercent(m) <= 50">
+          <div class="dept-progress-fill" [style.width.%]="getLoadPercent(m)" [class.critical]="getLoadPercent(m) > 80"
+            [class.warning]="getLoadPercent(m) > 50 && getLoadPercent(m) <= 80" [class.ok]="getLoadPercent(m) <= 50">
           </div>
         </div>
         <div class="dept-stats" style="display:flex; gap:1rem;">
-          <span style="display:flex; align-items:center; gap:0.2rem;"><span class="material-symbols-outlined" style="font-size:14px;">timer</span> {{ m.tiempoPromedioHoras | number:'1.0-1' }}h</span>
-          <span style="display:flex; align-items:center; gap:0.2rem;"><span class="material-symbols-outlined" style="font-size:14px;">account_tree</span> {{ m.cantidadTramites }} trám.</span>
-          <span style="display:flex; align-items:center; gap:0.2rem;"><span class="material-symbols-outlined" style="font-size:14px;">group</span> {{ m.capacidadPersonal }} pers.</span>
+          <span style="display:flex; align-items:center; gap:0.2rem;"><span class="material-symbols-outlined"
+              style="font-size:14px;">timer</span> {{ m.tiempoPromedioHoras | number:'1.0-1' }}h</span>
+          <span style="display:flex; align-items:center; gap:0.2rem;"><span class="material-symbols-outlined"
+              style="font-size:14px;">account_tree</span> {{ m.cantidadTramites }} trám.</span>
+          <span style="display:flex; align-items:center; gap:0.2rem;"><span class="material-symbols-outlined"
+              style="font-size:14px;">group</span> {{ m.capacidadPersonal }} pers.</span>
         </div>
       </div>
     </div>
@@ -58,22 +64,26 @@
     <hr style="margin: 2rem 0; opacity: 0.1;">
 
     <!-- Consola de Reestructuración -->
-    <h3 class="section-title" style="display:flex; align-items:center; gap:0.5rem;"><span class="material-symbols-outlined">sync</span> Consola de Reestructuración</h3>
+    <h3 class="section-title" style="display:flex; align-items:center; gap:0.5rem;"><span
+        class="material-symbols-outlined">sync</span> Consola de Reestructuración</h3>
     <div class="reassign-grid">
       <div class="reassign-source">
         <div class="form-row">
           <label>Departamento Origen</label>
           <select [(ngModel)]="reassignForm.idOrigen" (change)="onOrigenChange()" class="select-premium">
             <option value="">-- Seleccione Origen --</option>
-            <option *ngFor="let m of metricasDepartamentales" [value]="m.departamentoId">{{ m.nombreDepartamento }}</option>
+            <option *ngFor="let m of metricasDepartamentales" [value]="m.departamentoId">{{ m.nombreDepartamento }}
+            </option>
           </select>
         </div>
 
         <div class="users-box" *ngIf="usuariosOrigen.length">
           <label>Funcionarios ({{ selectedUserIds.length }} seleccionados)</label>
           <div class="users-scroll">
-            <div *ngFor="let u of usuariosOrigen" class="user-item" [class.selected]="selectedUserIds.includes(u.id)" (click)="toggleUser(u.id)" style="display:flex; align-items:center; gap:0.5rem;">
-              <span class="check-icon material-symbols-outlined" style="font-size:18px;">{{ selectedUserIds.includes(u.id) ? 'check_box' : 'check_box_outline_blank' }}</span>
+            <div *ngFor="let u of usuariosOrigen" class="user-item" [class.selected]="selectedUserIds.includes(u.id)"
+              (click)="toggleUser(u.id)" style="display:flex; align-items:center; gap:0.5rem;">
+              <span class="check-icon material-symbols-outlined" style="font-size:18px;">{{
+                selectedUserIds.includes(u.id) ? 'check_box' : 'check_box_outline_blank' }}</span>
               <span>{{ u.nombre }} — {{ u.cargo }}</span>
             </div>
           </div>
@@ -85,18 +95,21 @@
           <label>Departamento Destino</label>
           <select [(ngModel)]="reassignForm.idDestino" class="select-premium">
             <option value="">-- Seleccione Destino --</option>
-            <option *ngFor="let m of metricasDepartamentales" [value]="m.departamentoId">{{ m.nombreDepartamento }}</option>
+            <option *ngFor="let m of metricasDepartamentales" [value]="m.departamentoId">{{ m.nombreDepartamento }}
+            </option>
           </select>
         </div>
 
         <div class="form-row">
           <label>Motivo de la Transferencia</label>
-          <textarea [(ngModel)]="reassignForm.motivo" class="select-premium" rows="2" placeholder="Justifique el cambio..."></textarea>
+          <textarea [(ngModel)]="reassignForm.motivo" class="select-premium" rows="2"
+            placeholder="Justifique el cambio..."></textarea>
         </div>
 
         <button class="btn-execute-transfer"
-                [disabled]="!reassignForm.idDestino || selectedUserIds.length === 0 || executingAction"
-                (click)="ejecutarTransferencia()" style="display:flex; align-items:center; justify-content:center; gap:0.5rem;">
+          [disabled]="!reassignForm.idDestino || selectedUserIds.length === 0 || executingAction"
+          (click)="ejecutarTransferencia()"
+          style="display:flex; align-items:center; justify-content:center; gap:0.5rem;">
           <span class="material-symbols-outlined" *ngIf="executingAction">hourglass_empty</span>
           <span class="material-symbols-outlined" *ngIf="!executingAction">rocket_launch</span>
           {{ executingAction ? 'Ejecutando...' : 'Aplicar Transferencia Masiva' }}
@@ -108,17 +121,14 @@
   <!-- Lista de Supervisión -->
   <div class="grid-card monolith-surface shadow-ambient mt-2">
     <div class="supervision-header-flex">
-      <h3 class="section-title" style="display:flex; align-items:center; gap:0.5rem;"><span class="material-symbols-outlined">assignment</span> Registro de Trámites en Supervisión</h3>
-      
+      <h3 class="section-title" style="display:flex; align-items:center; gap:0.5rem;"><span
+          class="material-symbols-outlined">assignment</span> Registro de Trámites en Supervisión</h3>
+
       <!-- Barra de Búsqueda (Fase 4) -->
       <div class="search-box glass-premium search-small">
         <span class="search-icon material-symbols-outlined" style="opacity:0.5;">search</span>
-        <input 
-          type="text" 
-          placeholder="Buscar por CI del Cliente..." 
-          [(ngModel)]="searchTerm"
-          (keyup.enter)="buscarPorCI()"
-        />
+        <input type="text" placeholder="Buscar por CI del Cliente..." [(ngModel)]="searchTerm"
+          (keyup.enter)="buscarPorCI()" />
         <button class="btn-search" (click)="buscarPorCI()">Buscar</button>
       </div>
     </div>
@@ -145,22 +155,25 @@
             <div class="text-muted-small">{{ t.nombrePolitica }}</div>
           </td>
           <td>
-             <div class="font-strong">{{ t.nombreSolicitante || 'Desconocido' }}</div>
-             <div class="text-muted-small">CI: {{ t.ciSolicitante || '---' }}</div>
+            <div class="font-strong">{{ t.nombreSolicitante || 'Desconocido' }}</div>
+            <div class="text-muted-small">CI: {{ t.ciSolicitante || '---' }}</div>
           </td>
           <td>
             <span class="badge" [ngClass]="'badge-' + t.estadoActual.toLowerCase()">{{ t.estadoActual }}</span>
           </td>
           <td>
             <div class="workflow-step" style="display:flex; align-items:center; gap:0.3rem;">
-              <span class="step-icon material-symbols-outlined" style="font-size:16px;">location_on</span> {{ t.nombreNodoActual }}
+              <span class="step-icon material-symbols-outlined" style="font-size:16px;">location_on</span> {{
+              t.nombreNodoActual }}
             </div>
           </td>
           <td>
-             <span class="dept-tag">{{ t.nombreDepartamentoActual || 'Sin Asignar' }}</span>
+            <span class="dept-tag">{{ t.nombreDepartamentoActual || 'Sin Asignar' }}</span>
           </td>
           <td class="text-center">
-            <button class="btn btn-warning btn-sm" (click)="abrirIntervencion(t)" style="display:flex; align-items:center; gap:0.3rem; margin:0 auto;"><span class="material-symbols-outlined" style="font-size:16px;">build</span> Intervenir</button>
+            <button class="btn btn-warning btn-sm" (click)="abrirIntervencion(t)"
+              style="display:flex; align-items:center; gap:0.3rem; margin:0 auto;"><span
+                class="material-symbols-outlined" style="font-size:16px;">build</span> Intervenir</button>
           </td>
         </tr>
         <tr *ngIf="tramites.length === 0">
@@ -174,12 +187,14 @@
   <div class="modal-overlay" *ngIf="showModal">
     <div class="modal-content glass-premium animate-pop">
       <div class="modal-header">
-        <h2 style="display:flex; align-items:center; gap:0.5rem;"><span class="material-symbols-outlined">build</span> Intervención Administrativa</h2>
+        <h2 style="display:flex; align-items:center; gap:0.5rem;"><span class="material-symbols-outlined">build</span>
+          Intervención Administrativa</h2>
         <button class="close-btn material-symbols-outlined" (click)="cerrarModal()">close</button>
       </div>
       <div class="modal-body">
-        <p class="modal-hint">Ajuste forzado de flujo para el trámite <strong>{{ selectedTramite.codigoTramite }}</strong>.</p>
-        
+        <p class="modal-hint">Ajuste forzado de flujo para el trámite <strong>{{ selectedTramite.codigoTramite
+            }}</strong>.</p>
+
         <div class="form-group">
           <label>Paso de Destino (Nodo)</label>
           <select [(ngModel)]="intervencion.nuevoNodoId" class="form-control">
@@ -200,12 +215,14 @@
 
         <div class="form-group full-width">
           <label>Exposición de Motivos</label>
-          <textarea [(ngModel)]="intervencion.motivo" class="form-control" rows="3" placeholder="Justifique la intervención..."></textarea>
+          <textarea [(ngModel)]="intervencion.motivo" class="form-control" rows="3"
+            placeholder="Justifique la intervención..."></textarea>
         </div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" (click)="cerrarModal()">Cancelar</button>
-        <button class="btn btn-primary" (click)="ejecutarIntervencion()" [disabled]="!intervencion.motivo">Confirmar Intervención</button>
+        <button class="btn btn-primary" (click)="ejecutarIntervencion()" [disabled]="!intervencion.motivo">Confirmar
+          Intervención</button>
       </div>
     </div>
   </div>

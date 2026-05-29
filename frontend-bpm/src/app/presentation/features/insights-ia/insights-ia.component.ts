@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy, ViewChild, AfterViewInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
+import { saveAs } from 'file-saver';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { AnaliticaService, MetricData } from '../../../data/services/analitica.service';
@@ -26,7 +27,7 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
   executingAction = false;
   filtros = { meses: 0, idDepartamento: '' };
   activeTab: 'historico' | 'proyeccion' = 'historico';
-  
+
   // Métricas para Gráficos e IA
   metrics: MetricData[] = [];
   aiReport: string = '';
@@ -100,7 +101,7 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
     private http: HttpClient,
     private cdr: ChangeDetectorRef,
     private sanitizer: DomSanitizer
-  ) {}
+  ) { }
 
   // ========================================
   //  KPI GETTERS (Calculados sobre métricas filtradas)
@@ -135,7 +136,7 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     if (this.recognition) {
-      try { this.recognition.abort(); } catch (_) {}
+      try { this.recognition.abort(); } catch (_) { }
     }
   }
 
@@ -233,9 +234,9 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
     this.analyzingIA = true;
     this.aiReport = '';
     this.formattedReport = '';
-    this.http.post<any>('/api/v1/optimization/analyze', { 
-      meses: this.filtros.meses, 
-      idDepartamento: this.filtros.idDepartamento 
+    this.http.post<any>('/api/v1/optimization/analyze', {
+      meses: this.filtros.meses,
+      idDepartamento: this.filtros.idDepartamento
     }).subscribe({
       next: (res: any) => {
         // Guardar el reporte completo (puede ser un objeto profundo de la IA)
@@ -244,9 +245,10 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
         this.analyzingIA = false;
         this.cdr.detectChanges();
       },
-      error: () => {
-        this.aiReport = '⚠️ El Cerebro IA (Puerto 8000) no respondió. Inicie el servicio Python.';
-        this.formattedReport = this.sanitizer.bypassSecurityTrustHtml('<p style="color:#ef4444;">' + this.aiReport + '</p>');
+      error: (err: any) => {
+        const backendError = err?.error?.error || err?.error?.details || 'Error de conexión con el servicio de IA.';
+        this.aiReport = `⚠️ Error en el análisis: ${backendError}`;
+        this.formattedReport = this.sanitizer.bypassSecurityTrustHtml('<p style="color:#ef4444; font-weight: 500;">' + this.aiReport + '</p>');
         this.analyzingIA = false;
         this.cdr.detectChanges();
       }
@@ -426,7 +428,7 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
 
     // Si la consulta menciona análisis, generar análisis IA
     if (cmd.includes('analiz') || cmd.includes('reporte') || cmd.includes('cuello') || cmd.includes('botella') ||
-        cmd.includes('carga') || cmd.includes('rendimiento') || cmd.includes('optimiz')) {
+      cmd.includes('carga') || cmd.includes('rendimiento') || cmd.includes('optimiz')) {
       this.solicitarAnalisisIA();
       return;
     }
@@ -450,8 +452,9 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
         this.analyzingIA = false;
         this.cdr.detectChanges();
       },
-      error: () => {
-        this.aiReport = '⚠️ No se pudo procesar el comando de voz. Verifique los servicios.';
+      error: (err: any) => {
+        const backendError = err?.error?.error || 'No se pudo procesar el comando de voz.';
+        this.aiReport = `⚠️ Error: ${backendError}`;
         this.formattedReport = this.formatReport(this.aiReport);
         this.analyzingIA = false;
         this.cdr.detectChanges();
@@ -464,14 +467,21 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
   // ========================================
 
   exportarExcel() {
-    this.analiticaService.downloadExcel().subscribe({
-      next: (blob) => {
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'reporte_gestion_bpm.xlsx';
-        a.click();
-        window.URL.revokeObjectURL(url);
+    this.http.get('/api/v1/optimization/report/excel', {
+      responseType: 'blob',
+      observe: 'response'
+    }).subscribe({
+      next: (resp) => {
+        const blob = resp.body!;
+        const contentDisposition = resp.headers.get('Content-Disposition');
+        let filename = 'reporte_gestion_bpm.xlsx';
+        if (contentDisposition) {
+          const match = contentDisposition.match(/filename[^;=\n]*=\s*"?([^";\n]+)"?/);
+          if (match && match[1]) {
+            filename = match[1];
+          }
+        }
+        this._forceDownload(blob, filename, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       },
       error: () => {
         alert('Error al descargar el reporte Excel. Verifique el backend.');
@@ -485,8 +495,14 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    // Usar la versión detallada si existe, si no la normal
-    const contentToExport = this.aiDetailedReport || this.aiReport;
+    // Convertir el JSON del reporte a texto legible para el PDF
+    let contentToExport = '';
+    try {
+      const parsed = typeof this.aiReport === 'string' ? JSON.parse(this.aiReport) : this.aiReport;
+      contentToExport = this.flattenReportToText(parsed);
+    } catch {
+      contentToExport = this.aiReport;
+    }
 
     let chartImageBase64 = '';
     try {
@@ -497,19 +513,89 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
       console.warn('No se pudo extraer la imagen del gráfico', e);
     }
 
-    this.analiticaService.downloadPdf(contentToExport, chartImageBase64, this.metrics).subscribe({
-      next: (blob) => {
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'informe_ia_consultoria.pdf';
-        a.click();
-        window.URL.revokeObjectURL(url);
+    this.http.post('/api/v1/optimization/report/pdf',
+      { text: contentToExport, chartImage: chartImageBase64, metrics: this.metrics },
+      { responseType: 'blob', observe: 'response' }
+    ).subscribe({
+      next: (resp) => {
+        const blob = resp.body!;
+        const contentDisposition = resp.headers.get('Content-Disposition');
+        let filename = 'informe_ia_consultoria.pdf';
+        if (contentDisposition) {
+          const match = contentDisposition.match(/filename[^;=\n]*=\s*"?([^";\n]+)"?/);
+          if (match && match[1]) {
+            filename = match[1];
+          }
+        }
+        this._forceDownload(blob, filename, 'application/pdf');
       },
       error: () => {
         alert('Error al descargar el informe PDF. Verifique el backend.');
       }
     });
+  }
+
+  private async _forceDownload(blob: Blob, filename: string, mimeType: string) {
+    try {
+      // Intentar API Nativa (Chrome Desktop) para evitar UUIDs por seguridad del navegador
+      if ('showSaveFilePicker' in window) {
+        const handle = await (window as any).showSaveFilePicker({
+          suggestedName: filename,
+          types: [{
+            description: 'Reporte BPM',
+            accept: { [mimeType]: [filename.endsWith('.pdf') ? '.pdf' : '.xlsx'] },
+          }],
+        });
+        const writable = await handle.createWritable();
+        await writable.write(blob);
+        await writable.close();
+        return;
+      }
+    } catch (err: any) {
+      // El usuario canceló o hubo error, caer al fallback de file-saver
+      if (err.name === 'AbortError') return;
+    }
+
+    // Fallback con file-saver usando objeto File en lugar de Blob
+    try {
+      const file = new File([blob], filename, { type: mimeType });
+      saveAs(file);
+    } catch (e) {
+      saveAs(blob, filename);
+    }
+  }
+
+  /**
+   * Convierte recursivamente un objeto JSON de la IA en texto plano legible para el PDF.
+   */
+  private flattenReportToText(obj: any, indent: string = ''): string {
+    if (obj === null || obj === undefined) return '';
+    if (typeof obj === 'string') return obj;
+    if (typeof obj === 'number' || typeof obj === 'boolean') return String(obj);
+
+    let text = '';
+    if (Array.isArray(obj)) {
+      obj.forEach((item, i) => {
+        if (typeof item === 'string') {
+          text += `${indent}• ${item}\n`;
+        } else {
+          text += `${indent}[${i + 1}]\n${this.flattenReportToText(item, indent + '  ')}\n`;
+        }
+      });
+    } else if (typeof obj === 'object') {
+      for (const key of Object.keys(obj)) {
+        if (['status', 'error'].includes(key)) continue;
+        const val = obj[key];
+        if (val === null || val === undefined || val === '') continue;
+        const label = this.formatKeyLabel(key);
+        if (typeof val === 'string' || typeof val === 'number' || typeof val === 'boolean') {
+          text += `${indent}${label}: ${val}\n`;
+        } else {
+          text += `${indent}${label}:\n${this.flattenReportToText(val, indent + '  ')}\n`;
+        }
+      }
+    }
+    return text;
   }
 
   setTab(tab: 'historico' | 'proyeccion') {

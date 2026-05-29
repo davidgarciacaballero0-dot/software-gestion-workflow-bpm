@@ -127,10 +127,15 @@ public class OptimizacionController {
     @GetMapping("/report/excel")
     public ResponseEntity<byte[]> downloadExcelReport() {
         byte[] content = analiticaService.exportarMetricasExcel();
-        return ResponseEntity.ok()
-                .header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-                .header("Content-Disposition", "attachment; filename=reporte_gestion_bpm.xlsx")
-                .body(content);
+        org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+        headers.setContentType(org.springframework.http.MediaType.parseMediaType(
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+        headers.setContentDisposition(
+                org.springframework.http.ContentDisposition.attachment()
+                        .filename("reporte_gestion_bpm.xlsx")
+                        .build());
+        headers.setContentLength(content.length);
+        return new ResponseEntity<>(content, headers, org.springframework.http.HttpStatus.OK);
     }
 
     @PostMapping("/report/pdf")
@@ -145,17 +150,21 @@ public class OptimizacionController {
         if (metricsRaw != null) {
             metrics = metricsRaw.stream().map(m -> AnaliticaService.MetricDataDTO.builder()
                     .nombreDepartamento((String) m.get("nombreDepartamento"))
-                    .cantidadTramites((Integer) m.get("cantidadTramites"))
+                    .cantidadTramites(m.get("cantidadTramites") != null ? ((Number) m.get("cantidadTramites")).intValue() : 0)
                     .tiempoPromedioHoras(Double.valueOf(String.valueOf(m.getOrDefault("tiempoPromedioHoras", 0.0))))
-                    .capacidadPersonal((Integer) m.get("capacidadPersonal"))
+                    .capacidadPersonal(m.get("capacidadPersonal") != null ? ((Number) m.get("capacidadPersonal")).intValue() : 0)
                     .build()).collect(Collectors.toList());
         }
 
         byte[] content = analiticaService.generarPDFAnalisis(text, chartImage, metrics);
-        return ResponseEntity.ok()
-                .header("Content-Type", "application/pdf")
-                .header("Content-Disposition", "attachment; filename=informe_ia_consultoria.pdf")
-                .body(content);
+        org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+        headers.setContentType(org.springframework.http.MediaType.APPLICATION_PDF);
+        headers.setContentDisposition(
+                org.springframework.http.ContentDisposition.attachment()
+                        .filename("informe_ia_consultoria.pdf")
+                        .build());
+        headers.setContentLength(content.length);
+        return new ResponseEntity<>(content, headers, org.springframework.http.HttpStatus.OK);
     }
 
     @PostMapping("/asistente")
@@ -193,7 +202,8 @@ public class OptimizacionController {
 
                 // SI ES CLIENTE: Inyectar sus trámites personales + Catálogo disponible
                 if ("CLIENTE".equals(rol)) {
-                    Usuario user = usuarioRepository.findByEmail(email).orElse(null);
+                    java.util.List<Usuario> users = usuarioRepository.findByEmail(email);
+                    Usuario user = users.isEmpty() ? null : users.get(0);
                     if (user != null) {
                         List<TramiteResponseDTO> misTramites = tramiteService.listarBandejaPersonal(user.getId());
                         if (misTramites != null && !misTramites.isEmpty()) {

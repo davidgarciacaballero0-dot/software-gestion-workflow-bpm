@@ -43,11 +43,7 @@ public class DataInitializer implements CommandLineRunner {
         Rol clienteRol = getOrCreateRol("CLIENTE", List.of("START_TRAMITE"));
 
         // 2. Organización
-        Organizacion org = orgRepository.findByNombre("Corporación BPM Latam")
-                .orElseGet(() -> orgRepository.save(Organizacion.builder()
-                        .nombre("Corporación BPM Latam")
-                        .esquemaColores(Map.of("primary", "#4f46e5", "secondary", "#10b981"))
-                        .build()));
+        Organizacion org = getOrCreateOrg("Corporación BPM Latam");
 
         // 3. Departamentos
         Departamento depIT = getOrCreateDep("Sistemas (IT)", "IT-01", org.getId());
@@ -59,8 +55,11 @@ public class DataInitializer implements CommandLineRunner {
         // 4. Usuarios
         String commonPass = passwordEncoder.encode("password123");
 
-        // Admin
+        // Admins
         getOrCreateUser("Gerente", "General", "10000001", "70000001", "admin@bpm.com", commonPass, adminRol.getId(),
+                org.getId(), null);
+
+        getOrCreateUser("Admin", "Dos", "10000002", "70000002", "admin2@bpm.com", commonPass, adminRol.getId(),
                 org.getId(), null);
 
         // Jefes
@@ -147,20 +146,35 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private Rol getOrCreateRol(String nombre, List<String> permisos) {
-        return rolRepository.findByNombre(nombre)
-                .orElseGet(() -> rolRepository.save(Rol.builder().nombre(nombre).permisos(permisos).build()));
+        List<Rol> roles = rolRepository.findByNombre(nombre);
+        if (!roles.isEmpty()) return roles.get(0);
+        return rolRepository.save(Rol.builder().nombre(nombre).permisos(permisos).build());
     }
 
     private Departamento getOrCreateDep(String nombre, String codigo, String idOrg) {
-        return depRepository.findByNombre(nombre)
-                .orElseGet(() -> depRepository
-                        .save(Departamento.builder().nombre(nombre).codigoArea(codigo).idOrganizacion(idOrg).build()));
+        List<Departamento> deps = depRepository.findByNombre(nombre);
+        if (!deps.isEmpty()) return deps.get(0);
+        return depRepository.save(Departamento.builder()
+                .nombre(nombre)
+                .codigoArea(codigo)
+                .idOrganizacion(idOrg)
+                .build());
+    }
+
+    private Organizacion getOrCreateOrg(String nombre) {
+        List<Organizacion> orgs = orgRepository.findByNombre(nombre);
+        if (!orgs.isEmpty()) return orgs.get(0);
+        return orgRepository.save(Organizacion.builder()
+                .nombre(nombre)
+                .esquemaColores(Map.of("primary", "#4f46e5", "secondary", "#10b981"))
+                .build());
     }
 
     private Usuario getOrCreateUser(String nombre, String apellidos, String ci, String celular, String email,
             String pass, String idRol, String idOrg, String idDep) {
-        return usuarioRepository.findByEmail(email)
-                .orElseGet(() -> createUsuario(nombre, apellidos, ci, celular, email, pass, idRol, idOrg, idDep));
+        List<Usuario> users = usuarioRepository.findByEmail(email);
+        if (!users.isEmpty()) return users.get(0);
+        return createUsuario(nombre, apellidos, ci, celular, email, pass, idRol, idOrg, idDep);
     }
 
     private PoliticaWorkflow getOrCreatePoliticaVacaciones(String idOrg, String idDepRRHH) {

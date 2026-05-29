@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,7 +17,8 @@ class ProfileScreen extends ConsumerWidget {
     final session = ref.watch(sessionProvider);
 
     return session.when(
-      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (e, _) => Scaffold(body: Center(child: Text(e.toString()))),
       data: (user) {
         if (user == null) return const SizedBox.shrink();
@@ -62,9 +65,7 @@ class _ProfileGlassView extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 100),
           child: Column(
             children: [
-              FadeInDown(
-                child: _buildHeader(context),
-              ),
+              FadeInDown(child: _buildHeader(context)),
               const SizedBox(height: 40),
               FadeInUp(
                 delay: const Duration(milliseconds: 200),
@@ -73,7 +74,11 @@ class _ProfileGlassView extends StatelessWidget {
               const SizedBox(height: 24),
               Text(
                 'Miembro desde: ${_formatDate(user.createdAt)}',
-                style: const TextStyle(fontSize: 12, color: AppTheme.subtle, fontStyle: FontStyle.italic),
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppTheme.subtle,
+                  fontStyle: FontStyle.italic,
+                ),
               ),
             ],
           ),
@@ -96,13 +101,17 @@ class _ProfileGlassView extends StatelessWidget {
                 color: AppTheme.primary.withOpacity(0.3),
                 blurRadius: 15,
                 offset: const Offset(0, 8),
-              )
+              ),
             ],
           ),
           child: Center(
             child: Text(
               user.nombre.isNotEmpty ? user.nombre[0].toUpperCase() : 'C',
-              style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white),
+              style: const TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
           ),
         ),
@@ -150,11 +159,16 @@ class _ProfileGlassView extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('INFORMACIÓN PERSONAL', style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                fontWeight: FontWeight.w800, color: AppTheme.primary, letterSpacing: 1.2,
-              )),
+              Text(
+                'INFORMACIÓN PERSONAL',
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: AppTheme.primary,
+                  letterSpacing: 1.2,
+                ),
+              ),
               const SizedBox(height: 20),
-              _buildInfoGrid(),
+              _buildInfoGrid(context),
             ],
           ),
         ),
@@ -162,29 +176,49 @@ class _ProfileGlassView extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoGrid() {
+  Widget _buildInfoGrid(BuildContext context) {
     return Column(
       children: [
-        _buildInfoItem('Carnet de Identidad (CI)', user.ci.isNotEmpty ? user.ci : 'Sin registrar'),
+        _buildInfoItem(
+          context,
+          'Carnet de Identidad (CI)',
+          user.ci.isNotEmpty ? user.ci : 'Sin registrar',
+        ),
         const Divider(height: 24, color: Color(0x1A000000)),
-        _buildInfoItem('Teléfono / Celular', user.celular.isNotEmpty ? user.celular : 'Sin registrar'),
+        _buildInfoItem(
+          context,
+          'Teléfono / Celular',
+          user.celular.isNotEmpty ? user.celular : 'Sin registrar',
+        ),
         const Divider(height: 24, color: Color(0x1A000000)),
-        _buildInfoItem('Correo Electrónico', user.email),
+        _buildInfoItem(context, 'Correo Electrónico', user.email),
         const Divider(height: 24, color: Color(0x1A000000)),
-        _buildInfoItem('Fecha de Nacimiento', user.fechaNacimiento ?? 'No disponible'),
+        _buildInfoItem(context, 'Fecha de Nacimiento', user.fechaNacimiento),
       ],
     );
   }
 
-  Widget _buildInfoItem(String label, String value) {
+  Widget _buildInfoItem(BuildContext context, String label, String value) {
     return SizedBox(
       width: double.infinity,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label.toUpperCase(), style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 9, color: AppTheme.subtle)),
+          Text(
+            label.toUpperCase(),
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              fontSize: 9,
+              color: AppTheme.subtle,
+            ),
+          ),
           const SizedBox(height: 6),
-          Text(value, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700, color: AppTheme.primary)),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: AppTheme.primary,
+            ),
+          ),
         ],
       ),
     );

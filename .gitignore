@@ -33,3 +33,12 @@ ia_microservice/gcp-creds.json
 scratch/
 !.env.example
 !.env.template
+
+# Ignorar archivos markdown excepto README.md
+*.md
+*.MD
+!README.md
+
+# Firebase & Android builds
+.firebase/
+Movil_bpm/android/build/

@@ -37,7 +37,8 @@ public class SecurityConfig {
     @Bean
     public UserDetailsService userDetailsService() {
         return username -> {
-            Usuario usuario = usuarioRepository.findByEmail(username).orElse(null);
+            java.util.List<Usuario> usuarios = usuarioRepository.findByEmail(username);
+            Usuario usuario = usuarios.isEmpty() ? null : usuarios.get(0);
             if (usuario == null) {
                 throw new UsernameNotFoundException("Usuario no encontrado: " + username);
             }
@@ -86,10 +87,18 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        // Angular Web (localhost:4200) + Flutter móvil (cualquier origen en dev)
-        config.setAllowedOriginPatterns(List.of("http://localhost:4200", "http://10.*.*.*", "http://192.168.*.*", "http://172.*.*.*"));
+        // Angular Web (localhost:4200) + Flutter móvil (cualquier origen en dev) + Producción (Cloud Run / Firebase)
+        config.setAllowedOriginPatterns(List.of(
+            "http://localhost:4200", 
+            "http://10.*.*.*", 
+            "http://192.168.*.*", 
+            "http://172.*.*.*",
+            "https://*.run.app",
+            "https://*.web.app"
+        ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
+        config.setExposedHeaders(List.of("Content-Disposition", "Content-Type", "Content-Length"));
         config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

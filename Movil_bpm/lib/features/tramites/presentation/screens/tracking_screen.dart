@@ -2,6 +2,8 @@
 // lib/features/tramites/presentation/screens/tracking_screen.dart
 // ─────────────────────────────────────────────────────────────
 
+// ignore_for_file: deprecated_member_use
+
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,15 +23,20 @@ class ProcedureTrackingScreen extends ConsumerStatefulWidget {
   const ProcedureTrackingScreen({super.key, required this.tramite});
 
   @override
-  ConsumerState<ProcedureTrackingScreen> createState() => _ProcedureTrackingScreenState();
+  ConsumerState<ProcedureTrackingScreen> createState() =>
+      _ProcedureTrackingScreenState();
 }
 
-class _ProcedureTrackingScreenState extends ConsumerState<ProcedureTrackingScreen> {
+class _ProcedureTrackingScreenState
+    extends ConsumerState<ProcedureTrackingScreen> {
   final _formKey = GlobalKey<FormState>();
   final GlobalKey<DynamicFormBuilderState> _dynamicFormKey = GlobalKey();
   bool _isSubmitting = false;
 
-  void _submitSubsanacion(Map<String, dynamic> data, Map<String, File> files) async {
+  void _submitSubsanacion(
+    Map<String, dynamic> data,
+    Map<String, File> files,
+  ) async {
     setState(() {
       _isSubmitting = true;
     });
@@ -63,7 +70,9 @@ class _ProcedureTrackingScreenState extends ConsumerState<ProcedureTrackingScree
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Documentos enviados correctamente para subsanación.'),
+            content: Text(
+              'Documentos enviados correctamente para subsanación.',
+            ),
             backgroundColor: Colors.green,
           ),
         );
@@ -89,8 +98,11 @@ class _ProcedureTrackingScreenState extends ConsumerState<ProcedureTrackingScree
 
   @override
   Widget build(BuildContext context) {
-    final historialAsync = ref.watch(historialTramiteProvider(widget.tramite.id));
-    final isObservado = widget.tramite.estadoActual.toUpperCase() == 'OBSERVADO';
+    final historialAsync = ref.watch(
+      historialTramiteProvider(widget.tramite.id),
+    );
+    final isObservado =
+        widget.tramite.estadoActual.toUpperCase() == 'OBSERVADO';
 
     return Scaffold(
       backgroundColor: AppTheme.surface,
@@ -102,7 +114,7 @@ class _ProcedureTrackingScreenState extends ConsumerState<ProcedureTrackingScree
             onPressed: () {
               ref.invalidate(historialTramiteProvider(widget.tramite.id));
             },
-          )
+          ),
         ],
       ),
       body: _isSubmitting
@@ -125,30 +137,39 @@ class _ProcedureTrackingScreenState extends ConsumerState<ProcedureTrackingScree
                   Text(
                     widget.tramite.nombrePolitica.toUpperCase(),
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          color: AppTheme.primary,
-                          letterSpacing: 0.5,
-                        ),
+                      fontWeight: FontWeight.w800,
+                      color: AppTheme.primary,
+                      letterSpacing: 0.5,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'REFERENCIA: ${widget.tramite.codigoTramite}',
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: AppTheme.subtle,
-                        ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.labelSmall?.copyWith(color: AppTheme.subtle),
                   ),
                   const SizedBox(height: 16),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 16,
+                    ),
                     decoration: BoxDecoration(
-                      color: isObservado ? AppTheme.error.withOpacity(0.05) : AppTheme.primary.withOpacity(0.05),
+                      color: isObservado
+                          ? AppTheme.error.withOpacity(0.05)
+                          : AppTheme.primary.withOpacity(0.05),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Row(
                       children: [
                         Icon(
-                          isObservado ? Icons.report_problem_outlined : Icons.info_outlined,
-                          color: isObservado ? AppTheme.error : AppTheme.primary,
+                          isObservado
+                              ? Icons.report_problem_outlined
+                              : Icons.info_outlined,
+                          color: isObservado
+                              ? AppTheme.error
+                              : AppTheme.primary,
                           size: 24,
                         ),
                         const SizedBox(width: 16),
@@ -158,18 +179,22 @@ class _ProcedureTrackingScreenState extends ConsumerState<ProcedureTrackingScree
                             children: [
                               Text(
                                 'ESTADO: ${widget.tramite.estadoActual}',
-                                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                  color: isObservado ? AppTheme.error : AppTheme.primary,
-                                  fontWeight: FontWeight.w800,
-                                ),
+                                style: Theme.of(context).textTheme.labelSmall
+                                    ?.copyWith(
+                                      color: isObservado
+                                          ? AppTheme.error
+                                          : AppTheme.primary,
+                                      fontWeight: FontWeight.w800,
+                                    ),
                               ),
                               const SizedBox(height: 4),
                               Text(
                                 'UBICACIÓN: ${widget.tramite.nombreDepartamentoActual}',
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: AppTheme.subtle,
-                                  fontSize: 11,
-                                ),
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(
+                                      color: AppTheme.subtle,
+                                      fontSize: 11,
+                                    ),
                               ),
                             ],
                           ),
@@ -183,9 +208,9 @@ class _ProcedureTrackingScreenState extends ConsumerState<ProcedureTrackingScree
                   Text(
                     'LÍNEA DE TIEMPO',
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          color: AppTheme.primary,
-                        ),
+                      fontWeight: FontWeight.w800,
+                      color: AppTheme.primary,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   Container(
@@ -203,8 +228,11 @@ class _ProcedureTrackingScreenState extends ConsumerState<ProcedureTrackingScree
                     ),
                     child: historialAsync.when(
                       data: (events) => TimelineWidget(events: events),
-                      loading: () => const Center(child: CircularProgressIndicator()),
-                      error: (err, stack) => Center(child: Text('Error al cargar historial: $err')),
+                      loading: () =>
+                          const Center(child: CircularProgressIndicator()),
+                      error: (err, stack) => Center(
+                        child: Text('Error al cargar historial: $err'),
+                      ),
                     ),
                   ),
 
@@ -214,20 +242,20 @@ class _ProcedureTrackingScreenState extends ConsumerState<ProcedureTrackingScree
                     Text(
                       'SUBSANAR OBSERVACIÓN',
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            fontWeight: FontWeight.w800,
-                            color: AppTheme.error,
-                          ),
+                        fontWeight: FontWeight.w800,
+                        color: AppTheme.error,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       'Tu trámite ha sido observado. Por favor adjunta los documentos o información requerida.',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: AppTheme.subtle,
-                          ),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodyMedium?.copyWith(color: AppTheme.subtle),
                     ),
                     const SizedBox(height: 16),
                     _buildSubsanacionForm(context),
-                  ]
+                  ],
                 ],
               ),
             ),
@@ -251,18 +279,19 @@ class _ProcedureTrackingScreenState extends ConsumerState<ProcedureTrackingScree
           orElse: () => policy.nodes.first,
         );
 
-        List<FormFieldDefinitionModel> fieldsToFill = currentNode.formDefinition;
-        
+        List<FormFieldDefinitionModel> fieldsToFill =
+            currentNode.formDefinition;
+
         // Si el nodo actual no tiene formulario, al menos permitimos subir un archivo genérico
         if (fieldsToFill.isEmpty) {
           fieldsToFill = [
-             FormFieldDefinitionModel(
+            FormFieldDefinitionModel(
               fieldId: 'documento_subsanacion',
               label: 'Documento Corregido',
               type: 'FILE',
               required: true,
               options: [],
-            )
+            ),
           ];
         }
 
@@ -289,7 +318,9 @@ class _ProcedureTrackingScreenState extends ConsumerState<ProcedureTrackingScree
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.primary,
                   padding: const EdgeInsets.symmetric(vertical: 18),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                 ),
                 onPressed: () {
                   _dynamicFormKey.currentState?.saveForm();
@@ -297,7 +328,12 @@ class _ProcedureTrackingScreenState extends ConsumerState<ProcedureTrackingScree
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text('ENVIAR SUBSANACIÓN', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.white)),
+                    Text(
+                      'ENVIAR SUBSANACIÓN',
+                      style: Theme.of(
+                        context,
+                      ).textTheme.labelSmall?.copyWith(color: Colors.white),
+                    ),
                     const SizedBox(width: 12),
                     const Icon(Icons.send_outlined, size: 20),
                   ],

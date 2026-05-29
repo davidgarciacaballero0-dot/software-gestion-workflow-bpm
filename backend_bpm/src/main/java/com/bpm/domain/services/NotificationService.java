@@ -28,6 +28,7 @@ public class NotificationService {
         String topic = "/topic/department/" + departamentoId;
         
         NotificacionPush notification = NotificacionPush.builder()
+                .idDepartamentoDestino(departamentoId)
                 .titulo(titulo)
                 .mensaje(mensaje)
                 .leida(false)

@@ -177,7 +177,7 @@ public class TramiteService {
         }
 
         String nombreNodo = "N/A";
-        if (instancia.getNodoActualId() != null) {
+        if (instancia.getNodoActualId() != null && instancia.getIdPolitica() != null) {
             Optional<PoliticaWorkflow> polOpt = politicaRepository.findById(instancia.getIdPolitica());
             if (polOpt.isPresent() && polOpt.get().getNodes() != null) {
                 nombreNodo = polOpt.get().getNodes().stream()
@@ -406,7 +406,8 @@ public class TramiteService {
         String rawPassword = iniciales + "." + ci;
 
         // Buscar Rol CLIENTE
-        String idRolCliente = rolRepository.findByNombre("CLIENTE")
+        String idRolCliente = rolRepository.findByNombre("CLIENTE").stream()
+                .findFirst()
                 .map(Rol::getId)
                 .orElse(null);
 
@@ -444,6 +445,7 @@ public class TramiteService {
     }
 
     public String obtenerNombrePolitica(String idPolitica) {
+        if (idPolitica == null) return "Sin definir";
         return politicaRepository.findById(idPolitica)
                 .map(PoliticaWorkflow::getNombre)
                 .orElse("Sin definir");
@@ -492,7 +494,10 @@ public class TramiteService {
     }
 
     private TramiteResponseDTO transformarADTO(TramiteInstancia t) {
-        PoliticaWorkflow p = politicaRepository.findById(t.getIdPolitica()).orElse(null);
+        PoliticaWorkflow p = null;
+        if (t.getIdPolitica() != null) {
+            p = politicaRepository.findById(t.getIdPolitica()).orElse(null);
+        }
         return mapearADTO(t, p != null ? p.getNombre() : "N/A");
     }
 

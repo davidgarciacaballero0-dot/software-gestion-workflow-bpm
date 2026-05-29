@@ -21,6 +21,7 @@ public class NotificacionPush {
     private String id;
 
     private String idUsuarioDestino; // Referencia <Ref>
+    private String idDepartamentoDestino; // <NEW> Referencia por departamento
     private String titulo;
     private String mensaje;
     private Boolean leida;

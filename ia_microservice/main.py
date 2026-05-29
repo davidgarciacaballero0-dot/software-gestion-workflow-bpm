@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import List, Optional, Any
 from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel
-from google import genai
+import google.genai as genai
 from google.genai import types
 from dotenv import load_dotenv
 
@@ -119,33 +119,46 @@ async def generar_flujo(request: Request):
         comando = body.get("comando") or body.get("prompt") or body.get("descripcion") or ""
         deptos = body.get("departamentosDisponibles", [])
 
+        # Calcular posiciones X de los carriles según los departamentos disponibles
+        lane_positions = {}
+        for i, dep in enumerate(deptos):
+            dep_id = dep.get("id", f"dep_{i}")
+            lane_positions[dep_id] = 80 + (i * 190)  # Cada carril ocupa ~190px
+        
+        # Centro del canvas = carril del medio
+        center_x = 80 + ((len(deptos) - 1) * 190) // 2 if deptos else 250
+        lanes_info = ", ".join([f"'{d.get('nombre', d.get('name', d.get('id', '')))}' (id: {d.get('id', '')}) => x={80 + i*190}" for i, d in enumerate(deptos)])
+
         system_prompt = (
             "Eres un arquitecto de procesos BPM 2.0. Diseña flujos de trabajo funcionales.\n"
             "RESPONDE EXCLUSIVAMENTE con un JSON válido (sin texto adicional ni bloques de código).\n\n"
             "El JSON debe tener exactamente esta estructura:\n"
             "{\n"
             '  "nodes": [\n'
-            '    {"id": "node_1", "type": "START", "name": "Inicio", "uiPosition": {"x": 400, "y": 60}, "slaHours": 0},\n'
-            '    {"id": "node_2", "type": "USER_TASK", "name": "Revisar Solicitud", "uiPosition": {"x": 400, "y": 220}, "departmentId": "dep_xxx", "slaHours": 24},\n'
-            '    {"id": "node_3", "type": "EXCLUSIVE_GATEWAY", "name": "Aprobado?", "uiPosition": {"x": 400, "y": 380}, "slaHours": 0},\n'
-            '    {"id": "node_4", "type": "END", "name": "Fin", "uiPosition": {"x": 400, "y": 540}, "slaHours": 0}\n'
+            f'    {{"id": "node_1", "type": "START", "name": "Inicio", "uiPosition": {{"x": {center_x}, "y": 50}}, "slaHours": 0}},\n'
+            '    {"id": "node_2", "type": "USER_TASK", "name": "Revisar Solicitud", "uiPosition": {"x": 80, "y": 200}, "departmentId": "dep_xxx", "slaHours": 24},\n'
+            f'    {{"id": "node_last", "type": "END", "name": "Fin", "uiPosition": {{"x": {center_x}, "y": 999}}, "slaHours": 0}}\n'
             "  ],\n"
             '  "edges": [\n'
-            '    {"id": "edge_1", "sourceNodeId": "node_1", "targetNodeId": "node_2"},\n'
-            '    {"id": "edge_2", "sourceNodeId": "node_3", "targetNodeId": "node_4", "condition": {"variable": "f_aprobado", "operator": "EQUALS", "value": "true"}}\n'
+            '    {"id": "edge_1", "sourceNodeId": "node_1", "targetNodeId": "node_2"}\n'
             "  ]\n"
             "}\n\n"
-            "REGLAS OBLIGATORIAS:\n"
+            "REGLAS OBLIGATORIAS DE POSICIONAMIENTO:\n"
+            f"- CARRILES DISPONIBLES (columnas X fijas): {lanes_info}\n"
+            f"- El nodo START siempre va en x={center_x}, y=50 (centrado arriba).\n"
+            f"- El nodo END siempre va en x={center_x}, en la última fila Y (centrado abajo).\n"
+            "- Cada USER_TASK debe usar la coordenada X EXACTA del carril de su departamento asignado.\n"
+            "- Los EXCLUSIVE_GATEWAY deben usar la misma X que el nodo anterior que los alimenta.\n"
+            "- La coordenada Y progresa de arriba hacia abajo: primera fila Y=50, luego Y=200, Y=350, Y=500, Y=650, Y=800, etc. (incrementos de 150px).\n"
+            "- Las bifurcaciones de un GATEWAY (caminos true/false) deben ir a la MISMA fila Y pero en DIFERENTE columna X (cada rama a un carril distinto).\n"
+            "- Tras las bifurcaciones, ambos caminos convergen en el nodo END que está centrado en la fila Y más baja.\n\n"
+            "REGLAS DE ESTRUCTURA:\n"
             "- Tipos válidos: START, USER_TASK, EXCLUSIVE_GATEWAY, END\n"
-            "- Solo un nodo START y al menos un END\n"
-            "- REGLA DE CONVERGENCIA: Si un flujo tiene bifurcaciones, todos los caminos que terminen el proceso deben converger en un ÚNICO nodo de tipo END, a menos que existan estados de finalización lógicamente distintos (ej: Aprobado vs Rechazado).\n"
-            "- Las USER_TASK deben tener departmentId y slaHours (en horas)\n"
-            "- Los EXCLUSIVE_GATEWAY bifurcan con edges que tienen condition\n"
-            "- Las condiciones usan: {variable: 'f_aprobado', operator: 'EQUALS', value: 'true'/'false'}\n"
-            "- Posiciones: distribuir verticalmente (y: 60, 220, 380, 540...) centrado en x: 400\n"
-            "- Si hay bifurcaciones, desplazar x (ej: rama izquierda x:200, rama derecha x:600)\n"
-            f"- Departamentos disponibles para asignar: {json.dumps(deptos, ensure_ascii=False)}\n"
-            "- Si no hay departamentos, deja departmentId vacío\n"
+            "- EXACTAMENTE UN NODO 'START' y EXACTAMENTE UN NODO 'END'. ¡NO agregues múltiples nodos de fin!\n"
+            "- CONVERGENCIA: TODOS los caminos DEBEN terminar apuntando al MISMO nodo END.\n"
+            "- Las USER_TASK deben tener departmentId asignado lógicamente según su función, y slaHours.\n"
+            "- Los EXCLUSIVE_GATEWAY bifurcan con edges que tienen condition ({variable: '...', operator: 'EQUALS', value: 'true'/'false'}).\n"
+            f"- Departamentos disponibles: {json.dumps(deptos, ensure_ascii=False)}\n"
             "- NO incluyas texto, explicaciones ni bloques ```json```. Solo el JSON puro.\n"
         )
 

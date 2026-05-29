@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'dart:io';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:dio/dio.dart';
@@ -20,7 +22,7 @@ class VoiceService {
 
   Future<void> startListening(Function(String) onResult) async {
     if (!_isSpeechInitialized) await initSpeech();
-    
+
     if (_isSpeechInitialized) {
       await _speech.listen(
         onResult: (result) {
@@ -44,10 +46,7 @@ class VoiceService {
         data: {
           'text': text,
           'model_id': 'eleven_multilingual_v2',
-          'voice_settings': {
-            'stability': 0.5,
-            'similarity_boost': 0.5,
-          }
+          'voice_settings': {'stability': 0.5, 'similarity_boost': 0.5},
         },
         options: Options(
           headers: {
@@ -63,7 +62,7 @@ class VoiceService {
         final tempDir = await getTemporaryDirectory();
         final tempFile = File('${tempDir.path}/ai_voice.mp3');
         await tempFile.writeAsBytes(bytes);
-        
+
         await _audioPlayer.play(DeviceFileSource(tempFile.path));
       }
     } catch (e) {

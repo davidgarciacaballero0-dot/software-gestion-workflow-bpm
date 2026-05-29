@@ -2,6 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../../data/services/auth.service';
+import { NotificationService } from '../../../data/services/notification.service';
 import { ChatbotWidgetComponent } from '../../shared/voice-assistant/chatbot-widget.component';
 
 @Component({
@@ -35,10 +36,35 @@ import { ChatbotWidgetComponent } from '../../shared/voice-assistant/chatbot-wid
         </nav>
 
         <div class="navbar-right">
-          <button class="icon-btn">
+          <button class="icon-btn" (click)="toggleNotifications()">
             <span class="material-symbols-outlined">notifications</span>
-            <span class="notification-dot"></span>
+            <span class="notification-dot" *ngIf="notificationService.unreadCount() > 0"></span>
           </button>
+
+          <!-- Dropdown de Notificaciones -->
+          <div class="notifications-dropdown glass-premium animate-fade-in shadow-premium" *ngIf="showNotifications()">
+            <div class="dropdown-header">
+              <h3>Notificaciones</h3>
+              <span class="badge">{{ notificationService.unreadCount() }}</span>
+            </div>
+            <div class="dropdown-body">
+              <div *ngIf="notificationService.notifications().length === 0" class="empty-state">
+                No tienes notificaciones
+              </div>
+              <div *ngFor="let notif of notificationService.notifications()" 
+                   class="notification-item" 
+                   [class.unread]="!notif.leida"
+                   (click)="notif.id && notificationService.markAsRead(notif.id)">
+                <div class="item-icon">🔔</div>
+                <div class="item-content">
+                  <p class="title">{{ notif.titulo }}</p>
+                  <p class="msg">{{ notif.mensaje }}</p>
+                  <span class="time">{{ formatDate(notif.createdAt) }}</span>
+                </div>
+                <div class="unread-indicator" *ngIf="!notif.leida"></div>
+              </div>
+            </div>
+          </div>
           <div class="avatar-clickable" (click)="toggleProfile()" *ngIf="authService.currentUser() as user">
              {{ user.nombre.charAt(0).toUpperCase() }}
           </div>
@@ -305,14 +331,70 @@ import { ChatbotWidgetComponent } from '../../shared/voice-assistant/chatbot-wid
 
     .notification-dot {
       position: absolute;
-      top: 0px;
-      right: 0px;
-      width: 8px;
-      height: 8px;
+      top: -2px;
+      right: -2px;
+      width: 10px;
+      height: 10px;
       background: #ef4444; /* red indicator */
       border-radius: 50%;
       border: 2px solid white;
     }
+
+    /* DROPDOWN NOTIFICACIONES */
+    .notifications-dropdown {
+      position: absolute;
+      top: 70px;
+      right: 2rem;
+      width: 320px;
+      max-height: 400px;
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(0,0,0,0.1);
+      border-radius: 1rem;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .dropdown-header {
+      padding: 1rem;
+      border-bottom: 1px solid rgba(0,0,0,0.05);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .dropdown-header h3 { margin: 0; font-size: 0.9rem; font-weight: 700; color: var(--primary); }
+    .dropdown-header .badge { background: #ef4444; color: white; font-size: 0.7rem; padding: 0.1rem 0.5rem; border-radius: 99px; }
+
+    .dropdown-body {
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .empty-state { padding: 2rem; text-align: center; color: var(--text-muted); font-size: 0.85rem; }
+
+    .notification-item {
+      padding: 0.75rem 1rem;
+      display: flex;
+      gap: 0.75rem;
+      cursor: pointer;
+      transition: background 0.2s;
+      border-bottom: 1px solid rgba(0,0,0,0.03);
+      position: relative;
+    }
+
+    .notification-item:hover { background: rgba(0,0,0,0.02); }
+    .notification-item.unread { background: rgba(77, 64, 255, 0.03); }
+
+    .item-icon { font-size: 1.2rem; }
+    .item-content { flex: 1; }
+    .item-content .title { margin: 0; font-size: 0.8rem; font-weight: 700; color: var(--text-main); }
+    .item-content .msg { margin: 0.2rem 0; font-size: 0.75rem; color: var(--text-muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .item-content .time { font-size: 0.65rem; color: var(--text-muted); opacity: 0.7; }
+
+    .unread-indicator { width: 6px; height: 6px; background: var(--primary); border-radius: 50%; align-self: center; }
 
     .avatar-clickable {
       width: 36px;
@@ -637,9 +719,20 @@ import { ChatbotWidgetComponent } from '../../shared/voice-assistant/chatbot-wid
 })
 export class MainLayoutComponent {
   authService = inject(AuthService);
+  notificationService = inject(NotificationService);
   location = inject(Location);
+  
   showProfile = signal(false);
+  showNotifications = signal(false);
   isCollapsed = signal(false);
+
+  toggleNotifications() {
+    this.showNotifications.update(v => !v);
+  }
+
+  toggleProfile() {
+    this.showProfile.update(v => !v);
+  }
 
   goBack() {
     this.location.back();
@@ -647,10 +740,6 @@ export class MainLayoutComponent {
 
   toggleSidebar() {
     this.isCollapsed.update(v => !v);
-  }
-
-  toggleProfile() {
-    this.showProfile.update((v: boolean) => !v);
   }
 
   formatDate(dateStr?: string) {

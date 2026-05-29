@@ -28,7 +28,7 @@
 
   <div class="designer-body">
     <!-- Sidebar: Caja de Herramientas -->
-    <aside class="sidebar" [class.disabled]="!canEdit()">
+    <aside class="sidebar" [class.disabled]="!canEdit()" [class.collapsed]="sidebarCollapsed">
       <div class="tool-section">
         <h4>Nodos de Control</h4>
         <div class="node-tool tool-start" (click)="addNode('START')">
@@ -63,32 +63,36 @@
 
       <!-- CU-14: Diseño Asistido por IA -->
       <div class="tool-section ai-section mt-1" *ngIf="canEdit()">
-        <h4><span class="material-symbols-outlined" style="vertical-align: middle; font-size: 18px;">auto_awesome</span> Generar con IA</h4>
+        <h4>Generar con IA</h4>
         <div class="ai-prompt-box">
           <div class="textarea-wrapper">
             <textarea [(ngModel)]="aiPrompt"
               placeholder="Ej: 'Agrega un paso de aprobación al final'..."
-              class="form-control ai-textarea" rows="4" [disabled]="isListening"></textarea>
+              class="form-control ai-textarea" rows="2" [disabled]="isListening"></textarea>
           </div>
-          
-          <div class="voice-controls mt-2 d-flex flex-column gap-2">
-            <button *ngIf="!isListening" class="btn-premium btn-premium-secondary w-100 d-flex justify-content-center align-items-center gap-2" (click)="toggleVoiceInput()" title="Empezar a Escuchar">
-              <span class="material-symbols-outlined">mic</span> Empezar a Escuchar
+          <div class="d-flex align-items-center gap-2 mt-2">
+            <!-- Botón Micrófono (Solo Icono) -->
+            <button *ngIf="!isListening" class="btn-premium btn-premium-secondary d-flex justify-content-center align-items-center" 
+                    (click)="toggleVoiceInput()" title="Empezar a Escuchar" 
+                    style="width: 44px; height: 44px; padding: 0; flex-shrink: 0;">
+              <span class="material-symbols-outlined">mic</span>
             </button>
-            <button *ngIf="isListening" class="btn-premium btn-danger w-100 d-flex justify-content-center align-items-center gap-2" style="background-color: #ef4444; color: white;" (click)="toggleVoiceInput()" title="Detener y Procesar">
-              <span class="material-symbols-outlined pulse">stop_circle</span> Detener y Procesar
+            <button *ngIf="isListening" class="btn-premium btn-danger d-flex justify-content-center align-items-center" 
+                    style="background-color: #ef4444; color: white; width: 44px; height: 44px; padding: 0; flex-shrink: 0;" 
+                    (click)="toggleVoiceInput()" title="Detener y Procesar">
+              <span class="material-symbols-outlined pulse">stop_circle</span>
+            </button>
+
+            <!-- Botón Aplicar Cambios -->
+            <button class="btn-premium btn-premium-primary w-full" (click)="solicitarGeneracionIA()"
+              [disabled]="generatingIA || !aiPrompt || isListening" style="height: 44px; justify-content: center;">
+              {{ generatingIA ? 'Procesando...' : 'Aplicar Cambios' }}
             </button>
           </div>
           
           <div *ngIf="isListening" class="listening-indicator text-center mt-1 text-primary" style="font-size: 0.8rem;">
             Escuchando... (auto-envío en 5s de silencio)
           </div>
-
-          <button class="btn-premium btn-premium-primary w-full mt-2" (click)="solicitarGeneracionIA()"
-            [disabled]="generatingIA || !aiPrompt || isListening">
-            <span class="material-symbols-outlined" *ngIf="!generatingIA">magic_button</span>
-            {{ generatingIA ? 'Procesando...' : 'Aplicar Cambios' }}
-          </button>
         </div>
       </div>
 
@@ -99,104 +103,136 @@
       </div>
     </aside>
 
+    <!-- Botón toggle sidebar (visible en tablet/móvil) -->
+    <button class="sidebar-toggle" (click)="sidebarCollapsed = !sidebarCollapsed" title="Mostrar/Ocultar herramientas">
+      <span class="material-symbols-outlined">{{ sidebarCollapsed ? 'menu' : 'close' }}</span>
+    </button>
+
     <!-- Lienzo Central -->
     <main class="canvas-area" id="canvas" *ngIf="isLoaded">
       
-      <!-- Capa de Carriles (Swimlanes) -->
-      <div class="swimlanes-container">
-        <div class="lane" *ngFor="let lane of activeLanes; let i = index">
-          <div class="lane-header glass-premium shadow-ambient">
-            <select [(ngModel)]="lane.departamentoId" class="lane-select form-control" [disabled]="!canEdit()">
-              <option value="">Seleccione Departamento...</option>
-              <option *ngFor="let d of departamentos" [value]="d.id">{{ d.nombre }}</option>
-            </select>
-          </div>
-        </div>
-      </div>
+      <!-- Wrapper de Zoom -->
+      <div class="canvas-zoom-wrapper" [style.transform]="'scale(' + zoomLevel + ')'" 
+           [style.min-width.px]="canvasDynamicWidth" [style.min-height.px]="canvasDynamicHeight">
 
-      <!-- Capa SVG para Aristas -->
-      <svg class="connections-svg">
-        <defs>
-          <marker id="arrowhead" markerWidth="12" markerHeight="8" refX="11" refY="4" orient="auto">
-            <polygon points="0 0, 12 4, 0 8" fill="#555" />
-          </marker>
-          <marker id="arrowhead-active" markerWidth="12" markerHeight="8" refX="11" refY="4" orient="auto">
-            <polygon points="0 0, 12 4, 0 8" fill="var(--primary)" />
-          </marker>
-        </defs>
-
-        <!-- Conectores Ortogonales 90° -->
-        <path *ngFor="let edge of edges" class="connector-line" [class.active]="selectedEdge === edge.id"
-          [attr.d]="calculatePath(edge)" [attr.marker-end]="selectedEdge === edge.id ? 'url(#arrowhead-active)' : 'url(#arrowhead)'" (click)="selectEdge(edge.id, $event)"
-          style="pointer-events: stroke;"></path>
-
-        <!-- Etiqueta de Condición (TRUE/FALSE) para bifurcaciones -->
-        <ng-container *ngFor="let edge of edges">
-          <text *ngIf="edge.condition?.value" [attr.x]="getEdgeLabelPosition(edge).x" [attr.y]="getEdgeLabelPosition(edge).y"
-            class="edge-label" text-anchor="middle" font-size="11" font-weight="700">
-            {{ edge.condition?.value === 'true' ? 'VERDADERO' : edge.condition?.value === 'false' ? 'FALSO' : (edge.condition?.value | uppercase) }}
-          </text>
-        </ng-container>
-      </svg>
-
-      <!-- Capa de Nodos Con Arrastre del CDK -->
-      <div *ngFor="let node of nodes" class="node-item" [class.selected]="selectedNode?.id === node.id"
-        [ngClass]="node.type" [cdkDragFreeDragPosition]="node.uiPosition" cdkDrag
-        [cdkDragDisabled]="!canEdit()" 
-        (cdkDragStarted)="onNodeDragStarted(node)"
-        (cdkDragMoved)="onNodeDragMoved($event, node)"
-        (cdkDragEnded)="onNodeMoved($event, node)" (click)="selectNode(node)">
-
-        <!-- Badge de documentos requeridos -->
-        <div class="doc-count-badge" *ngIf="node.type === 'USER_TASK' && getRequiredDocsCount(node) > 0">
-          {{ getRequiredDocsCount(node) }}
-        </div>
-
-        <!-- START / END: solo texto grande -->
-        <ng-container *ngIf="node.type === 'START' || node.type === 'END'">
-          <div class="node-capsule-text">
-            {{ node.type === 'START' ? 'INICIO' : 'FIN' }}
-          </div>
-        </ng-container>
-
-        <!-- USER_TASK: layout con icono + texto -->
-        <ng-container *ngIf="node.type === 'USER_TASK'">
-          <div class="node-content-wrapper">
-            <div class="node-icon-sidebar">
-              <span class="material-symbols-outlined">task</span>
-            </div>
-            <div class="node-text-content">
-              <div class="node-header">
-                <span>{{ node.name }}</span>
-              </div>
-              <div class="node-sub">
-                <span class="dept-badge">
-                  {{ getDepartmentName(node.departmentId) || 'SIN ASIGNAR' }}
-                </span>
-                <span *ngIf="node.slaHours" class="sla-badge" title="SLA Horas">
-                  <span class="material-symbols-outlined" style="font-size: 12px; vertical-align: middle;">schedule</span> {{ node.slaHours }}h
-                </span>
-              </div>
+        <!-- Capa de Carriles (Swimlanes) -->
+        <div class="swimlanes-container">
+          <div class="lane" *ngFor="let lane of activeLanes; let i = index">
+            <div class="lane-header glass-premium shadow-ambient">
+              <select [(ngModel)]="lane.departamentoId" (ngModelChange)="onLaneChanged()" class="lane-select form-control" [disabled]="!canEdit()">
+                <option value="">Seleccione Departamento...</option>
+                <option *ngFor="let d of departamentos" [value]="d.id">{{ d.nombre }}</option>
+              </select>
             </div>
           </div>
-        </ng-container>
+        </div>
 
-        <!-- EXCLUSIVE_GATEWAY: texto de decisión -->
-        <ng-container *ngIf="node.type === 'EXCLUSIVE_GATEWAY'">
-          <div class="gateway-content">
-            <span class="gateway-label">{{ node.name }}</span>
+        <!-- Capa SVG para Aristas -->
+        <svg class="connections-svg" [attr.width]="canvasDynamicWidth" [attr.height]="canvasDynamicHeight"
+             [style.width.px]="canvasDynamicWidth" [style.height.px]="canvasDynamicHeight">
+          <defs>
+            <marker id="arrowhead" markerWidth="12" markerHeight="8" refX="11" refY="4" orient="auto">
+              <polygon points="0 0, 12 4, 0 8" fill="#555" />
+            </marker>
+            <marker id="arrowhead-active" markerWidth="12" markerHeight="8" refX="11" refY="4" orient="auto">
+              <polygon points="0 0, 12 4, 0 8" fill="var(--primary)" />
+            </marker>
+          </defs>
+
+          <!-- Conectores Ortogonales 90° -->
+          <path *ngFor="let edge of edges" class="connector-line" [class.active]="selectedEdge === edge.id"
+            [attr.d]="calculatePath(edge)" [attr.marker-end]="selectedEdge === edge.id ? 'url(#arrowhead-active)' : 'url(#arrowhead)'" (click)="selectEdge(edge.id, $event)"
+            style="pointer-events: stroke;"></path>
+
+          <!-- Etiqueta de Condición (TRUE/FALSE) para bifurcaciones -->
+          <ng-container *ngFor="let edge of edges">
+            <text *ngIf="edge.condition?.value" [attr.x]="getEdgeLabelPosition(edge).x" [attr.y]="getEdgeLabelPosition(edge).y"
+              class="edge-label" text-anchor="middle" font-size="11" font-weight="700">
+              {{ edge.condition?.value === 'true' ? 'VERDADERO' : edge.condition?.value === 'false' ? 'FALSO' : (edge.condition?.value | uppercase) }}
+            </text>
+          </ng-container>
+        </svg>
+
+        <!-- Capa de Cursores en Vivo -->
+        <div class="live-cursors-layer">
+          <div *ngFor="let cursor of liveCursors | keyvalue" class="live-cursor" 
+               [style.transform]="'translate(' + cursor.value.x + 'px, ' + cursor.value.y + 'px)'">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M1 1L15 6L8.5 8.5L6 15L1 1Z" fill="#ff4081" stroke="white" stroke-width="1.5" stroke-linejoin="round"/>
+            </svg>
+            <div class="cursor-label">{{ cursor.value.name }}</div>
           </div>
-        </ng-container>
+        </div>
 
-        <!-- Puntos de Conexión (4 direcciones) -->
-        <div class="anchor-point top" [class.highlight]="isConnecting() && connectingSourceNode?.id !== node.id"
-          (click)="finishConnecting(node, $event)"></div>
-        <div class="anchor-point bottom" [class.connecting-origin]="connectingSourceNode?.id === node.id"
-          (click)="startConnecting(node, $event)"></div>
-        <div class="anchor-point left" [class.highlight]="isConnecting() && connectingSourceNode?.id !== node.id"
-          (click)="finishConnecting(node, $event)"></div>
-        <div class="anchor-point right" [class.connecting-origin]="connectingSourceNode?.id === node.id"
-          (click)="startConnecting(node, $event)"></div>
+        <!-- Capa de Nodos Con Arrastre del CDK -->
+        <div *ngFor="let node of nodes; trackBy: trackByNode" class="node-item" [class.selected]="selectedNode?.id === node.id"
+          [ngClass]="node.type" [cdkDragFreeDragPosition]="node.uiPosition" cdkDrag
+          [cdkDragDisabled]="!canEdit()" 
+          (cdkDragStarted)="onNodeDragStarted(node)"
+          (cdkDragMoved)="onNodeDragMoved($event, node)"
+          (cdkDragEnded)="onNodeMoved($event, node)" (click)="selectNode(node)">
+
+          <!-- Badge de documentos requeridos -->
+          <div class="doc-count-badge" *ngIf="node.type === 'USER_TASK' && getRequiredDocsCount(node) > 0">
+            {{ getRequiredDocsCount(node) }}
+          </div>
+
+          <!-- START / END: solo texto grande -->
+          <ng-container *ngIf="node.type === 'START' || node.type === 'END'">
+            <div class="node-capsule-text">
+              {{ node.type === 'START' ? 'INICIO' : 'FIN' }}
+            </div>
+          </ng-container>
+
+          <!-- USER_TASK: layout con icono + texto -->
+          <ng-container *ngIf="node.type === 'USER_TASK'">
+            <div class="node-content-wrapper">
+              <div class="node-icon-sidebar">
+                <span class="material-symbols-outlined">task</span>
+              </div>
+              <div class="node-text-content">
+                <div class="node-header">
+                  <span>{{ node.name }}</span>
+                </div>
+                <div class="node-sub">
+                  <span class="dept-badge">
+                    {{ getDepartmentName(node.departmentId) || 'SIN ASIGNAR' }}
+                  </span>
+                  <span *ngIf="node.slaHours" class="sla-badge" title="SLA Horas">
+                    <span class="material-symbols-outlined" style="font-size: 12px; vertical-align: middle;">schedule</span> {{ node.slaHours }}h
+                  </span>
+                </div>
+              </div>
+            </div>
+          </ng-container>
+
+          <!-- EXCLUSIVE_GATEWAY: texto de decisión -->
+          <ng-container *ngIf="node.type === 'EXCLUSIVE_GATEWAY'">
+            <div class="gateway-content">
+              <span class="gateway-label">{{ node.name }}</span>
+            </div>
+          </ng-container>
+
+          <!-- Puntos de Conexión (4 direcciones) -->
+          <div class="anchor-point top" [class.highlight]="isConnecting() && connectingSourceNode?.id !== node.id"
+            (click)="finishConnecting(node, $event)"></div>
+          <div class="anchor-point bottom" [class.connecting-origin]="connectingSourceNode?.id === node.id"
+            (click)="startConnecting(node, $event)"></div>
+          <div class="anchor-point left" [class.highlight]="isConnecting() && connectingSourceNode?.id !== node.id"
+            (click)="finishConnecting(node, $event)"></div>
+          <div class="anchor-point right" [class.connecting-origin]="connectingSourceNode?.id === node.id"
+            (click)="startConnecting(node, $event)"></div>
+        </div>
+
+      </div><!-- /canvas-zoom-wrapper -->
+
+      <!-- Controles de Zoom (flotantes) -->
+      <div class="zoom-controls">
+        <button (click)="zoomOut()" title="Alejar"><span class="material-symbols-outlined">remove</span></button>
+        <span class="zoom-label">{{ (zoomLevel * 100) | number:'1.0-0' }}%</span>
+        <button (click)="zoomIn()" title="Acercar"><span class="material-symbols-outlined">add</span></button>
+        <button (click)="zoomFit()" title="Ajustar al lienzo"><span class="material-symbols-outlined">fit_screen</span></button>
+        <button (click)="zoomReset()" title="Restablecer 100%"><span class="material-symbols-outlined">restart_alt</span></button>
       </div>
     </main>
 
@@ -221,7 +257,7 @@
             <h4>IDENTIFICACIÓN</h4>
             <div class="form-group">
               <label>Nombre del Paso</label>
-              <input type="text" [(ngModel)]="selectedNode.name" class="form-control" placeholder="Ej: Revisión Técnica">
+              <input type="text" [(ngModel)]="selectedNode.name" (ngModelChange)="onNodeChanged(selectedNode)" class="form-control" placeholder="Ej: Revisión Técnica">
             </div>
             <div class="form-group mt-2">
               <label>Tipo de Nodo</label>
@@ -234,14 +270,14 @@
             <h4>CONFIGURACIÓN</h4>
             <div class="form-group">
               <label>Departamento Responsable</label>
-              <select [(ngModel)]="selectedNode.departmentId" class="form-control">
+              <select [(ngModel)]="selectedNode.departmentId" (ngModelChange)="onNodeChanged(selectedNode)" class="form-control">
                 <option value="" disabled>Seleccione...</option>
                 <option *ngFor="let d of departamentos" [value]="d.id">{{ d.nombre }}</option>
               </select>
             </div>
             <div class="form-group mt-2">
               <label>Tiempo Límite (SLA Horas)</label>
-              <input type="number" [(ngModel)]="selectedNode.slaHours" class="form-control" placeholder="Ej: 48" min="1">
+              <input type="number" [(ngModel)]="selectedNode.slaHours" (ngModelChange)="onNodeChanged(selectedNode)" class="form-control" placeholder="Ej: 48" min="1">
               <small class="text-error" *ngIf="!selectedNode.slaHours"><span class="material-symbols-outlined" style="font-size:12px;">warning</span> Requerido (mín. 1h)</small>
             </div>
           </div>
@@ -316,11 +352,11 @@
               <ng-container *ngFor="let field of selectedNode.formDefinition; let i = index">
                 <div *ngIf="field.type !== 'FILE'" class="field-card monolith-surface">
                   <div class="field-row">
-                    <input type="text" [(ngModel)]="field.label" class="field-input" placeholder="Etiqueta del campo">
+                    <input type="text" [(ngModel)]="field.label" (ngModelChange)="onNodeChanged(selectedNode)" class="field-input" placeholder="Etiqueta del campo">
                     <button *ngIf="canEdit()" class="btn-remove-tiny" (click)="removeField(i)"><span class="material-symbols-outlined" style="font-size:14px;">close</span></button>
                   </div>
                   <div class="field-row mt-1">
-                    <select [(ngModel)]="field.type" class="field-select">
+                    <select [(ngModel)]="field.type" (ngModelChange)="onNodeChanged(selectedNode)" class="field-select">
                       <option value="TEXT">Texto</option>
                       <option value="NUMBER">Número</option>
                       <option value="DATE">Fecha</option>
@@ -328,7 +364,7 @@
                       <option value="DROPDOWN">Selección</option>
                     </select>
                     <label class="check-label d-flex align-items-center gap-1">
-                      <input type="checkbox" [(ngModel)]="field.required"> Req.
+                      <input type="checkbox" [(ngModel)]="field.required" (ngModelChange)="onNodeChanged(selectedNode)"> Req.
                     </label>
                   </div>
                 </div>

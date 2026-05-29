@@ -8,11 +8,11 @@ class AppConstants {
 
   // ── Backend ──────────────────────────────────────────────────
   // Para el emulador de Android usa 10.0.2.2 en lugar de localhost.
-  // En dispositivo físico, usa la IP local del equipo (p.ej. 192.168.x.x).
-  static const String baseUrl = 'http://10.0.2.2:8080/api/v1';
+  // En dispositivo físico, usa la IP local del equipo (p.ej. 192.168.x.x) o el servidor en la nube.
+  static const String baseUrl = 'https://backend-spring-241130514391.us-central1.run.app/api/v1';
 
   // ── WebSocket (STOMP) ────────────────────────────────────────
-  static const String wsUrl = 'ws://10.0.2.2:8080/ws-bpm/websocket';
+  static const String wsUrl = 'https://backend-spring-241130514391.us-central1.run.app/ws-bpm/websocket';
 
   // ── JWT ──────────────────────────────────────────────────────
   static const String tokenKey = 'bpm_jwt_token';

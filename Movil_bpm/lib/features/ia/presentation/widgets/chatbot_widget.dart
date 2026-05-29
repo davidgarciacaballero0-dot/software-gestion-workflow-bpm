@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -47,7 +49,7 @@ class _ChatbotWidgetState extends ConsumerState<ChatbotWidget> {
     ref.read(isTypingProvider.notifier).state = true;
 
     await ref.read(chatProvider.notifier).sendMessage(text, 'CLIENTE');
-    
+
     ref.read(isTypingProvider.notifier).state = false;
     _scrollToBottom();
 
@@ -89,7 +91,10 @@ class _ChatbotWidgetState extends ConsumerState<ChatbotWidget> {
           child: FloatingActionButton(
             onPressed: _toggleChat,
             backgroundColor: _isOpen ? AppTheme.subtle : AppTheme.primary,
-            child: Icon(_isOpen ? Icons.close : Icons.auto_awesome_rounded, color: Colors.white),
+            child: Icon(
+              _isOpen ? Icons.close : Icons.auto_awesome_rounded,
+              color: Colors.white,
+            ),
           ),
         ),
 
@@ -108,7 +113,7 @@ class _ChatbotWidgetState extends ConsumerState<ChatbotWidget> {
                     width: MediaQuery.of(context).size.width * 0.85,
                     height: 500,
                     decoration: BoxDecoration(
-                      color: AppTheme.glassBackground,
+                      color: Colors.white.withOpacity(0.85),
                       borderRadius: BorderRadius.circular(24),
                       border: Border.all(color: Colors.white.withOpacity(0.3)),
                       boxShadow: [
@@ -116,7 +121,7 @@ class _ChatbotWidgetState extends ConsumerState<ChatbotWidget> {
                           color: Colors.black.withOpacity(0.1),
                           blurRadius: 20,
                           offset: const Offset(0, 10),
-                        )
+                        ),
                       ],
                     ),
                     child: Column(
@@ -139,7 +144,13 @@ class _ChatbotWidgetState extends ConsumerState<ChatbotWidget> {
                             padding: EdgeInsets.only(left: 16, bottom: 8),
                             child: Align(
                               alignment: Alignment.centerLeft,
-                              child: Text('Asistente IA escribiendo...', style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic)),
+                              child: Text(
+                                'Asistente IA escribiendo...',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
                             ),
                           ),
                         // Input Area
@@ -160,21 +171,35 @@ class _ChatbotWidgetState extends ConsumerState<ChatbotWidget> {
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
       decoration: BoxDecoration(
         color: AppTheme.primary.withOpacity(0.05),
-        border: Border(bottom: BorderSide(color: Colors.black.withOpacity(0.05))),
+        border: Border(
+          bottom: BorderSide(color: Colors.black.withOpacity(0.05)),
+        ),
       ),
       child: Row(
         children: [
           Container(
             width: 8,
             height: 8,
-            decoration: const BoxDecoration(color: Colors.green, shape: BoxShape.circle),
+            decoration: const BoxDecoration(
+              color: Colors.green,
+              shape: BoxShape.circle,
+            ),
           ),
           const SizedBox(width: 10),
           const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Asistente IA', style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primary)),
-              Text('Atención al Cliente', style: TextStyle(fontSize: 10, color: AppTheme.subtle)),
+              Text(
+                'Asistente IA',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.primary,
+                ),
+              ),
+              Text(
+                'Atención al Cliente',
+                style: TextStyle(fontSize: 10, color: AppTheme.subtle),
+              ),
             ],
           ),
         ],
@@ -193,12 +218,20 @@ class _ChatbotWidgetState extends ConsumerState<ChatbotWidget> {
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(16),
             topRight: const Radius.circular(16),
-            bottomLeft: msg.isAi ? const Radius.circular(0) : const Radius.circular(16),
-            bottomRight: msg.isAi ? const Radius.circular(16) : const Radius.circular(0),
+            bottomLeft: msg.isAi
+                ? const Radius.circular(0)
+                : const Radius.circular(16),
+            bottomRight: msg.isAi
+                ? const Radius.circular(16)
+                : const Radius.circular(0),
           ),
           boxShadow: [
             if (msg.isAi)
-              BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 5, offset: const Offset(0, 2))
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 5,
+                offset: const Offset(0, 2),
+              ),
           ],
         ),
         child: Column(
@@ -206,12 +239,18 @@ class _ChatbotWidgetState extends ConsumerState<ChatbotWidget> {
           children: [
             Text(
               msg.text,
-              style: TextStyle(color: msg.isAi ? AppTheme.onSurface : Colors.white, fontSize: 14),
+              style: TextStyle(
+                color: msg.isAi ? AppTheme.onSurface : Colors.white,
+                fontSize: 14,
+              ),
             ),
             const SizedBox(height: 4),
             Text(
               DateFormat('HH:mm').format(msg.timestamp),
-              style: TextStyle(color: msg.isAi ? AppTheme.subtle : Colors.white70, fontSize: 10),
+              style: TextStyle(
+                color: msg.isAi ? AppTheme.subtle : Colors.white70,
+                fontSize: 10,
+              ),
             ),
           ],
         ),
@@ -239,8 +278,14 @@ class _ChatbotWidgetState extends ConsumerState<ChatbotWidget> {
                 hintText: 'Escribe tu consulta...',
                 hintStyle: const TextStyle(fontSize: 14),
                 fillColor: const Color(0xFFF4F4F5),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide.none),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  borderSide: BorderSide.none,
+                ),
               ),
             ),
           ),

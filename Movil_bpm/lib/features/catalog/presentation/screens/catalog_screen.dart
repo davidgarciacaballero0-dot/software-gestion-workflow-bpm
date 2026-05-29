@@ -2,6 +2,8 @@
 // lib/features/catalog/presentation/screens/catalog_screen.dart
 // ─────────────────────────────────────────────────────────────
 
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -50,7 +52,12 @@ class CatalogScreen extends ConsumerWidget {
               }
 
               return ListView.separated(
-                padding: const EdgeInsets.only(left: 24, right: 24, bottom: 24, top: 100),
+                padding: const EdgeInsets.only(
+                  left: 24,
+                  right: 24,
+                  bottom: 24,
+                  top: 100,
+                ),
                 itemCount: policies.length,
                 separatorBuilder: (_, __) => const SizedBox(height: 16),
                 itemBuilder: (context, index) {
@@ -151,7 +158,9 @@ class _PolicyCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  policyDesc.isNotEmpty ? policyDesc : 'Sin descripción disponible.',
+                  policyDesc.isNotEmpty
+                      ? policyDesc
+                      : 'Sin descripción disponible.',
                   style: const TextStyle(color: AppTheme.subtle, fontSize: 13),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -164,7 +173,10 @@ class _PolicyCard extends StatelessWidget {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.primary,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
                       minimumSize: Size.zero,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -173,7 +185,11 @@ class _PolicyCard extends StatelessWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text('INICIAR TRÁMITE', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.white, fontSize: 10)),
+                        Text(
+                          'INICIAR TRÁMITE',
+                          style: Theme.of(context).textTheme.labelSmall
+                              ?.copyWith(color: Colors.white, fontSize: 10),
+                        ),
                         const SizedBox(width: 8),
                         const Icon(Icons.arrow_forward_rounded, size: 14),
                       ],
@@ -189,7 +205,6 @@ class _PolicyCard extends StatelessWidget {
   }
 }
 
-
 class _EmptyCatalogState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -201,13 +216,17 @@ class _EmptyCatalogState extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.inventory_2_outlined, size: 64, color: AppTheme.subtle.withOpacity(0.2)),
+            Icon(
+              Icons.inventory_2_outlined,
+              size: 64,
+              color: AppTheme.subtle.withOpacity(0.2),
+            ),
             const SizedBox(height: 16),
             Text(
               'No hay trámites disponibles',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: AppTheme.subtle,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(color: AppTheme.subtle),
             ),
           ],
         ),

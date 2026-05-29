@@ -25,9 +25,19 @@ public class NotificacionController {
      * Obtiene todas las notificaciones de un usuario (ordenadas por fecha descendente).
      */
     @GetMapping("/usuario/{usuarioId}")
-    public ResponseEntity<List<NotificacionPush>> listarPorUsuario(@PathVariable String usuarioId) {
-        List<NotificacionPush> notificaciones = notificacionRepository
-                .findByIdUsuarioDestino(usuarioId, Sort.by(Sort.Direction.DESC, "createdAt"));
+    public ResponseEntity<List<NotificacionPush>> listarPorUsuario(
+            @PathVariable String usuarioId,
+            @RequestParam(required = false) String departamentoId) {
+        
+        List<NotificacionPush> notificaciones;
+        Sort sort = Sort.by(Sort.Direction.DESC, "createdAt");
+        
+        if (departamentoId != null && !departamentoId.isEmpty()) {
+            notificaciones = notificacionRepository.findByIdUsuarioDestinoOrIdDepartamentoDestino(usuarioId, departamentoId, sort);
+        } else {
+            notificaciones = notificacionRepository.findByIdUsuarioDestino(usuarioId, sort);
+        }
+        
         return ResponseEntity.ok(notificaciones);
     }
 

@@ -1,4 +1,5 @@
-import 'dart:ui';
+// ignore_for_file: deprecated_member_use, curly_braces_in_flow_control_structures
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:animate_do/animate_do.dart';
@@ -44,7 +45,12 @@ class HomeScreen extends ConsumerWidget {
           },
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.only(left: 24, right: 24, bottom: 24, top: 100),
+            padding: const EdgeInsets.only(
+              left: 24,
+              right: 24,
+              bottom: 24,
+              top: 100,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -55,10 +61,11 @@ class HomeScreen extends ConsumerWidget {
                     children: [
                       Text(
                         'Hola, ${user?.nombre ?? 'Cliente'}',
-                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          color: AppTheme.primary,
-                          fontWeight: FontWeight.w800,
-                        ),
+                        style: Theme.of(context).textTheme.headlineMedium
+                            ?.copyWith(
+                              color: AppTheme.primary,
+                              fontWeight: FontWeight.w800,
+                            ),
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -75,18 +82,25 @@ class HomeScreen extends ConsumerWidget {
                 // ── Resumen / Dashboard ───────────────────────────
                 tramitesAsync.when(
                   data: (tramites) {
-                    final activos = tramites.where((t) => t.estadoActual != 'FINALIZADO' && t.estadoActual != 'RECHAZADO').length;
+                    final activos = tramites
+                        .where(
+                          (t) =>
+                              t.estadoActual != 'FINALIZADO' &&
+                              t.estadoActual != 'RECHAZADO',
+                        )
+                        .length;
                     return FadeIn(
                       delay: const Duration(milliseconds: 200),
                       child: _ResumenPremiumCard(activos: activos),
                     );
                   },
-                  loading: () => const Center(child: CircularProgressIndicator()),
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
                   error: (err, stack) => _ErrorCard(error: err.toString()),
                 ),
 
                 const SizedBox(height: 40),
-                
+
                 // ── Título Sección ────────────────────────────────
                 FadeInLeft(
                   delay: const Duration(milliseconds: 300),
@@ -158,7 +172,11 @@ class _ResumenPremiumCard extends StatelessWidget {
           Positioned(
             right: -10,
             top: -10,
-            child: Icon(Icons.blur_on, color: Colors.white.withOpacity(0.05), size: 120),
+            child: Icon(
+              Icons.blur_on,
+              color: Colors.white.withOpacity(0.05),
+              size: 120,
+            ),
           ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -208,7 +226,9 @@ class _TramitePremiumItem extends StatelessWidget {
   Widget build(BuildContext context) {
     Color statusColor = Colors.grey;
     if (tramite.estadoActual == 'PENDIENTE') statusColor = Colors.orange;
-    if (tramite.estadoActual == 'EN_PROCESO' || tramite.estadoActual == 'APROBADO') statusColor = AppTheme.primary;
+    if (tramite.estadoActual == 'EN_PROCESO' ||
+        tramite.estadoActual == 'APROBADO')
+      statusColor = AppTheme.primary;
     if (tramite.estadoActual == 'FINALIZADO') statusColor = Colors.green;
     if (tramite.estadoActual == 'RECHAZADO') statusColor = Colors.red;
 
@@ -225,7 +245,10 @@ class _TramitePremiumItem extends StatelessWidget {
         ],
       ),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 20,
+          vertical: 12,
+        ),
         leading: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
@@ -261,7 +284,11 @@ class _TramitePremiumItem extends StatelessWidget {
           ),
           child: Text(
             tramite.estadoActual,
-            style: TextStyle(color: statusColor, fontSize: 9, fontWeight: FontWeight.w800),
+            style: TextStyle(
+              color: statusColor,
+              fontSize: 9,
+              fontWeight: FontWeight.w800,
+            ),
           ),
         ),
         onTap: () {
@@ -303,7 +330,11 @@ class _EmptyState extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 60),
       child: Column(
         children: [
-          Icon(Icons.inbox_outlined, size: 48, color: AppTheme.subtle.withOpacity(0.3)),
+          Icon(
+            Icons.inbox_outlined,
+            size: 48,
+            color: AppTheme.subtle.withOpacity(0.3),
+          ),
           const SizedBox(height: 16),
           const Text(
             'Sin trámites activos',

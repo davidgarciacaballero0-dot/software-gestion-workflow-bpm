@@ -32,6 +32,9 @@ interface ChatMessage {
           </div>
         </div>
         <div class="header-actions">
+          <button class="voice-toggle-btn" (click)="toggleMute()" [title]="isMuted() ? 'Activar voz' : 'Silenciar voz'">
+            {{ isMuted() ? '🔇' : '🔊' }}
+          </button>
           <button class="minimize-btn" (click)="toggleChat()">—</button>
         </div>
       </div>
@@ -219,6 +222,7 @@ export class ChatbotWidgetComponent implements AfterViewChecked {
   @ViewChild('scrollContainer') private scrollContainer!: ElementRef;
 
   isOpen = signal(false);
+  isMuted = signal(false);
   isListening = false;
   isTyping = signal(false);
   messages = signal<ChatMessage[]>([]);
@@ -259,6 +263,13 @@ export class ChatbotWidgetComponent implements AfterViewChecked {
     this.isOpen.update(v => !v);
   }
 
+  toggleMute() {
+    this.isMuted.update(v => !v);
+    if (this.isMuted()) {
+      window.speechSynthesis.cancel(); // Detiene el audio inmediatamente si se silencia
+    }
+  }
+
   toggleListening() {
     if (this.isListening) {
       this.recognition.stop();
@@ -294,6 +305,7 @@ export class ChatbotWidgetComponent implements AfterViewChecked {
         this.isTyping.set(false);
         const aiResponse = res.respuesta;
         this.messages.update(prev => [...prev, { text: aiResponse, isAi: true, timestamp: new Date() }]);
+        this.speakText(aiResponse);
       },
       error: (err) => {
         this.isTyping.set(false);
@@ -311,5 +323,19 @@ export class ChatbotWidgetComponent implements AfterViewChecked {
     if (this.scrollContainer) {
       this.scrollContainer.nativeElement.scrollTop = this.scrollContainer.nativeElement.scrollHeight;
     }
+  }
+
+  private speakText(text: string): void {
+    if (this.isMuted() || !('speechSynthesis' in window)) return;
+    
+    // Limpiar respuesta de markdown o símbolos raros antes de hablar
+    const cleanText = text.replace(/[*#_]/g, '');
+    
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    utterance.lang = 'es-ES'; // Forzar español
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+    
+    window.speechSynthesis.speak(utterance);
   }
 }

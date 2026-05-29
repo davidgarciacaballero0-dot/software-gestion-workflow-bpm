@@ -1,0 +1,48 @@
+{
+  "hosting": {
+    "public": "frontend-bpm/dist/frontend-bpm/browser",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "/api/**",
+        "run": {
+          "serviceId": "backend-spring",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "/ia/**",
+        "run": {
+          "serviceId": "ia-service",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "/ws-bpm/**",
+        "run": {
+          "serviceId": "backend-spring",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ],
+    "headers": [
+      {
+        "source": "/index.html",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
+          }
+        ]
+      }
+    ]
+  }
+}
