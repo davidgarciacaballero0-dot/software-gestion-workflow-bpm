@@ -63,11 +63,11 @@ import { AuthService } from '../../../data/services/auth.service';
     .progress-box { display: flex; align-items: center; justify-content: center; gap: 1rem; color: #94a3b8; }
     .spinner { width: 24px; height: 24px; border: 3px solid rgba(255,255,255,0.1); border-left-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
 
-    .success-box { display: flex; align-items: center; justify-content: space-between; background: rgba(16, 185, 129, 0.1); padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid rgba(16, 185, 129, 0.2); }
+    .success-box { display: flex; align-items: center; justify-content: space-between; background: rgba(16, 185, 129, 0.1); padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid rgba(16, 185, 129, 0.3); }
     .success-icon { color: #10b981; margin-right: 0.5rem; }
-    .file-name { color: #e2e8f0; font-size: 0.85rem; flex: 1; text-align: left; }
-    .remove-btn { background: transparent; border: none; color: #475569; cursor: pointer; transition: color 0.2s; }
-    .remove-btn:hover { color: #ef4444; }
+    .file-name { color: #064e3b; font-weight: 600; font-size: 0.85rem; flex: 1; text-align: left; }
+    .remove-btn { background: transparent; border: none; color: #ef4444; font-weight: bold; cursor: pointer; transition: color 0.2s; }
+    .remove-btn:hover { color: #b91c1c; }
 
     @keyframes spin { to { transform: rotate(360deg); } }
   `]

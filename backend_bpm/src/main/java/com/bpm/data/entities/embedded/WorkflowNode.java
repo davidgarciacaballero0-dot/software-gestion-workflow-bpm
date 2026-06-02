@@ -21,4 +21,5 @@ public class WorkflowNode {
     private UIPosition uiPosition;
     private List<FormFieldDefinition> formDefinition; // CU-06
     private List<String> requiredDocuments; // NUEVO: Gestión Documental (DMS)
+    private String gatewayType; // Solo para PARALLEL_GATEWAY (FORK / JOIN)
 }

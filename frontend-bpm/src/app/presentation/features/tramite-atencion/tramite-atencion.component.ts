@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { TramiteService } from '../../../data/services/tramite.service';
 import { PoliticaWorkflowService } from '../../../data/services/politica-workflow.service';
 import { AuthService } from '../../../data/services/auth.service';
@@ -26,6 +27,13 @@ export class TramiteAtencionComponent implements OnInit {
   submitting = false;
   errorMessage: string | null = null;
 
+  // Collaborative editing (CU-24)
+  showDriveEditor = false;
+  driveEditorUrl: SafeResourceUrl | null = null;
+  activeDriveFileId = '';
+  activeDriveArchivoId = '';
+  archivosSubidos: any[] = [];
+
   // Modal de Éxito Premium
   showSuccessModal = false;
   targetNodeName = '';
@@ -41,7 +49,8 @@ export class TramiteAtencionComponent implements OnInit {
     private authService: AuthService,
     private cd: ChangeDetectorRef,
     private zone: NgZone,
-    private http: HttpClient
+    private http: HttpClient,
+    private sanitizer: DomSanitizer
   ) {}
 
   ngOnInit(): void {
@@ -56,7 +65,15 @@ export class TramiteAtencionComponent implements OnInit {
     const tramiteId = this.route.snapshot.paramMap.get('id');
     if (tramiteId) {
       this.cargarTramite(tramiteId);
+      this.cargarArchivosTramite(tramiteId);
     }
+
+    // Escuchar mensajes del iframe editor colaborativo (CU-24)
+    window.addEventListener('message', (event) => {
+      if (event.data === 'closeDriveEditor') {
+        this.cerrarEditorDrive();
+      }
+    });
   }
 
   cargarTramite(id: string): void {
@@ -131,10 +148,9 @@ export class TramiteAtencionComponent implements OnInit {
 
     this.formFields = [...(this.nodoActual.formDefinition || [])];
     
-    // Inyectar requisitos documentales como campos de tipo FILE
+    // Inyectar requisitos documentales estáticos
     if (this.nodoActual.requiredDocuments && this.nodoActual.requiredDocuments.length > 0) {
       this.nodoActual.requiredDocuments.forEach((docName: string) => {
-        // Evitar duplicados si ya existe un campo con el mismo nombre
         const fieldId = 'doc_' + docName.replace(/\s+/g, '_').toLowerCase();
         if (!this.formFields.find(f => f.fieldId === fieldId)) {
           this.formFields.push({
@@ -146,12 +162,27 @@ export class TramiteAtencionComponent implements OnInit {
         }
       });
     }
+
+    // CU-27: Inyectar requisitos documentales DINÁMICOS exigidos por la IA
+    if (this.tramite.documentosDinamicosRequeridos && this.tramite.documentosDinamicosRequeridos.length > 0) {
+      this.tramite.documentosDinamicosRequeridos.forEach((doc: any) => {
+        const fieldId = 'doc_ia_' + doc.nombre.replace(/\s+/g, '_').toLowerCase();
+        if (!this.formFields.find(f => f.fieldId === fieldId)) {
+          this.formFields.push({
+            fieldId: fieldId,
+            label: `⚡ Requisito IA: ${doc.nombre}`,
+            type: 'FILE',
+            required: true,
+            isDynamicIA: true,
+            description: doc.descripcion || 'Exigido dinámicamente por la IA.'
+          });
+        }
+      });
+    }
     
-    // Inicializar formData: precargar con datos acumulados existentes del trámite
-    // para que los gateways puedan evaluar las condiciones correctamente
+    // Inicializar formData
     this.formData = {};
     this.formFields.forEach((field: any) => {
-      // Si el trámite ya tiene datos acumulados para este campo, usarlos como default
       const existingValue = this.tramite.datosAcumuladosFormulario?.[field.fieldId];
       this.formData[field.fieldId] = existingValue !== undefined ? existingValue : '';
     });
@@ -171,6 +202,9 @@ export class TramiteAtencionComponent implements OnInit {
   onFileUpload(fieldId: string, fileId: string): void {
     // Guardamos el ID del archivo en el campo del formulario correspondiente
     this.formData[fieldId] = fileId;
+    if (this.tramite && this.tramite.id) {
+      this.cargarArchivosTramite(this.tramite.id);
+    }
   }
 
   descargarArchivo(fileId: string): void {
@@ -229,5 +263,67 @@ export class TramiteAtencionComponent implements OnInit {
 
   volver(): void {
     this.router.navigate(['/app/inbox']);
+  }
+
+  cargarArchivosTramite(tramiteId: string): void {
+    this.http.get<any[]>(`/api/v1/archivos/tramite/${tramiteId}`).subscribe({
+      next: (archivos) => {
+        this.zone.run(() => {
+          this.archivosSubidos = archivos;
+          this.cd.detectChanges();
+        });
+      }
+    });
+  }
+
+  iniciarEdicionColaborativa(archivoId: string): void {
+    this.errorMessage = null;
+    this.http.post<any>(`/api/v1/archivos/drive/iniciar?archivoId=${archivoId}`, {}).subscribe({
+      next: (res) => {
+        this.zone.run(() => {
+          this.activeDriveFileId = res.fileId;
+          this.activeDriveArchivoId = res.archivoId;
+          this.driveEditorUrl = this.sanitizer.bypassSecurityTrustResourceUrl(res.editUrl);
+          this.showDriveEditor = true;
+          this.cd.detectChanges();
+        });
+      },
+      error: (err) => {
+        this.zone.run(() => {
+          this.errorMessage = 'No se pudo iniciar la sesión colaborativa: ' + (err.error?.message || 'Error de Google Drive API');
+          this.cd.detectChanges();
+        });
+      }
+    });
+  }
+
+  cerrarEditorDrive(): void {
+    if (!this.activeDriveFileId || !this.activeDriveArchivoId) {
+      this.showDriveEditor = false;
+      this.driveEditorUrl = null;
+      return;
+    }
+
+    this.http.post<any>(`/api/v1/archivos/drive/finalizar?fileId=${this.activeDriveFileId}&archivoId=${this.activeDriveArchivoId}`, {}).subscribe({
+      next: () => {
+        this.zone.run(() => {
+          this.showDriveEditor = false;
+          this.driveEditorUrl = null;
+          // Recargar archivos del trámite para ver los cambios actualizados
+          if (this.tramite && this.tramite.id) {
+            this.cargarArchivosTramite(this.tramite.id);
+          }
+          this.cd.detectChanges();
+        });
+      },
+      error: (err) => {
+        this.zone.run(() => {
+          this.showDriveEditor = false;
+          this.driveEditorUrl = null;
+          this.errorMessage = 'La edición colaborativa finalizó pero hubo un problema al sincronizar con GCS.';
+          this.cd.detectChanges();
+        });
+      }
+    });
   }
 }

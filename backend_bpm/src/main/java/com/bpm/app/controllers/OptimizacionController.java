@@ -298,6 +298,31 @@ public class OptimizacionController {
         }
     }
 
+    @PostMapping("/voice-orchestrator")
+    public ResponseEntity<Map<String, Object>> voiceOrchestrator(@RequestBody Map<String, Object> payload) {
+        try {
+            Map<String, Object> request = new HashMap<>();
+            request.put("comando", payload.get("comando"));
+            
+            // Add current context
+            Map<String, Object> contexto = new HashMap<>();
+            contexto.put("metricas", analiticaService.calcularMetricasDepartamentales());
+            request.put("contexto", contexto);
+
+            @SuppressWarnings("unchecked")
+            Class<Map<String, Object>> responseType = (Class<Map<String, Object>>) (Class<?>) Map.class;
+            ResponseEntity<Map<String, Object>> response = restTemplate.postForEntity(IA_URL + "/orquestador-voz",
+                    request, responseType);
+            return ResponseEntity.ok(response.getBody());
+        } catch (Exception e) {
+            System.err.println("Error calling IA Voice Orchestrator: " + e.getMessage());
+            Map<String, Object> error = new HashMap<>();
+            error.put("action", "TEXT_ONLY");
+            error.put("text_response", "Error al conectar con el Orquestador IA: " + e.getMessage());
+            return ResponseEntity.status(503).body(error);
+        }
+    }
+
     @lombok.Data
     public static class ReassignRequest {
         private String idOrigen;
@@ -343,6 +368,101 @@ public class OptimizacionController {
                 error.put("errorType", "UNKNOWN");
             }
             return ResponseEntity.status(503).body(error);
+        }
+    }
+
+    @PostMapping("/nlp-report")
+    public ResponseEntity<Map<String, Object>> getReportByNLP(@RequestBody Map<String, String> requestPayload) {
+        String prompt = requestPayload.get("prompt");
+        if (prompt == null || prompt.trim().isEmpty()) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", "El prompt NLP no puede estar vacío.");
+            return ResponseEntity.badRequest().body(error);
+        }
+
+        try {
+            // 1. Enviar el prompt a FastAPI para extraer parámetros estructurados de forma segura
+            Map<String, String> iaRequest = new HashMap<>();
+            iaRequest.put("prompt", prompt);
+
+            ResponseEntity<AnaliticaService.NlpReportParams> iaResponse = restTemplate.postForEntity(
+                IA_URL + "/parsear-reporte-nlp",
+                iaRequest,
+                AnaliticaService.NlpReportParams.class
+            );
+
+            AnaliticaService.NlpReportParams params = iaResponse.getBody();
+            if (params == null) {
+                throw new RuntimeException("No se pudieron parsear los parámetros del reporte con IA.");
+            }
+
+            // 2. Ejecutar la agregación parametrizada y segura en Spring Boot / MongoDB
+            AnaliticaService.NlpReportResult result = analiticaService.ejecutarReporteDinamicoNLP(params);
+
+            // 3. Empaquetar y devolver respuesta con metadatos para renderizado premium
+            Map<String, Object> response = new HashMap<>();
+            response.put("params", params);
+            response.put("result", result);
+            response.put("status", "success");
+            return ResponseEntity.ok(response);
+
+        } catch (HttpStatusCodeException e) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", "Error en el procesamiento de IA del reporte.");
+            error.put("details", e.getResponseBodyAsString());
+            return ResponseEntity.status(e.getStatusCode()).body(error);
+        } catch (Exception e) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", "Error al ejecutar reporte dinámico por NLP.");
+            error.put("details", e.getMessage());
+            return ResponseEntity.status(500).body(error);
+        }
+    }
+
+    @PostMapping("/nlp-policy-assignment")
+    public ResponseEntity<Map<String, Object>> assignPolicyByIntent(@RequestBody Map<String, String> requestPayload) {
+        String requerimiento = requestPayload.get("requerimiento");
+        if (requerimiento == null || requerimiento.trim().isEmpty()) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", "El requerimiento no puede estar vacío.");
+            return ResponseEntity.badRequest().body(error);
+        }
+
+        try {
+            // 1. Obtener todas las políticas de negocio disponibles
+            List<com.bpm.data.entities.PoliticaWorkflow> politicas = analiticaService.obtenerTodasLasPoliticas();
+            if (politicas.isEmpty()) {
+                Map<String, Object> error = new HashMap<>();
+                error.put("error", "No hay políticas de negocio registradas en el sistema para realizar la asignación.");
+                return ResponseEntity.status(404).body(error);
+            }
+
+            // 2. Construir payload para FastAPI
+            Map<String, Object> iaRequest = new HashMap<>();
+            iaRequest.put("requerimiento", requerimiento);
+            iaRequest.put("politicas", politicas);
+
+            // 3. Enviar a FastAPI para análisis de similitud
+            @SuppressWarnings("unchecked")
+            Class<Map<String, Object>> responseType = (Class<Map<String, Object>>) (Class<?>) Map.class;
+            ResponseEntity<Map<String, Object>> iaResponse = restTemplate.postForEntity(
+                IA_URL + "/analisis-intencion-politica",
+                iaRequest,
+                responseType
+            );
+
+            return ResponseEntity.ok(iaResponse.getBody());
+
+        } catch (HttpStatusCodeException e) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", "Error en el microservicio de IA al analizar intención.");
+            error.put("details", e.getResponseBodyAsString());
+            return ResponseEntity.status(e.getStatusCode()).body(error);
+        } catch (Exception e) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", "Error al asignar política por intención NLP.");
+            error.put("details", e.getMessage());
+            return ResponseEntity.status(500).body(error);
         }
     }
 }

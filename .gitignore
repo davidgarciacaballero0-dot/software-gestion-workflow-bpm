@@ -30,6 +30,8 @@ Thumbs.db
 # Variables de entorno y secretos (CRÍTICO: nunca subir)
 .env
 ia_microservice/gcp-creds.json
+credentials.json
+backend_bpm/credentials.json
 scratch/
 !.env.example
 !.env.template
@@ -48,3 +50,11 @@ temp_*.txt
 test_*.js
 test*.js
 
+# Secretos específicos del proyecto
+bpm-ai-service-key.json
+client_oauth.json
+pyrightconfig.json
+ia_microservice/pyrightconfig.json
+fix_formatting.py
+ia_microservice/test_all.py
+ia_microservice/test_voz.py

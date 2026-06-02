@@ -2,6 +2,7 @@ import { Component, OnInit, ChangeDetectorRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TramiteService } from '../../../data/services/tramite.service';
+import { HttpClient } from '@angular/common/http';
 
 @Component({
   selector: 'app-tramite-historial',
@@ -13,12 +14,14 @@ import { TramiteService } from '../../../data/services/tramite.service';
 export class TramiteHistorialComponent implements OnInit {
   tramite: any = null;
   eventos: any[] = [];
+  archivos: any[] = [];
   loading = true;
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private tramiteService: TramiteService,
+    private http: HttpClient,
     private cd: ChangeDetectorRef,
     private zone: NgZone
   ) {}
@@ -47,6 +50,7 @@ export class TramiteHistorialComponent implements OnInit {
       next: (tramite) => {
         this.zone.run(() => {
           this.tramite = tramite;
+          this.cargarArchivos(id);
           this.cargarHistorial(id, safetyTimer);
         });
       },
@@ -57,6 +61,20 @@ export class TramiteHistorialComponent implements OnInit {
           this.loading = false;
           this.cd.detectChanges();
         });
+      }
+    });
+  }
+
+  cargarArchivos(id: string): void {
+    this.http.get<any[]>(`/api/v1/archivos/tramite/${id}`).subscribe({
+      next: (archivos) => {
+        this.zone.run(() => {
+          this.archivos = archivos || [];
+          this.cd.detectChanges();
+        });
+      },
+      error: (err) => {
+        console.error('Error al cargar archivos adjuntos del trámite:', err);
       }
     });
   }
@@ -84,6 +102,18 @@ export class TramiteHistorialComponent implements OnInit {
         });
       }
     });
+  }
+
+  isImage(contentType: string): boolean {
+    return !!contentType && contentType.startsWith('image/');
+  }
+
+  getDownloadUrl(id: string): string {
+    return `/api/v1/archivos/download/${id}`;
+  }
+
+  descargarArchivo(id: string): void {
+    window.open(this.getDownloadUrl(id), '_blank');
   }
 
   getEventIcon(tipo: string): string {

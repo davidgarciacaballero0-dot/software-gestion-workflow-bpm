@@ -9,6 +9,7 @@ import org.springframework.data.mongodb.repository.config.EnableMongoRepositorie
 @SpringBootApplication(scanBasePackages = "com.bpm")
 @EnableMongoRepositories(basePackages = "com.bpm.data.repositories")
 @EnableMongoAuditing
+@org.springframework.scheduling.annotation.EnableScheduling
 public class BackendApplication {
 
 	public static void main(String[] args) {

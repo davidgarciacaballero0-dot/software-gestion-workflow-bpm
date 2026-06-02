@@ -10,7 +10,8 @@ import java.util.List;
 public interface TramiteInstanciaRepository extends MongoRepository<TramiteInstancia, String> {
 
     // Método crítico para consultar con máxima velocidad las Entradas de un
-    // Departamento específico
+    // Departamento específico (soporta departamentoActualId legacy y departamentosActualesIds de ejecución paralela)
+    @org.springframework.data.mongodb.repository.Query("{$or: [{'departamentoActualId': ?0}, {'departamentosActualesIds': ?0}]}")
     List<TramiteInstancia> findByDepartamentoActualId(String departamentoActualId);
 
     // Consulta de la Bandeja Personal (Trámites iniciados por un usuario)

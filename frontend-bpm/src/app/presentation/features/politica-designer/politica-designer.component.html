@@ -10,7 +10,7 @@
       </div>
     </div>
     <div class="header-actions">
-      <button *ngIf="canEdit()" class="btn-premium btn-premium-secondary" (click)="autoLayoutHierarchical()" title="Reorganizar nodos automáticamente">
+      <button *ngIf="canEdit()" class="btn-premium btn-premium-secondary" (click)="applyDagreLayout()" title="Reorganizar nodos automáticamente con Dagre">
         <span class="material-symbols-outlined">auto_fix_high</span> Auto-Organizar
       </button>
       <button *ngIf="currentPolicy.status === 'PUBLISHED' && isAdmin" class="btn-premium btn-premium-secondary"
@@ -41,7 +41,11 @@
         </div>
         <div class="node-tool tool-decision" (click)="addNode('EXCLUSIVE_GATEWAY')">
           <span class="material-symbols-outlined tool-icon">call_split</span>
-          <span>Decisión / Gateway</span>
+          <span>Decisión (×)</span>
+        </div>
+        <div class="node-tool tool-parallel" (click)="addParallelGatewayPair()">
+          <span class="material-symbols-outlined tool-icon">mediation</span>
+          <span>Paralelo (+) Fork/Join</span>
         </div>
         <div class="node-tool tool-end" (click)="addNode('END')">
           <span class="material-symbols-outlined tool-icon">stop_circle</span>
@@ -67,11 +71,10 @@
         <div class="ai-prompt-box">
           <div class="textarea-wrapper">
             <textarea [(ngModel)]="aiPrompt"
-              placeholder="Ej: 'Agrega un paso de aprobación al final'..."
+              placeholder="Ej: 'Crea un flujo con aprobación paralela de 2 departamentos'..."
               class="form-control ai-textarea" rows="2" [disabled]="isListening"></textarea>
           </div>
           <div class="d-flex align-items-center gap-2 mt-2">
-            <!-- Botón Micrófono (Solo Icono) -->
             <button *ngIf="!isListening" class="btn-premium btn-premium-secondary d-flex justify-content-center align-items-center" 
                     (click)="toggleVoiceInput()" title="Empezar a Escuchar" 
                     style="width: 44px; height: 44px; padding: 0; flex-shrink: 0;">
@@ -83,7 +86,6 @@
               <span class="material-symbols-outlined pulse">stop_circle</span>
             </button>
 
-            <!-- Botón Aplicar Cambios -->
             <button class="btn-premium btn-premium-primary w-full" (click)="solicitarGeneracionIA()"
               [disabled]="generatingIA || !aiPrompt || isListening" style="height: 44px; justify-content: center;">
               {{ generatingIA ? 'Procesando...' : 'Aplicar Cambios' }}
@@ -98,7 +100,7 @@
 
       <div class="tool-info mt-auto">
         <p class="text-muted small">
-          {{ canEdit() ? 'Arrastra o haz clic para añadir elementos.' : 'Política en modo lectura.' }}
+          {{ canEdit() ? 'Arrastra puertos para conectar nodos.' : 'Política en modo lectura.' }}
         </p>
       </div>
     </aside>
@@ -108,130 +110,148 @@
       <span class="material-symbols-outlined">{{ sidebarCollapsed ? 'menu' : 'close' }}</span>
     </button>
 
-    <!-- Lienzo Central -->
-    <main class="canvas-area" id="canvas" *ngIf="isLoaded">
+    <!-- ============== LIENZO FOBLEX FLOW ============== -->
+    <main class="canvas-area" *ngIf="isLoaded">
       
-      <!-- Wrapper de Zoom -->
-      <div class="canvas-zoom-wrapper" [style.transform]="'scale(' + zoomLevel + ')'" 
-           [style.min-width.px]="canvasDynamicWidth" [style.min-height.px]="canvasDynamicHeight">
-
-        <!-- Capa de Carriles (Swimlanes) -->
-        <div class="swimlanes-container">
-          <div class="lane" *ngFor="let lane of activeLanes; let i = index">
-            <div class="lane-header glass-premium shadow-ambient">
-              <select [(ngModel)]="lane.departamentoId" (ngModelChange)="onLaneChanged()" class="lane-select form-control" [disabled]="!canEdit()">
-                <option value="">Seleccione Departamento...</option>
-                <option *ngFor="let d of departamentos" [value]="d.id">{{ d.nombre }}</option>
-              </select>
-            </div>
-          </div>
+      <!-- Swimlane Headers (fuera del canvas de Foblex) -->
+      <div class="swimlanes-header-bar">
+        <div class="lane-header-item" *ngFor="let lane of activeLanes; let i = index">
+          <select [(ngModel)]="lane.departamentoId" (ngModelChange)="onLaneChanged()" class="lane-select form-control" [disabled]="!canEdit()">
+            <option value="">Seleccione Departamento...</option>
+            <option *ngFor="let d of departamentos" [value]="d.id">{{ d.nombre }}</option>
+          </select>
         </div>
+      </div>
 
-        <!-- Capa SVG para Aristas -->
-        <svg class="connections-svg" [attr.width]="canvasDynamicWidth" [attr.height]="canvasDynamicHeight"
-             [style.width.px]="canvasDynamicWidth" [style.height.px]="canvasDynamicHeight">
-          <defs>
-            <marker id="arrowhead" markerWidth="12" markerHeight="8" refX="11" refY="4" orient="auto">
-              <polygon points="0 0, 12 4, 0 8" fill="#555" />
-            </marker>
-            <marker id="arrowhead-active" markerWidth="12" markerHeight="8" refX="11" refY="4" orient="auto">
-              <polygon points="0 0, 12 4, 0 8" fill="var(--primary)" />
-            </marker>
-          </defs>
+      <f-flow fDraggable (fCreateConnection)="onConnectionCreated($event)">
+        <f-background>
+          <f-rect-pattern></f-rect-pattern>
+        </f-background>
+        <f-canvas fZoom [fWheelTrigger]="disableWheelZoom">
+          <!-- Ghost line while dragging to connect -->
+          <f-connection-for-create>
+            <f-connection-marker-arrow></f-connection-marker-arrow>
+          </f-connection-for-create>
 
-          <!-- Conectores Ortogonales 90° -->
-          <path *ngFor="let edge of edges" class="connector-line" [class.active]="selectedEdge === edge.id"
-            [attr.d]="calculatePath(edge)" [attr.marker-end]="selectedEdge === edge.id ? 'url(#arrowhead-active)' : 'url(#arrowhead)'" (click)="selectEdge(edge.id, $event)"
-            style="pointer-events: stroke;"></path>
-
-          <!-- Etiqueta de Condición (TRUE/FALSE) para bifurcaciones -->
-          <ng-container *ngFor="let edge of edges">
-            <text *ngIf="edge.condition?.value" [attr.x]="getEdgeLabelPosition(edge).x" [attr.y]="getEdgeLabelPosition(edge).y"
-              class="edge-label" text-anchor="middle" font-size="11" font-weight="700">
-              {{ edge.condition?.value === 'true' ? 'VERDADERO' : edge.condition?.value === 'false' ? 'FALSO' : (edge.condition?.value | uppercase) }}
-            </text>
-          </ng-container>
-        </svg>
-
-        <!-- Capa de Cursores en Vivo -->
-        <div class="live-cursors-layer">
-          <div *ngFor="let cursor of liveCursors | keyvalue" class="live-cursor" 
-               [style.transform]="'translate(' + cursor.value.x + 'px, ' + cursor.value.y + 'px)'">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M1 1L15 6L8.5 8.5L6 15L1 1Z" fill="#ff4081" stroke="white" stroke-width="1.5" stroke-linejoin="round"/>
-            </svg>
-            <div class="cursor-label">{{ cursor.value.name }}</div>
-          </div>
-        </div>
-
-        <!-- Capa de Nodos Con Arrastre del CDK -->
-        <div *ngFor="let node of nodes; trackBy: trackByNode" class="node-item" [class.selected]="selectedNode?.id === node.id"
-          [ngClass]="node.type" [cdkDragFreeDragPosition]="node.uiPosition" cdkDrag
-          [cdkDragDisabled]="!canEdit()" 
-          (cdkDragStarted)="onNodeDragStarted(node)"
-          (cdkDragMoved)="onNodeDragMoved($event, node)"
-          (cdkDragEnded)="onNodeMoved($event, node)" (click)="selectNode(node)">
-
-          <!-- Badge de documentos requeridos -->
-          <div class="doc-count-badge" *ngIf="node.type === 'USER_TASK' && getRequiredDocsCount(node) > 0">
-            {{ getRequiredDocsCount(node) }}
-          </div>
-
-          <!-- START / END: solo texto grande -->
-          <ng-container *ngIf="node.type === 'START' || node.type === 'END'">
-            <div class="node-capsule-text">
-              {{ node.type === 'START' ? 'INICIO' : 'FIN' }}
+          <!-- Existing Connections (Edges) -->
+          <f-connection *ngFor="let edge of edges; trackBy: trackByEdge"
+            [fConnectionId]="edge.id"
+            [fOutputId]="'out-' + edge.sourceNodeId" 
+            [fInputId]="'in-' + edge.targetNodeId"
+            fBehavior="floating"
+            fType="bezier"
+            [class.edge-selected]="selectedEdge === edge.id"
+            (click)="selectEdge(edge.id, $event)">
+            <f-connection-marker-arrow></f-connection-marker-arrow>
+            <div fConnectionContent [position]="0.5" *ngIf="getEdgeLabel(edge)">
+              <span class="edge-label-text">{{ getEdgeLabel(edge) }}</span>
             </div>
-          </ng-container>
+          </f-connection>
 
-          <!-- USER_TASK: layout con icono + texto -->
-          <ng-container *ngIf="node.type === 'USER_TASK'">
-            <div class="node-content-wrapper">
-              <div class="node-icon-sidebar">
-                <span class="material-symbols-outlined">task</span>
-              </div>
-              <div class="node-text-content">
-                <div class="node-header">
-                  <span>{{ node.name }}</span>
+          <!-- ====== NODES ====== -->
+          <div *ngFor="let node of nodes; trackBy: trackByNode"
+               fNode
+               [fNodeId]="node.id"
+               [fNodePosition]="node.uiPosition"
+               (fNodePositionChange)="onNodePositionChanged(node.id, $event)"
+               class="foblex-node"
+               [ngClass]="{
+                 'foblex-node-start': node.type === 'START',
+                 'foblex-node-end': node.type === 'END',
+                 'foblex-node-task': node.type === 'USER_TASK',
+                 'foblex-node-gateway-exclusive': node.type === 'EXCLUSIVE_GATEWAY',
+                 'foblex-node-gateway-parallel': node.type === 'PARALLEL_GATEWAY'
+               }"
+               [class.selected]="selectedNode?.id === node.id"
+               (click)="selectNode(node)">
+
+            <ng-container [ngSwitch]="node.type">
+              <!-- START Node -->
+              <ng-container *ngSwitchCase="'START'">
+                <div fDragHandle class="node-drag-handle">
+                  <div class="node-capsule-text">INICIO</div>
                 </div>
-                <div class="node-sub">
-                  <span class="dept-badge">
-                    {{ getDepartmentName(node.departmentId) || 'SIN ASIGNAR' }}
-                  </span>
-                  <span *ngIf="node.slaHours" class="sla-badge" title="SLA Horas">
-                    <span class="material-symbols-outlined" style="font-size: 12px; vertical-align: middle;">schedule</span> {{ node.slaHours }}h
-                  </span>
+                <div fNodeOutput [fOutputId]="'out-' + node.id" fOutputConnectableSide="bottom" class="foblex-port foblex-port-output"></div>
+              </ng-container>
+
+              <!-- END Node -->
+              <ng-container *ngSwitchCase="'END'">
+                <div fNodeInput [fInputId]="'in-' + node.id" fInputConnectableSide="top" class="foblex-port foblex-port-input"></div>
+                <div fDragHandle class="node-drag-handle">
+                  <div class="node-capsule-text">FIN</div>
                 </div>
-              </div>
+              </ng-container>
+
+              <!-- USER_TASK Node -->
+              <ng-container *ngSwitchCase="'USER_TASK'">
+                <div fNodeInput [fInputId]="'in-' + node.id" fInputConnectableSide="top" class="foblex-port foblex-port-input"></div>
+                <div fDragHandle class="node-drag-handle">
+                  <div class="doc-count-badge" *ngIf="getRequiredDocsCount(node) > 0">
+                    {{ getRequiredDocsCount(node) }}
+                  </div>
+                  <div class="node-content-wrapper">
+                    <div class="node-icon-sidebar">
+                      <span class="material-symbols-outlined">task</span>
+                    </div>
+                    <div class="node-text-content">
+                      <div class="node-header">
+                        <span>{{ node.name }}</span>
+                      </div>
+                      <div class="node-sub">
+                        <span class="dept-badge">
+                          {{ getDepartmentName(node.departmentId) || 'SIN ASIGNAR' }}
+                        </span>
+                        <span *ngIf="node.slaHours" class="sla-badge" title="SLA Horas">
+                          <span class="material-symbols-outlined" style="font-size: 12px; vertical-align: middle;">schedule</span> {{ node.slaHours }}h
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div fNodeOutput [fOutputId]="'out-' + node.id" fOutputConnectableSide="bottom" class="foblex-port foblex-port-output"></div>
+              </ng-container>
+
+              <!-- EXCLUSIVE_GATEWAY Node -->
+              <ng-container *ngSwitchCase="'EXCLUSIVE_GATEWAY'">
+                <div fNodeInput [fInputId]="'in-' + node.id" fInputConnectableSide="top" class="foblex-port foblex-port-input"></div>
+                <div fDragHandle class="node-drag-handle gateway-diamond">
+                  <span class="gateway-symbol">×</span>
+                  <span class="gateway-label">{{ node.name }}</span>
+                </div>
+                <div fNodeOutput [fOutputId]="'out-' + node.id" fOutputConnectableSide="bottom" class="foblex-port foblex-port-output"></div>
+              </ng-container>
+
+              <!-- PARALLEL_GATEWAY Node -->
+              <ng-container *ngSwitchCase="'PARALLEL_GATEWAY'">
+                <div fNodeInput [fInputId]="'in-' + node.id" fInputConnectableSide="top" class="foblex-port foblex-port-input"></div>
+                <div fDragHandle class="node-drag-handle gateway-diamond gateway-parallel">
+                  <span class="gateway-symbol">+</span>
+                  <span class="gateway-label">{{ node.gatewayType === 'FORK' ? 'FORK' : 'JOIN' }}</span>
+                </div>
+                <div fNodeOutput [fOutputId]="'out-' + node.id" fOutputConnectableSide="bottom" class="foblex-port foblex-port-output"></div>
+              </ng-container>
+            </ng-container>
+          </div>
+
+          <!-- Capa de Cursores en Vivo -->
+          <div class="live-cursors-layer">
+            <div *ngFor="let cursor of liveCursors | keyvalue" class="live-cursor" 
+                 [style.transform]="'translate(' + cursor.value.x + 'px, ' + cursor.value.y + 'px)'">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M1 1L15 6L8.5 8.5L6 15L1 1Z" fill="#ff4081" stroke="white" stroke-width="1.5" stroke-linejoin="round"/>
+              </svg>
+              <div class="cursor-label">{{ cursor.value.name }}</div>
             </div>
-          </ng-container>
+          </div>
 
-          <!-- EXCLUSIVE_GATEWAY: texto de decisión -->
-          <ng-container *ngIf="node.type === 'EXCLUSIVE_GATEWAY'">
-            <div class="gateway-content">
-              <span class="gateway-label">{{ node.name }}</span>
-            </div>
-          </ng-container>
-
-          <!-- Puntos de Conexión (4 direcciones) -->
-          <div class="anchor-point top" [class.highlight]="isConnecting() && connectingSourceNode?.id !== node.id"
-            (click)="finishConnecting(node, $event)"></div>
-          <div class="anchor-point bottom" [class.connecting-origin]="connectingSourceNode?.id === node.id"
-            (click)="startConnecting(node, $event)"></div>
-          <div class="anchor-point left" [class.highlight]="isConnecting() && connectingSourceNode?.id !== node.id"
-            (click)="finishConnecting(node, $event)"></div>
-          <div class="anchor-point right" [class.connecting-origin]="connectingSourceNode?.id === node.id"
-            (click)="startConnecting(node, $event)"></div>
-        </div>
-
-      </div><!-- /canvas-zoom-wrapper -->
+        </f-canvas>
+      </f-flow>
 
       <!-- Controles de Zoom (flotantes) -->
       <div class="zoom-controls">
         <button (click)="zoomOut()" title="Alejar"><span class="material-symbols-outlined">remove</span></button>
-        <span class="zoom-label">{{ (zoomLevel * 100) | number:'1.0-0' }}%</span>
+        <span class="zoom-label">{{ (currentZoomLevel * 100) | number:'1.0-0' }}%</span>
         <button (click)="zoomIn()" title="Acercar"><span class="material-symbols-outlined">add</span></button>
-        <button (click)="zoomFit()" title="Ajustar al lienzo"><span class="material-symbols-outlined">fit_screen</span></button>
         <button (click)="zoomReset()" title="Restablecer 100%"><span class="material-symbols-outlined">restart_alt</span></button>
       </div>
     </main>
@@ -262,6 +282,13 @@
             <div class="form-group mt-2">
               <label>Tipo de Nodo</label>
               <input type="text" [value]="selectedNode.type" class="form-control" disabled>
+            </div>
+            <div class="form-group mt-2" *ngIf="selectedNode.type === 'PARALLEL_GATEWAY'">
+              <label>Tipo de Gateway</label>
+              <select [(ngModel)]="selectedNode.gatewayType" (ngModelChange)="onNodeChanged(selectedNode)" class="form-control">
+                <option value="FORK">FORK (Bifurcar)</option>
+                <option value="JOIN">JOIN (Sincronizar)</option>
+              </select>
             </div>
           </div>
 

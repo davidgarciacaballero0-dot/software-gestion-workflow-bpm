@@ -20,11 +20,14 @@
       </div>
 
       <div class="dynamic-form mt-1">
-        <div *ngFor="let field of formFields" class="form-group slide-in">
-          <label [for]="field.fieldId">
+        <div *ngFor="let field of formFields" class="form-group slide-in" [class.dynamic-ia-group]="field.isDynamicIA" [style.border-left]="field.isDynamicIA ? '3px solid #ef4444' : 'none'" [style.padding-left]="field.isDynamicIA ? '0.8rem' : '0'">
+          <label [for]="field.fieldId" [style.color]="field.isDynamicIA ? '#ef4444' : 'inherit'" [style.font-weight]="field.isDynamicIA ? 'bold' : 'normal'">
             {{ field.label }} 
             <span *ngIf="field.required" class="required-mark">*</span>
           </label>
+          <div *ngIf="field.isDynamicIA" class="dynamic-ia-explanation" style="font-size: 0.8rem; color: #ef4444; margin-top: -0.2rem; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.3rem;">
+            <span class="material-symbols-outlined" style="font-size: 14px;">warning</span> {{ field.description }}
+          </div>
 
           <!-- Inputs según tipo -->
           <ng-container [ngSwitch]="field.type">
@@ -70,10 +73,13 @@
             <!-- Archivos -->
             <div *ngSwitchCase="'FILE'" class="uploader-wrapper">
               <app-file-uploader 
+                [fieldId]="field.fieldId"
+                [tramiteId]="tramite?.id"
                 (onUploadSuccess)="onFileUpload(field.fieldId, $event)">
               </app-file-uploader>
-              <div *ngIf="formData[field.fieldId]" class="file-success" style="display:flex; align-items:center; gap:0.4rem;">
-                <span class="material-symbols-outlined" style="font-size:16px;">check_circle</span> Archivo cargado (ID: {{ formData[field.fieldId] | slice:0:8 }}...)
+              <div *ngIf="formData[field.fieldId]" class="file-success" style="display: flex; align-items: center; gap: 0.5rem; color: #10b981; font-weight: 500; font-size: 0.85rem; margin-top: 0.5rem; background: rgba(16, 185, 129, 0.08); padding: 0.5rem 0.8rem; border-radius: 8px; border: 1px solid rgba(16, 185, 129, 0.15);">
+                <span class="material-symbols-outlined" style="font-size: 18px; color: #10b981;">check_circle</span>
+                <span>Documento validado y asociado con éxito (Ref ID: {{ formData[field.fieldId] | slice:0:8 }})</span>
               </div>
             </div>
 
@@ -130,6 +136,29 @@
           <div class="stat-row">
             <span>Iniciado</span>
             <span>{{ tramite?.createdAt | date:'short' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gestión Documental en la Nube (GCS & Drive - CU-24) -->
+      <div class="grid-card glass-premium shadow-ambient mt-2" *ngIf="archivosSubidos && archivosSubidos.length > 0">
+        <h3 style="display:flex; align-items:center; gap:0.5rem; margin-bottom: 1rem;"><span class="material-symbols-outlined">cloud_done</span> Gestión Documental (GCS)</h3>
+        <div class="attachments-list" style="display:flex; flex-direction:column; gap:0.8rem;">
+          <div *ngFor="let arch of archivosSubidos" class="attachment-item monolith-surface" style="padding:10px; border:1px solid var(--outline-variant); margin-bottom:0.5rem;">
+            <div style="font-weight:600; font-size:0.9rem; margin-bottom:0.3rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--text-main);" [title]="arch.nombreOriginal">
+              {{ arch.nombreOriginal }}
+            </div>
+            <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.5rem;">
+              Tamaño: {{ arch.tamano / 1024 | number:'1.0-1' }} KB | Tipo: {{ arch.contentType }}
+            </div>
+            <div style="display:flex; gap:0.5rem;">
+              <button class="btn btn-secondary w-full" (click)="descargarArchivo(arch.id)" style="font-size:0.75rem; padding:6px 10px; display:flex; align-items:center; justify-content:center; gap:0.3rem; cursor:pointer;">
+                <span class="material-symbols-outlined" style="font-size:14px;">download</span> Descargar
+              </button>
+              <button class="btn-premium btn-premium-primary w-full" (click)="iniciarEdicionColaborativa(arch.id)" style="font-size:0.75rem; padding:6px 10px; display:flex; align-items:center; justify-content:center; gap:0.3rem; cursor:pointer;">
+                <span class="material-symbols-outlined" style="font-size:14px;">group</span> Editar (Drive)
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -204,6 +233,24 @@
           <span class="material-symbols-outlined">history</span> Ver Historial
         </button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- OVERLAY DE EDICIÓN COLABORATIVA DE GOOGLE DRIVE (CU-24) -->
+<div class="success-overlay animate-fade-in" *ngIf="showDriveEditor" style="z-index: 9999; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center;">
+  <div class="success-modal glass-premium shadow-premium animate-zoom-in" style="max-width: 90%; width: 90%; height: 85%; padding: 1.5rem; display: flex; flex-direction: column; background: #0f172a; border: 1px solid #334155; border-radius: 12px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid #334155; padding-bottom: 0.8rem;">
+      <div style="display:flex; align-items:center; gap:0.5rem;">
+        <span class="material-symbols-outlined" style="color: #38bdf8; font-size:28px;">edit_document</span>
+        <h3 class="text-gradient" style="margin: 0; font-size:1.4rem; font-weight:600;">Google Drive API - Espacio Colaborativo de Edición</h3>
+      </div>
+      <button (click)="cerrarEditorDrive()" style="display:flex; align-items:center; gap:0.4rem; font-size: 0.85rem; padding: 8px 16px; cursor: pointer; background: #ef4444; color: white; border: none; border-radius: 6px; font-weight: 600; box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.2);">
+        <span class="material-symbols-outlined" style="font-size: 16px;">close</span> Cerrar Editor
+      </button>
+    </div>
+    <div style="flex: 1; border-radius: 8px; overflow: hidden; background: #0f172a; border: 1px solid #334155;">
+      <iframe *ngIf="driveEditorUrl" [src]="driveEditorUrl" style="width: 100%; height: 100%; border: none;"></iframe>
     </div>
   </div>
 </div>

@@ -8,6 +8,7 @@ import { InboxComponent } from './presentation/features/inbox/inbox.component';
 import { TramiteAtencionComponent } from './presentation/features/tramite-atencion/tramite-atencion.component';
 import { TramiteHistorialComponent } from './presentation/features/tramite-historial/tramite-historial.component';
 import { SupervisionComponent } from './presentation/features/supervision/supervision.component';
+import { ReportesNlpComponent } from './presentation/features/reportes-nlp/reportes-nlp.component';
 import { OrganizacionListComponent } from './presentation/features/organizacion/organizacion-list/organizacion-list.component';
 import { DepartamentoViewComponent } from './presentation/features/departamento/departamento-view/departamento-view.component';
 import { UsuarioListComponent } from './presentation/features/usuario/usuario-list/usuario-list.component';
@@ -30,6 +31,8 @@ export const routes: Routes = [
       { path: 'politica/designer/:id', component: PoliticaDesignerComponent },
       { path: 'inbox', component: InboxComponent },
       { path: 'tramite/atencion/:id', component: TramiteAtencionComponent },
+      { path: 'tramites/:id', component: TramiteAtencionComponent },
+      { path: 'reportes-nlp', component: ReportesNlpComponent },
       { path: 'tramite/historial/:id', component: TramiteHistorialComponent },
       { path: 'supervision', component: SupervisionComponent },
       { path: 'organizations', component: OrganizacionListComponent },

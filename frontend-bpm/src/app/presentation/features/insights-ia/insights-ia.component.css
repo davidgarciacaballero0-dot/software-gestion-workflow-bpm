@@ -292,22 +292,38 @@
 }
 
 .mic-icon-large {
-  font-size: 3rem;
-  width: 80px;
-  height: 80px;
+  width: 90px;
+  height: 90px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f1f5f9;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.06), rgba(168, 85, 247, 0.06));
+  border: 2px solid rgba(99, 102, 241, 0.15);
   border-radius: 50%;
   cursor: pointer;
-  transition: all 0.3s;
-  margin-bottom: 1rem;
+  position: relative;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  margin-bottom: 1.5rem;
+  box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.1), 0 8px 10px -6px rgba(99, 102, 241, 0.05);
+}
+
+.mic-icon-large span {
+  font-size: 44px;
+  color: #4f46e5;
+  transition: all 0.3s ease;
+  z-index: 2;
 }
 
 .mic-icon-large:hover {
-  background: #e0e7ff;
-  transform: scale(1.1);
+  transform: translateY(-4px) scale(1.06);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(168, 85, 247, 0.12));
+  border-color: rgba(99, 102, 241, 0.3);
+  box-shadow: 0 20px 35px -8px rgba(99, 102, 241, 0.2), 0 12px 16px -8px rgba(99, 102, 241, 0.1);
+}
+
+.mic-icon-large:hover span {
+  color: #3b82f6;
+  transform: scale(1.05);
 }
 
 .report-empty-state h4 {
@@ -819,4 +835,83 @@
 .filters-bar:hover {
   background: rgba(255, 255, 255, 0.8) !important;
   box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.1) !important;
+}
+
+/* --- Voice Interaction Enhancements --- */
+.listening-pulse-dot {
+  width: 10px;
+  height: 10px;
+  background-color: #ef4444;
+  border-radius: 50%;
+  display: inline-block;
+  animation: pulse-dot-anim 1s infinite alternate;
+}
+
+@keyframes pulse-dot-anim {
+  from { transform: scale(0.8); opacity: 0.5; }
+  to { transform: scale(1.2); opacity: 1; }
+}
+
+.mic-icon-large.pulse-active {
+  background: linear-gradient(135deg, #fef2f2, #fee2e2) !important;
+  border-color: #fca5a5 !important;
+  box-shadow: 0 10px 30px rgba(239, 68, 68, 0.25);
+  animation: pulse-icon 2s infinite alternate;
+}
+
+.mic-icon-large.pulse-active span {
+  color: #ef4444 !important;
+}
+
+/* Concentric Pulse Rings */
+.pulse-ring {
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  border: 2px solid rgba(239, 68, 68, 0.4);
+  border-radius: 50%;
+  animation: pulse-ring-wave 2s cubic-bezier(0.215, 0.610, 0.355, 1) infinite;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.mic-icon-large::after {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  border: 2px solid rgba(239, 68, 68, 0.2);
+  border-radius: 50%;
+  animation: pulse-ring-wave 2s cubic-bezier(0.215, 0.610, 0.355, 1) infinite;
+  animation-delay: 0.6s;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0;
+}
+
+@keyframes pulse-ring-wave {
+  0% {
+    transform: scale(0.95);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+@keyframes pulse-icon {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.05); }
+}
+
+.btn-icon-refresh.listening {
+  background: #fef2f2 !important;
+  border-color: #fca5a5 !important;
+  color: #ef4444 !important;
+  animation: pulse-border 1.5s infinite;
 }

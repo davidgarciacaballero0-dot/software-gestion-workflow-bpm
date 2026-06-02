@@ -7,5 +7,6 @@ import java.util.Map;
 public class AvanzarTramiteRequestDTO {
     private String idTramite;
     private String idUsuarioAccion;
+    private String nodoActualId; // Opcional: Especifica cuál de los nodos activos se está completando en ejecución paralela
     private Map<String, Object> datosFormulario;
 }

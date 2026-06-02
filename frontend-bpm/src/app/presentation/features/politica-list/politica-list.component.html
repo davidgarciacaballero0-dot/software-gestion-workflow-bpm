@@ -91,6 +91,63 @@
     </div>
   </div>
 
+  <!-- BÚSQUEDA INTELIGENTE DE TRÁMITES POR INTENCIÓN IA (CU-26) -->
+  <div class="ai-intent-section glass-premium mb-4 animate-fade-in" *ngIf="isClient || !isDesignerView">
+    <div class="ai-intent-content" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
+      <div style="display: flex; align-items: center; gap: 0.5rem; color: #6366f1;">
+        <span class="material-symbols-outlined" style="font-size: 24px; animation: pulse 2s infinite;">psychology</span>
+        <h3 style="margin: 0; font-size: 1.1rem; font-weight: 600; color: var(--text-main);">Asistente Inteligente de Trámites</h3>
+      </div>
+      <p style="margin: 0; font-size: 0.85rem; color: var(--text-muted);">
+        ¿No estás seguro de qué trámite necesitas? Explícanos tu requerimiento en lenguaje natural y nuestro modelo de IA seleccionará el proceso óptimo para ti.
+      </p>
+      
+      <div class="ai-search-box" style="display: flex; gap: 0.5rem; align-items: center; background: rgba(99, 102, 241, 0.05); padding: 0.5rem 1rem; border-radius: 12px; border: 1.5px solid rgba(99, 102, 241, 0.15); transition: all 0.3s ease;">
+        <input type="text" [(ngModel)]="aiSearchQuery" placeholder="Ej: 'Quiero pedir reembolso por mi viaje de trabajo' o 'Necesito reportar una baja médica'" 
+               (keyup.enter)="buscarPoliticaPorIntencion()" style="width: 100%; border: none; background: transparent; font-size: 0.9rem; color: var(--text-main); outline: none;" />
+        
+        <button *ngIf="aiSearchQuery" (click)="limpiarBusquedaIA()" style="background: none; border: none; color: #94a3b8; cursor: pointer; padding: 0; display: flex; align-items: center;">
+          <span class="material-symbols-outlined" style="font-size: 18px;">close</span>
+        </button>
+        
+        <button (click)="buscarPoliticaPorIntencion()" [disabled]="searchingAiIntent || !aiSearchQuery" 
+                style="background: none; border: none; color: #6366f1; cursor: pointer; padding: 0; display: flex; align-items: center; justify-content: center;">
+          <span class="material-symbols-outlined" style="font-size: 22px;">{{ searchingAiIntent ? 'hourglass_empty' : 'arrow_forward' }}</span>
+        </button>
+      </div>
+
+      <!-- Spinner cargando -->
+      <div *ngIf="searchingAiIntent" style="display: flex; align-items: center; gap: 0.5rem; justify-content: center; font-size: 0.85rem; color: #6366f1;">
+        <div class="loader-ring" style="width: 16px; height: 16px; border-width: 2px;"></div>
+        Analizando tu intención semántica con Gemini...
+      </div>
+
+      <!-- Error de búsqueda -->
+      <div *ngIf="aiSearchErrorMessage" style="font-size: 0.85rem; color: #ef4444; text-align: center; display: flex; align-items: center; justify-content: center; gap: 0.3rem;">
+        <span class="material-symbols-outlined" style="font-size: 16px;">error</span> {{ aiSearchErrorMessage }}
+      </div>
+
+      <!-- Sugerencia Ganadora por Embeddings -->
+      <div *ngIf="suggestedPolicy && !searchingAiIntent" class="suggested-policy-result animate-pop" 
+           style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(16, 185, 129, 0.05)); border: 1.5px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 1.2rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
+        <div style="flex: 1;">
+          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.3rem;">
+            <span class="org-tag" style="background: rgba(99, 102, 241, 0.15); color: #4f46e5; font-size: 0.7rem; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 20px; text-transform: uppercase;">
+              ⭐ Coincidencia del {{ suggestedScore * 100 | number:'1.0-0' }}%
+            </span>
+            <span style="font-size: 0.75rem; font-weight: 600; color: #10b981;">Recomendación IA</span>
+          </div>
+          <h4 style="margin: 0 0 0.3rem 0; font-size: 1.05rem; font-weight: 600; color: var(--text-main);">{{ suggestedPolicy.nombre }}</h4>
+          <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted);">{{ suggestedPolicy.description || 'Proceso idóneo para resolver tu requerimiento.' }}</p>
+        </div>
+        <button class="btn-premium btn-premium-primary" (click)="iniciarTramite(suggestedPolicy)" 
+                style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; padding: 0.6rem 1.2rem; flex-shrink: 0; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);">
+          <span class="material-symbols-outlined" style="font-size: 18px;">rocket_launch</span> Iniciar Ahora
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Widget de Trámites Activos (Solo Clientes) -->
   <div class="dashboard-widgets" *ngIf="isClient">
     <div class="active-tasks-widget" *ngIf="tramitesActivos.length > 0">

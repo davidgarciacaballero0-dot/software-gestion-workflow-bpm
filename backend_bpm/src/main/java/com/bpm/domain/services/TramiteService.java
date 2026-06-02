@@ -23,8 +23,11 @@ import com.bpm.data.repositories.RolRepository;
 import com.bpm.data.repositories.TramiteInstanciaRepository;
 import com.bpm.data.repositories.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import java.time.LocalDateTime;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -45,6 +48,18 @@ public class TramiteService {
     private final UsuarioRepository usuarioRepository;
     private final RolRepository rolRepository;
     private final PasswordEncoder passwordEncoder;
+
+    @Value("${ia.service.url:http://localhost:8000/ia}")
+    private String IA_URL;
+
+    private final RestTemplate restTemplate = createRestTemplate();
+
+    private static RestTemplate createRestTemplate() {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(3000);
+        factory.setReadTimeout(5000);
+        return new RestTemplate(factory);
+    }
 
     @Autowired
     public TramiteService(TramiteInstanciaRepository tramiteRepository,
@@ -143,6 +158,8 @@ public class TramiteService {
                 .estadoActual("EN_PROGRESO")
                 .nodoActualId(firstOpNode.getId())
                 .departamentoActualId(firstOpNode.getDepartmentId())
+                .nodosActualesIds(List.of(firstOpNode.getId()))
+                .departamentosActualesIds(List.of(firstOpNode.getDepartmentId()))
                 .funcionarioAsignadoId((esFuncionarioIniciador && iniciador != null) ? iniciador.getId() : null) // Auto-asignación si es funcionario
                 .prioridad(request.getPrioridad() != null ? request.getPrioridad() : 2)
                 .datosAcumuladosFormulario(
@@ -153,6 +170,7 @@ public class TramiteService {
                 .updatedAt(LocalDateTime.now())
                 .build();
 
+        evaluarDocumentacionDinamica(instancia, politica);
         TramiteInstancia guardado = tramiteRepository.save(instancia);
 
         // CU-10: Registrar evento de creación en la Bitácora
@@ -169,24 +187,50 @@ public class TramiteService {
     }
 
     public TramiteResponseDTO mapearADTO(TramiteInstancia instancia, String nombrePolitica) {
-        String nombreDept = "N/A";
-        if (instancia.getDepartamentoActualId() != null) {
-            nombreDept = departamentoRepository.findById(instancia.getDepartamentoActualId())
-                    .map(d -> d.getNombre())
-                    .orElse("Desconocido");
-        }
-
-        String nombreNodo = "N/A";
-        if (instancia.getNodoActualId() != null && instancia.getIdPolitica() != null) {
-            Optional<PoliticaWorkflow> polOpt = politicaRepository.findById(instancia.getIdPolitica());
-            if (polOpt.isPresent() && polOpt.get().getNodes() != null) {
-                nombreNodo = polOpt.get().getNodes().stream()
-                        .filter(n -> n.getId().equals(instancia.getNodoActualId()))
-                        .map(n -> n.getName())
-                        .findFirst()
-                        .orElse(instancia.getNodoActualId());
+        // Inicializar listas en la instancia si son nulas o vacías
+        if (instancia.getNodosActualesIds() == null || instancia.getNodosActualesIds().isEmpty()) {
+            if (instancia.getNodoActualId() != null) {
+                instancia.setNodosActualesIds(new java.util.ArrayList<>(List.of(instancia.getNodoActualId())));
+            } else {
+                instancia.setNodosActualesIds(new java.util.ArrayList<>());
             }
         }
+        if (instancia.getDepartamentosActualesIds() == null || instancia.getDepartamentosActualesIds().isEmpty()) {
+            if (instancia.getDepartamentoActualId() != null) {
+                instancia.setDepartamentosActualesIds(new java.util.ArrayList<>(List.of(instancia.getDepartamentoActualId())));
+            } else {
+                instancia.setDepartamentosActualesIds(new java.util.ArrayList<>());
+            }
+        }
+
+        // Obtener nombres de departamentos
+        List<String> nombresDepts = new java.util.ArrayList<>();
+        for (String depId : instancia.getDepartamentosActualesIds()) {
+            if (depId != null) {
+                String name = departamentoRepository.findById(depId)
+                        .map(d -> d.getNombre())
+                        .orElse("Desconocido");
+                nombresDepts.add(name);
+            }
+        }
+
+        // Obtener nombres de nodos
+        List<String> nombresNodos = new java.util.ArrayList<>();
+        Optional<PoliticaWorkflow> polOpt = politicaRepository.findById(instancia.getIdPolitica());
+        for (String nId : instancia.getNodosActualesIds()) {
+            String name = nId;
+            if (polOpt.isPresent() && polOpt.get().getNodes() != null) {
+                name = polOpt.get().getNodes().stream()
+                        .filter(n -> n.getId().equals(nId))
+                        .map(n -> n.getName())
+                        .findFirst()
+                        .orElse(nId);
+            }
+            nombresNodos.add(name);
+        }
+
+        String nombreDept = nombresDepts.isEmpty() ? "N/A" : nombresDepts.get(0);
+        String nombreNodo = nombresNodos.isEmpty() ? "N/A" : nombresNodos.get(0);
 
         return TramiteResponseDTO.builder()
                 .id(instancia.getId())
@@ -202,8 +246,17 @@ public class TramiteService {
                 .nombreNodoActual(nombreNodo)
                 .departamentoActualId(instancia.getDepartamentoActualId())
                 .nombreDepartamentoActual(nombreDept)
+                .nodosActualesIds(instancia.getNodosActualesIds())
+                .departamentosActualesIds(instancia.getDepartamentosActualesIds())
+                .nombresNodosActuales(nombresNodos)
+                .nombresDepartamentosActuales(nombresDepts)
                 .prioridad(instancia.getPrioridad())
+                .dynamicPriority(instancia.getDynamicPriority())
+                .esAnomalo(instancia.getEsAnomalo())
+                .anomaliaDetalle(instancia.getAnomaliaDetalle())
                 .datosAcumuladosFormulario(instancia.getDatosAcumuladosFormulario())
+                .archivosAdjuntos(instancia.getArchivosAdjuntos())
+                .documentosDinamicosRequeridos(instancia.getDocumentosDinamicosRequeridos())
                 .createdAt(instancia.getCreatedAt())
                 .build();
     }
@@ -227,8 +280,12 @@ public class TramiteService {
         if (request.getIdUsuarioAccion() != null && !request.getIdUsuarioAccion().isEmpty()) {
             Usuario usuarioEjecutor = usuarioRepository.findById(request.getIdUsuarioAccion()).orElse(null);
             if (usuarioEjecutor != null && usuarioEjecutor.getIdDepartamento() != null && !usuarioEjecutor.getIdDepartamento().isEmpty()) {
-                // Si el usuario pertenece a un departamento, debe coincidir con el departamento actual del trámite
-                if (instancia.getDepartamentoActualId() != null && !instancia.getDepartamentoActualId().equals(usuarioEjecutor.getIdDepartamento())) {
+                // Si el usuario pertenece a un departamento, debe coincidir con alguno de los departamentos actuales del trámite
+                if (instancia.getDepartamentosActualesIds() != null && !instancia.getDepartamentosActualesIds().isEmpty()) {
+                    if (!instancia.getDepartamentosActualesIds().contains(usuarioEjecutor.getIdDepartamento())) {
+                        throw new WorkflowValidationException("Acceso Denegado: Este trámite se encuentra en otra área. Solo funcionarios del departamento correspondiente pueden avanzar el proceso.");
+                    }
+                } else if (instancia.getDepartamentoActualId() != null && !instancia.getDepartamentoActualId().equals(usuarioEjecutor.getIdDepartamento())) {
                     throw new WorkflowValidationException("Acceso Denegado: Este trámite se encuentra en otra área. Solo funcionarios del departamento correspondiente pueden avanzar el proceso.");
                 }
             }
@@ -243,56 +300,171 @@ public class TramiteService {
             instancia.getDatosAcumuladosFormulario().putAll(request.getDatosFormulario());
         }
 
-        // 2. Identificar el nodo actual
-        WorkflowNode nodoActual = findNodeById(politica, instancia.getNodoActualId());
+        // 2. Identificar el nodo de origen que se está completando
+        String nodoOrigenId = request.getNodoActualId();
+        if (nodoOrigenId == null || nodoOrigenId.isEmpty()) {
+            if (instancia.getNodosActualesIds() != null && !instancia.getNodosActualesIds().isEmpty()) {
+                if (instancia.getNodosActualesIds().size() == 1) {
+                    nodoOrigenId = instancia.getNodosActualesIds().get(0);
+                } else if (request.getIdUsuarioAccion() != null && !request.getIdUsuarioAccion().isEmpty()) {
+                    Usuario usuarioEjecutor = usuarioRepository.findById(request.getIdUsuarioAccion()).orElse(null);
+                    if (usuarioEjecutor != null && usuarioEjecutor.getIdDepartamento() != null) {
+                        final String userDepId = usuarioEjecutor.getIdDepartamento();
+                        nodoOrigenId = instancia.getNodosActualesIds().stream()
+                                .map(id -> findNodeById(politica, id))
+                                .filter(n -> userDepId.equals(n.getDepartmentId()))
+                                .map(WorkflowNode::getId)
+                                .findFirst()
+                                .orElse(instancia.getNodosActualesIds().get(0));
+                    } else {
+                        nodoOrigenId = instancia.getNodosActualesIds().get(0);
+                    }
+                } else {
+                    nodoOrigenId = instancia.getNodosActualesIds().get(0);
+                }
+            } else {
+                nodoOrigenId = instancia.getNodoActualId();
+            }
+        }
 
-        // 3. Resolver el siguiente nodo de parada (USER_TASK o END)
-        WorkflowNode nextStopNode = resolverSiguienteNodoDeParada(
-                politica, nodoActual, instancia.getDatosAcumuladosFormulario());
+        if (nodoOrigenId == null) {
+            throw new WorkflowValidationException("No se pudo determinar el nodo de origen para avanzar.");
+        }
 
-        // SLA Check: ¿Se pasó de la fecha límite?
+        final String finalNodoOrigenId = nodoOrigenId;
+        WorkflowNode nodoOrigen = findNodeById(politica, finalNodoOrigenId);
+
+        // 3. Evaluar SLA del nodo completado
         boolean excedioSla = false;
         if (instancia.getFechaVencimientoSla() != null) {
             excedioSla = LocalDateTime.now().isAfter(instancia.getFechaVencimientoSla());
         }
         LocalDateTime oldSlaVencimiento = instancia.getFechaVencimientoSla();
 
-        // 4. Actualizar la instancia según el nodo destino
-        String deptAnteriorId = instancia.getDepartamentoActualId();
-        
-        if (nextStopNode.getType() == NodeType.END) {
-            instancia.setEstadoActual("FINALIZADO");
-            instancia.setNodoActualId(nextStopNode.getId());
-            instancia.setFechaVencimientoSla(null);
-            instancia.setFuncionarioAsignadoId(null); // Limpiar al finalizar
+        // 4. Cargar y actualizar los tokens activos de la instancia
+        if (instancia.getNodosActualesIds() == null || instancia.getNodosActualesIds().isEmpty()) {
+            instancia.setNodosActualesIds(new java.util.ArrayList<>(List.of(instancia.getNodoActualId())));
+        }
+        if (instancia.getDepartamentosActualesIds() == null || instancia.getDepartamentosActualesIds().isEmpty()) {
+            if (instancia.getDepartamentoActualId() != null) {
+                instancia.setDepartamentosActualesIds(new java.util.ArrayList<>(List.of(instancia.getDepartamentoActualId())));
+            } else {
+                instancia.setDepartamentosActualesIds(new java.util.ArrayList<>());
+            }
+        }
+
+        java.util.List<String> activeNodes = new java.util.ArrayList<>(instancia.getNodosActualesIds());
+        activeNodes.remove(finalNodoOrigenId);
+
+        java.util.List<String> activeDepts = new java.util.ArrayList<>();
+
+        // Encontrar conexiones salientes del nodo origen completado
+        List<WorkflowEdge> outgoing = politica.getEdges().stream()
+                .filter(e -> e.getSourceNodeId().equals(finalNodoOrigenId))
+                .toList();
+
+        if (outgoing.isEmpty()) {
+            throw new WorkflowValidationException("El paso '" + nodoOrigen.getName() + "' no tiene conexiones salientes.");
+        }
+
+        // Si hay un solo camino, tomarlo; si no, evaluar condiciones (Gateway)
+        WorkflowEdge edgeElegido;
+        if (outgoing.size() == 1) {
+            edgeElegido = outgoing.get(0);
         } else {
-            instancia.setNodoActualId(nextStopNode.getId());
-            instancia.setDepartamentoActualId(nextStopNode.getDepartmentId());
-            instancia.setFechaInicioNodoActual(LocalDateTime.now());
-            instancia.setFechaVencimientoSla(nextStopNode.getSlaHours() != null ? 
-                LocalDateTime.now().plusHours(nextStopNode.getSlaHours()) : null);
+            edgeElegido = outgoing.stream()
+                    .filter(e -> e.getCondition() != null && evaluarCondicion(e.getCondition(), instancia.getDatosAcumuladosFormulario()))
+                    .findFirst()
+                    .orElse(null);
+            if (edgeElegido == null) {
+                edgeElegido = outgoing.stream()
+                        .filter(e -> e.getCondition() == null)
+                        .findFirst()
+                        .orElse(outgoing.get(0));
+            }
+        }
+
+        WorkflowNode nextStopNode = findNodeById(politica, edgeElegido.getTargetNodeId());
+        
+        // Resolver navegación recursiva sobre gateways hasta puntos de parada (USER_TASK o END)
+        resolverNavegacionParalela(politica, nextStopNode, instancia.getDatosAcumuladosFormulario(), activeNodes, activeDepts);
+
+        // Reconstruir lista de departamentos basada en todos los nodos activos actuales
+        activeDepts.clear();
+        String endNodeId = null;
+        java.util.List<String> nodesToRemove = new java.util.ArrayList<>();
+
+        for (String activeId : activeNodes) {
+            WorkflowNode n = findNodeById(politica, activeId);
+            if (n.getType() == NodeType.USER_TASK) {
+                activeDepts.add(n.getDepartmentId() != null ? n.getDepartmentId() : "");
+            } else if (n.getType() == NodeType.END) {
+                endNodeId = n.getId();
+                nodesToRemove.add(activeId);
+            }
+        }
+        
+        // Remover del pool de tokens activos los que correspondan al fin del flujo
+        activeNodes.removeAll(nodesToRemove);
+
+        // 5. Actualizar la instancia según los tokens resultantes
+        if (activeNodes.isEmpty()) {
+            // Todos los hilos del proceso han concluido
+            instancia.setEstadoActual("FINALIZADO");
+            instancia.setNodoActualId(endNodeId != null ? endNodeId : finalNodoOrigenId);
+            instancia.setDepartamentoActualId(null);
+            instancia.setFechaVencimientoSla(null);
+            instancia.setFuncionarioAsignadoId(null);
+            instancia.setNodosActualesIds(new java.util.ArrayList<>());
+            instancia.setDepartamentosActualesIds(new java.util.ArrayList<>());
+        } else {
+            // Quedan hilos activos (o se crearon nuevos por bifurcación fork)
+            instancia.setNodosActualesIds(activeNodes);
+            instancia.setDepartamentosActualesIds(activeDepts);
             
-            // REQ: Si cambia de departamento, liberar la tarea
-            if (nextStopNode.getDepartmentId() != null && !nextStopNode.getDepartmentId().equals(deptAnteriorId)) {
+            // Sincronizar campos legacy de base
+            instancia.setNodoActualId(activeNodes.get(0));
+            instancia.setDepartamentoActualId(activeDepts.isEmpty() ? null : activeDepts.get(0));
+            
+            instancia.setFechaInicioNodoActual(LocalDateTime.now());
+            
+            // SLA: Tomar el primer nodo activo como referencia para el SLA
+            WorkflowNode primerNodoActivo = findNodeById(politica, activeNodes.get(0));
+            instancia.setFechaVencimientoSla(primerNodoActivo.getSlaHours() != null ? 
+                LocalDateTime.now().plusHours(primerNodoActivo.getSlaHours()) : null);
+            
+            // Liberar asignación de funcionario si cambia de área
+            if (primerNodoActivo.getDepartmentId() != null && !primerNodoActivo.getDepartmentId().equals(instancia.getDepartamentoActualId())) {
                 instancia.setFuncionarioAsignadoId(null);
             }
         }
 
         instancia.setUpdatedAt(LocalDateTime.now());
+        
+        // Evaluar requerimientos documentales dinámicos antes de guardar
+        evaluarDocumentacionDinamica(instancia, politica);
+        
         TramiteInstancia guardado = tramiteRepository.save(instancia);
 
-        // CU-10: Registrar evento de avance o finalización en la Bitácora
-        TipoEvento tipo = nextStopNode.getType() == NodeType.END ? TipoEvento.FINALIZACION : TipoEvento.AVANCE;
-        registrarEvento(guardado, nodoActual.getId(), nextStopNode.getId(),
+        // Registrar evento de avance/finalización en la Bitácora
+        TipoEvento tipo = activeNodes.isEmpty() ? TipoEvento.FINALIZACION : TipoEvento.AVANCE;
+        registrarEvento(guardado, finalNodoOrigenId, nextStopNode.getId(),
                 request.getIdUsuarioAccion(), tipo, null,
                 instancia.getDatosAcumuladosFormulario(), excedioSla, oldSlaVencimiento);
 
-        // 5. Notificar en tiempo real
-        if (nextStopNode.getType() == NodeType.USER_TASK && nextStopNode.getDepartmentId() != null) {
-            notificationService.notificarDepartamento(
-                    nextStopNode.getDepartmentId(),
-                    "Trámite en Tránsito",
-                    "El trámite " + guardado.getCodigoTramite() + " ha avanzado a: " + nextStopNode.getName());
+        // Notificaciones en tiempo real para todos los departamentos que ahora tengan tareas
+        for (String depId : activeDepts) {
+            if (depId != null && !depId.isEmpty()) {
+                notificationService.notificarDepartamento(
+                        depId,
+                        "Trámite en Tránsito",
+                        "El trámite " + guardado.getCodigoTramite() + " tiene tareas asignadas a su departamento.");
+            }
+        }
+
+        // Evaluar autotransición automática
+        if (!activeNodes.isEmpty()) {
+            guardado = evaluarYEjecutarAutotransicion(guardado, politica);
         }
 
         return mapearADTO(guardado, politica.getNombre());
@@ -303,47 +475,7 @@ public class TramiteService {
     // parada
     // ========================================================================================
 
-    private WorkflowNode resolverSiguienteNodoDeParada(PoliticaWorkflow politica, WorkflowNode nodoActual,
-            Map<String, Object> datosAcumulados) {
-        // Encontrar edges salientes del nodo actual
-        List<WorkflowEdge> edgesSalientes = politica.getEdges().stream()
-                .filter(e -> e.getSourceNodeId().equals(nodoActual.getId()))
-                .toList();
 
-        if (edgesSalientes.isEmpty()) {
-            throw new WorkflowValidationException(
-                    "El nodo '" + nodoActual.getName() + "' no tiene conexiones salientes. Flujo roto.");
-        }
-
-        // Si solo hay un camino, tomarlo directamente
-        WorkflowEdge edgeElegido;
-        if (edgesSalientes.size() == 1) {
-            edgeElegido = edgesSalientes.get(0);
-        } else {
-            // Múltiples caminos: evaluar condiciones (Gateway)
-            edgeElegido = edgesSalientes.stream()
-                    .filter(e -> e.getCondition() != null && evaluarCondicion(e.getCondition(), datosAcumulados))
-                    .findFirst()
-                    .orElseThrow(() -> new WorkflowValidationException(
-                            "Ninguna condición del Gateway '" + nodoActual.getName()
-                                    + "' se cumplió con los datos proporcionados."));
-        }
-
-        // Resolver el nodo destino
-        WorkflowNode nextNode = findNodeById(politica, edgeElegido.getTargetNodeId());
-
-        // Si es USER_TASK o END, es un punto de parada
-        if (nextNode.getType() == NodeType.USER_TASK || nextNode.getType() == NodeType.END) {
-            return nextNode;
-        }
-
-        // Si es un GATEWAY, resolver recursivamente
-        if (nextNode.getType() == NodeType.EXCLUSIVE_GATEWAY) {
-            return resolverSiguienteNodoDeParada(politica, nextNode, datosAcumulados);
-        }
-
-        throw new WorkflowValidationException("Tipo de nodo no soportado para navegación: " + nextNode.getType());
-    }
 
     // ========================================================================================
     // EVALUADOR DE CONDICIONES: Compara variables del formulario
@@ -426,8 +558,12 @@ public class TramiteService {
     }
 
     public TramiteInstancia obtenerTramitePorId(String id) {
-        return tramiteRepository.findById(id)
+        TramiteInstancia tramite = tramiteRepository.findById(id)
                 .orElseThrow(() -> new WorkflowValidationException("Trámite no encontrado: " + id));
+        if (tramite.getVersion() == null) {
+            tramite.setVersion(1L);
+        }
+        return tramite;
     }
 
     public TramiteResponseDTO asignarFuncionario(String tramiteId, String funcionarioId) {
@@ -506,8 +642,7 @@ public class TramiteService {
     // ========================================================================================
 
     public TramiteResponseDTO intervenirTramite(IntervencionRequestDTO request) {
-        TramiteInstancia instancia = tramiteRepository.findById(request.getIdTramite())
-                .orElseThrow(() -> new WorkflowValidationException("Trámite no encontrado: " + request.getIdTramite()));
+        TramiteInstancia instancia = obtenerTramitePorId(request.getIdTramite());
 
         String nodoAnterior = instancia.getNodoActualId();
 
@@ -630,5 +765,297 @@ public class TramiteService {
                 .slaVencimientoEsperado(slaVencimiento)
                 .build();
         historialRepository.save(evento);
+    }
+
+    private void evaluarDocumentacionDinamica(TramiteInstancia tramite, PoliticaWorkflow politica) {
+        try {
+            Map<String, Object> req = new HashMap<>();
+            req.put("datosFormulario", tramite.getDatosAcumuladosFormulario());
+            req.put("descripcionTramite", politica.getNombre() + " - " + politica.getDescription());
+            req.put("archivosAdjuntos", tramite.getArchivosAdjuntos() != null ? tramite.getArchivosAdjuntos() : new HashMap<>());
+
+            @SuppressWarnings("unchecked")
+            Class<Map<String, Object>> responseType = (Class<Map<String, Object>>) (Class<?>) Map.class;
+            Map<String, Object> iaResponse = restTemplate.postForObject(
+                    IA_URL + "/validar-documentacion-dinamica",
+                    req,
+                    responseType
+            );
+
+            if (iaResponse != null && iaResponse.containsKey("documentos_requeridos")) {
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> docs = (List<Map<String, Object>>) iaResponse.get("documentos_requeridos");
+                if (docs != null) {
+                    tramite.setDocumentosDinamicosRequeridos(docs);
+                    System.out.println("✅ CU-27: Auditoría de documentación dinámica completada. Requisitos exigidos: " + docs.size());
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("WARN: Fallo en auditoría de documentación dinámica: " + e.getMessage());
+        }
+    }
+
+    private TramiteInstancia evaluarYEjecutarAutotransicion(TramiteInstancia tramite, PoliticaWorkflow politica) {
+        try {
+            String currentNodoId = tramite.getNodoActualId();
+            if (currentNodoId == null) return tramite;
+
+            WorkflowNode currentNode = findNodeById(politica, currentNodoId);
+            if (currentNode == null || currentNode.getType() != NodeType.USER_TASK) return tramite;
+
+            List<WorkflowEdge> outgoing = politica.getEdges().stream()
+                    .filter(e -> e.getSourceNodeId().equals(currentNodoId))
+                    .toList();
+
+            if (outgoing.isEmpty()) return tramite;
+
+            List<Map<String, Object>> nodosSiguientes = outgoing.stream()
+                    .map(e -> {
+                        WorkflowNode next = findNodeById(politica, e.getTargetNodeId());
+                        Map<String, Object> map = new HashMap<>();
+                        map.put("id", next.getId());
+                        map.put("name", next.getName());
+                        map.put("type", next.getType().toString());
+                        return map;
+                    })
+                    .collect(Collectors.toList());
+
+            List<String> historialSucesos = historialRepository.findByIdTramite(tramite.getId()).stream()
+                    .map(e -> String.format("[%s] Tarea '%s' ejecutada por %s", 
+                            e.getCreatedAt(), e.getNodoDestinoNombre(), e.getEjecutadoPorNombre()))
+                    .collect(Collectors.toList());
+
+            Map<String, Object> req = new HashMap<>();
+            req.put("datosFormulario", tramite.getDatosAcumuladosFormulario());
+            req.put("nodosSiguientes", nodosSiguientes);
+            req.put("historial", historialSucesos);
+
+            @SuppressWarnings("unchecked")
+            Class<Map<String, Object>> responseType = (Class<Map<String, Object>>) (Class<?>) Map.class;
+            Map<String, Object> iaResponse = restTemplate.postForObject(
+                    IA_URL + "/predecir-transicion",
+                    req,
+                    responseType
+            );
+
+            if (iaResponse != null) {
+                String nodoRecomendadoId = (String) iaResponse.get("nodo_recomendado_id");
+                Double confianza = null;
+                Object rawConf = iaResponse.get("confianza");
+                if (rawConf instanceof Number) {
+                    confianza = ((Number) rawConf).doubleValue();
+                }
+
+                String motivo = (String) iaResponse.get("motivo");
+
+                if (nodoRecomendadoId != null && confianza != null && confianza >= 0.90) {
+                    System.out.println("⚡ CU-28: Autotransicionando trámite " + tramite.getCodigoTramite() + " con confianza " + confianza);
+                    return this.ejecutarAvanceAutomaticoInterno(tramite, currentNodoId, nodoRecomendadoId, motivo, confianza);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("WARN: Fallo en evaluación de autotransición predictiva: " + e.getMessage());
+        }
+        return tramite;
+    }
+
+    private TramiteInstancia ejecutarAvanceAutomaticoInterno(TramiteInstancia tramite, String nodoOrigenId, String nodoDestinoId, String motivo, Double confianza) {
+        PoliticaWorkflow politica = politicaRepository.findById(tramite.getIdPolitica())
+                .orElseThrow(() -> new WorkflowValidationException("Política asociada no encontrada."));
+
+        WorkflowNode nodoDestino = findNodeById(politica, nodoDestinoId);
+
+        boolean excedioSla = false;
+        if (tramite.getFechaVencimientoSla() != null) {
+            excedioSla = LocalDateTime.now().isAfter(tramite.getFechaVencimientoSla());
+        }
+        LocalDateTime oldSlaVencimiento = tramite.getFechaVencimientoSla();
+
+        java.util.List<String> activeNodes = new java.util.ArrayList<>(tramite.getNodosActualesIds() != null ? tramite.getNodosActualesIds() : List.of(nodoOrigenId));
+        activeNodes.remove(nodoOrigenId);
+
+        java.util.List<String> activeDepts = new java.util.ArrayList<>();
+
+        // Resolver navegación recursiva
+        resolverNavegacionParalela(politica, nodoDestino, tramite.getDatosAcumuladosFormulario(), activeNodes, activeDepts);
+
+        activeDepts.clear();
+        String endNodeId = null;
+        java.util.List<String> nodesToRemove = new java.util.ArrayList<>();
+
+        for (String activeId : activeNodes) {
+            WorkflowNode n = findNodeById(politica, activeId);
+            if (n.getType() == NodeType.USER_TASK) {
+                activeDepts.add(n.getDepartmentId() != null ? n.getDepartmentId() : "");
+            } else if (n.getType() == NodeType.END) {
+                endNodeId = n.getId();
+                nodesToRemove.add(activeId);
+            }
+        }
+        activeNodes.removeAll(nodesToRemove);
+
+        if (activeNodes.isEmpty()) {
+            tramite.setEstadoActual("FINALIZADO");
+            tramite.setNodoActualId(endNodeId != null ? endNodeId : nodoDestinoId);
+            tramite.setDepartamentoActualId(null);
+            tramite.setFechaVencimientoSla(null);
+            tramite.setFuncionarioAsignadoId(null);
+            tramite.setNodosActualesIds(new java.util.ArrayList<>());
+            tramite.setDepartamentosActualesIds(new java.util.ArrayList<>());
+        } else {
+            tramite.setNodosActualesIds(activeNodes);
+            tramite.setDepartamentosActualesIds(activeDepts);
+            tramite.setNodoActualId(activeNodes.get(0));
+            tramite.setDepartamentoActualId(activeDepts.isEmpty() ? null : activeDepts.get(0));
+            tramite.setFechaInicioNodoActual(LocalDateTime.now());
+            
+            WorkflowNode primerNodoActivo = findNodeById(politica, activeNodes.get(0));
+            tramite.setFechaVencimientoSla(primerNodoActivo.getSlaHours() != null ? 
+                LocalDateTime.now().plusHours(primerNodoActivo.getSlaHours()) : null);
+            
+            if (primerNodoActivo.getDepartmentId() != null && !primerNodoActivo.getDepartmentId().equals(tramite.getDepartamentoActualId())) {
+                tramite.setFuncionarioAsignadoId(null);
+            }
+        }
+
+        tramite.setUpdatedAt(LocalDateTime.now());
+        
+        // Ejecutar también validación documental al cambiar de nodo automáticamente
+        evaluarDocumentacionDinamica(tramite, politica);
+        
+        TramiteInstancia guardado = tramiteRepository.save(tramite);
+
+        String autoMotivo = String.format("Autotransición de IA recomendada (Confianza: %.0f%%). Diagnóstico: %s", confianza * 100, motivo);
+        TipoEvento tipo = activeNodes.isEmpty() ? TipoEvento.FINALIZACION : TipoEvento.AVANCE;
+
+        registrarEvento(guardado, nodoOrigenId, nodoDestinoId,
+                null, tipo, autoMotivo,
+                tramite.getDatosAcumuladosFormulario(), excedioSla, oldSlaVencimiento);
+
+        for (String depId : activeDepts) {
+            if (depId != null && !depId.isEmpty()) {
+                notificationService.notificarDepartamento(
+                        depId,
+                        "Trámite Autotransicionado por IA ⚡",
+                        "El trámite " + guardado.getCodigoTramite() + " fue avanzado automáticamente por la IA hacia su departamento.");
+            }
+        }
+        return guardado;
+    }
+
+
+    private boolean canReach(PoliticaWorkflow politica, String startNodeId, String targetNodeId) {
+        if (startNodeId.equals(targetNodeId)) return true;
+        java.util.Set<String> visited = new java.util.HashSet<>();
+        java.util.Queue<String> queue = new java.util.LinkedList<>();
+        queue.add(startNodeId);
+        visited.add(startNodeId);
+        
+        while (!queue.isEmpty()) {
+            String current = queue.poll();
+            List<WorkflowEdge> edges = politica.getEdges().stream()
+                    .filter(e -> e.getSourceNodeId().equals(current))
+                    .toList();
+            for (WorkflowEdge edge : edges) {
+                String next = edge.getTargetNodeId();
+                if (next.equals(targetNodeId)) return true;
+                if (!visited.contains(next)) {
+                    visited.add(next);
+                    queue.add(next);
+                }
+            }
+        }
+        return false;
+    }
+
+    private void resolverNavegacionParalela(
+            PoliticaWorkflow politica, 
+            WorkflowNode nodo, 
+            Map<String, Object> datosAcumulados, 
+            java.util.List<String> activeNodes, 
+            java.util.List<String> activeDepts) {
+        
+        if (nodo.getType() == NodeType.USER_TASK) {
+            if (!activeNodes.contains(nodo.getId())) {
+                activeNodes.add(nodo.getId());
+                activeDepts.add(nodo.getDepartmentId() != null ? nodo.getDepartmentId() : "");
+            }
+            return;
+        }
+        
+        if (nodo.getType() == NodeType.END) {
+            if (!activeNodes.contains(nodo.getId())) {
+                activeNodes.add(nodo.getId());
+            }
+            return;
+        }
+        
+        if (nodo.getType() == NodeType.EXCLUSIVE_GATEWAY) {
+            List<WorkflowEdge> edgesSalientes = politica.getEdges().stream()
+                    .filter(e -> e.getSourceNodeId().equals(nodo.getId()))
+                    .toList();
+            if (edgesSalientes.isEmpty()) {
+                throw new WorkflowValidationException("Gateway Exclusivo '" + nodo.getName() + "' no tiene conexiones salientes.");
+            }
+            WorkflowEdge edgeElegido = null;
+            if (edgesSalientes.size() == 1) {
+                edgeElegido = edgesSalientes.get(0);
+            } else {
+                edgeElegido = edgesSalientes.stream()
+                        .filter(e -> e.getCondition() != null && evaluarCondicion(e.getCondition(), datosAcumulados))
+                        .findFirst()
+                        .orElse(null);
+                if (edgeElegido == null) {
+                    edgeElegido = edgesSalientes.stream()
+                            .filter(e -> e.getCondition() == null)
+                            .findFirst()
+                            .orElse(edgesSalientes.get(0));
+                }
+            }
+            WorkflowNode next = findNodeById(politica, edgeElegido.getTargetNodeId());
+            resolverNavegacionParalela(politica, next, datosAcumulados, activeNodes, activeDepts);
+            return;
+        }
+        
+        if (nodo.getType() == NodeType.PARALLEL_GATEWAY) {
+            String gType = nodo.getGatewayType() != null ? nodo.getGatewayType() : "";
+            if ("FORK".equalsIgnoreCase(gType)) {
+                List<WorkflowEdge> edgesSalientes = politica.getEdges().stream()
+                        .filter(e -> e.getSourceNodeId().equals(nodo.getId()))
+                        .toList();
+                if (edgesSalientes.isEmpty()) {
+                    throw new WorkflowValidationException("Gateway Paralelo Fork '" + nodo.getName() + "' no tiene conexiones salientes.");
+                }
+                for (WorkflowEdge edge : edgesSalientes) {
+                    WorkflowNode next = findNodeById(politica, edge.getTargetNodeId());
+                    resolverNavegacionParalela(politica, next, datosAcumulados, activeNodes, activeDepts);
+                }
+            } else if ("JOIN".equalsIgnoreCase(gType)) {
+                boolean esperar = false;
+                for (String activeId : activeNodes) {
+                    if (canReach(politica, activeId, nodo.getId())) {
+                        esperar = true;
+                        break;
+                    }
+                }
+                
+                if (esperar) {
+                    System.out.println("JOIN Sincronización: Rama en espera. Aún quedan ramas activas pendientes.");
+                } else {
+                    System.out.println("JOIN Sincronización: ¡Todas las ramas completadas! Avanzando flujo principal.");
+                    List<WorkflowEdge> edgesSalientes = politica.getEdges().stream()
+                            .filter(e -> e.getSourceNodeId().equals(nodo.getId()))
+                            .toList();
+                    if (edgesSalientes.isEmpty()) {
+                        throw new WorkflowValidationException("Gateway Paralelo Join '" + nodo.getName() + "' no tiene conexiones salientes.");
+                    }
+                    WorkflowNode next = findNodeById(politica, edgesSalientes.get(0).getTargetNodeId());
+                    resolverNavegacionParalela(politica, next, datosAcumulados, activeNodes, activeDepts);
+                }
+            }
+            return;
+        }
+        
+        throw new WorkflowValidationException("Tipo de nodo no soportado: " + nodo.getType());
     }
 }

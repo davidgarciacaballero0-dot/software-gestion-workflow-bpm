@@ -4,11 +4,17 @@ import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../../data/services/auth.service';
+import { PoliticaWorkflowService } from '../../../data/services/politica-workflow.service';
 
 interface ChatMessage {
   text: string;
   isAi: boolean;
   timestamp: Date;
+  actionButton?: {
+    label: string;
+    route: string;
+    queryParams?: any;
+  };
 }
 
 @Component({
@@ -42,13 +48,21 @@ interface ChatMessage {
       <div class="chat-messages" #scrollContainer>
         <div class="welcome-msg">
           👋 Hola {{ authService.currentUser()?.nombre }}, soy tu asistente especializado. 
-          ¿En qué puedo ayudarte hoy?
+          Puedes consultarme por voz o **subir un documento PDF/Imagen** para que infiera el trámite de forma automática.
         </div>
         
         <div *ngFor="let msg of messages()" 
              [class]="msg.isAi ? 'msg-ai' : 'msg-user'">
           <div class="bubble">
-            {{ msg.text }}
+            <div style="white-space: pre-wrap;">{{ msg.text }}</div>
+            
+            <!-- Botón de acción interactivo -->
+            <div *ngIf="msg.actionButton" class="action-btn-container">
+              <button class="chat-action-btn" (click)="executeAction(msg.actionButton)">
+                {{ msg.actionButton.label }}
+              </button>
+            </div>
+            
             <span class="time">{{ msg.timestamp | date:'HH:mm' }}</span>
           </div>
         </div>
@@ -59,13 +73,20 @@ interface ChatMessage {
       </div>
 
       <div class="chat-input-area">
-        <button class="voice-btn" [class.listening]="isListening" (click)="toggleListening()">
+        <button class="voice-btn" [class.listening]="isListening" (click)="toggleListening()" title="Hablar por micrófono">
           {{ isListening ? '🛑' : '🎙️' }}
         </button>
+        
+        <!-- Botón de adjuntar documento premium -->
+        <button class="attach-btn" (click)="fileInput.click()" [disabled]="isTyping()" title="Subir documento PDF/Imagen para clasificar">
+          📎
+        </button>
+        <input #fileInput type="file" style="display: none" (change)="onFileSelected($event)" accept=".pdf,image/*">
+        
         <input type="text" 
                [(ngModel)]="userInput" 
                (keyup.enter)="sendMessage()"
-               placeholder="Escribe tu consulta..."
+               placeholder="Pregunta o sube un documento..."
                [disabled]="isTyping()">
         <button class="send-btn" (click)="sendMessage()" [disabled]="!userInput.trim() || isTyping()">
           ➤
@@ -99,9 +120,9 @@ interface ChatMessage {
       position: fixed;
       bottom: 6.5rem;
       right: 2rem;
-      width: 380px;
-      height: 550px;
-      background: rgba(255, 255, 255, 0.8);
+      width: 400px;
+      height: 580px;
+      background: rgba(255, 255, 255, 0.85);
       backdrop-filter: blur(20px) saturate(180%);
       border: 1px solid rgba(255, 255, 255, 0.4);
       border-radius: 1.5rem;
@@ -146,6 +167,7 @@ interface ChatMessage {
       color: var(--text-muted);
       text-align: center;
       margin-bottom: 0.5rem;
+      line-height: 1.4;
     }
 
     .bubble {
@@ -170,6 +192,31 @@ interface ChatMessage {
       color: #1a1c1e;
       border-bottom-left-radius: 0.25rem;
       box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+
+    .action-btn-container {
+      display: flex;
+      justify-content: flex-start;
+      margin-top: 0.75rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .chat-action-btn {
+      background: #22c55e;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 0.75rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(34, 197, 94, 0.3);
+      transition: all 0.3s ease;
+    }
+    .chat-action-btn:hover {
+      background: #16a34a;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 15px rgba(34, 197, 94, 0.4);
     }
 
     .time {
@@ -199,14 +246,15 @@ interface ChatMessage {
       outline: none;
     }
 
-    .voice-btn, .send-btn {
+    .voice-btn, .send-btn, .attach-btn {
       background: none;
       border: none;
       font-size: 1.2rem;
       cursor: pointer;
       transition: transform 0.2s;
+      color: var(--text-muted);
     }
-    .voice-btn:hover, .send-btn:hover { transform: scale(1.15); }
+    .voice-btn:hover, .send-btn:hover, .attach-btn:hover { transform: scale(1.15); color: var(--primary); }
     .voice-btn.listening { animation: pulse-red 1.5s infinite; }
 
     @keyframes pulse-red {
@@ -233,7 +281,8 @@ export class ChatbotWidgetComponent implements AfterViewChecked {
     private router: Router, 
     private zone: NgZone,
     private http: HttpClient,
-    public authService: AuthService
+    public authService: AuthService,
+    private politicaService: PoliticaWorkflowService
   ) {
     this.initSpeechRecognition();
   }
@@ -266,7 +315,7 @@ export class ChatbotWidgetComponent implements AfterViewChecked {
   toggleMute() {
     this.isMuted.update(v => !v);
     if (this.isMuted()) {
-      window.speechSynthesis.cancel(); // Detiene el audio inmediatamente si se silencia
+      window.speechSynthesis.cancel();
     }
   }
 
@@ -299,7 +348,6 @@ export class ChatbotWidgetComponent implements AfterViewChecked {
       rol: this.authService.currentUser()?.nombreRol || 'CLIENTE'
     };
 
-    // Usar el nuevo endpoint de chat interactivo
     this.http.post('/ia/chat-interactivo', payload).subscribe({
       next: (res: any) => {
         this.isTyping.set(false);
@@ -319,6 +367,103 @@ export class ChatbotWidgetComponent implements AfterViewChecked {
     });
   }
 
+  onFileSelected(event: any) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    this.messages.update(prev => [...prev, { 
+      text: `📎 Subiendo y analizando documento: "${file.name}"...`, 
+      isAi: false, 
+      timestamp: new Date() 
+    }]);
+    this.isTyping.set(true);
+
+    this.politicaService.listarCatalogoPublico().subscribe({
+      next: (politicas) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('politicas', JSON.stringify(politicas));
+
+        this.http.post('/ia/analisis-documento', formData).subscribe({
+          next: (res: any) => {
+            this.isTyping.set(false);
+            
+            const polId = res.politica_asignada_id;
+            const polNombre = res.nombre_politica;
+            const score = res.score;
+            const resumen = res.resumen_documento;
+            const datos = res.datos_extraidos;
+
+            let respuestaChat = `📋 **Resumen del documento analizado:**\n${resumen}\n\n`;
+            
+            if (datos) {
+              respuestaChat += `🔑 **Datos Clave Extraídos:**\n`;
+              if (datos.nombre_cliente) respuestaChat += `- **Cliente:** ${datos.nombre_cliente}\n`;
+              if (datos.ci_cliente) respuestaChat += `- **Cédula de Identidad:** ${datos.ci_cliente}\n`;
+              if (datos.monto) respuestaChat += `- **Monto:** $${datos.monto}\n`;
+              if (datos.fecha) respuestaChat += `- **Fecha:** ${datos.fecha}\n`;
+              respuestaChat += `\n`;
+            }
+
+            if (polId && score > 0.4) {
+              respuestaChat += `🎯 **Inferencia de Trámite:** He determinado con un ${(score * 100).toFixed(0)}% de confianza que este documento corresponde a la política de **"${polNombre}"**.\n\n¿Deseas iniciar este trámite de inmediato con los datos extraídos?`;
+              
+              this.messages.update(prev => [...prev, { 
+                text: respuestaChat, 
+                isAi: true, 
+                timestamp: new Date(),
+                actionButton: {
+                  label: `Iniciar trámite de ${polNombre}`,
+                  route: `/dashboard/tramites/iniciar`,
+                  queryParams: { 
+                    politicaId: polId,
+                    nombreCliente: datos?.nombre_cliente || '',
+                    ciCliente: datos?.ci_cliente || '',
+                    monto: datos?.monto || ''
+                  }
+                }
+              }]);
+            } else {
+              respuestaChat += `⚠️ No he podido asociar este documento a ninguna política de negocio activa de forma concluyente. ¿Podrías darme más detalles o seleccionar un trámite manualmente?`;
+              this.messages.update(prev => [...prev, { 
+                text: respuestaChat, 
+                isAi: true, 
+                timestamp: new Date() 
+              }]);
+            }
+            
+            this.speakText(respuestaChat);
+          },
+          error: (err) => {
+            this.isTyping.set(false);
+            console.error('Error analizando documento:', err);
+            this.messages.update(prev => [...prev, { 
+              text: 'Hubo un error al procesar el archivo. Asegúrate de que sea un PDF o imagen válido.', 
+              isAi: true, 
+              timestamp: new Date() 
+            }]);
+          }
+        });
+      },
+      error: (err) => {
+        this.isTyping.set(false);
+        console.error('Error listando catálogo:', err);
+        this.messages.update(prev => [...prev, { 
+          text: 'No se pudo obtener el catálogo de políticas de negocio para la validación.', 
+          isAi: true, 
+          timestamp: new Date() 
+        }]);
+      }
+    });
+
+    event.target.value = '';
+  }
+
+  executeAction(action: any) {
+    this.toggleChat();
+    this.router.navigate([action.route], { queryParams: action.queryParams });
+  }
+
   private scrollToBottom(): void {
     if (this.scrollContainer) {
       this.scrollContainer.nativeElement.scrollTop = this.scrollContainer.nativeElement.scrollHeight;
@@ -328,11 +473,9 @@ export class ChatbotWidgetComponent implements AfterViewChecked {
   private speakText(text: string): void {
     if (this.isMuted() || !('speechSynthesis' in window)) return;
     
-    // Limpiar respuesta de markdown o símbolos raros antes de hablar
     const cleanText = text.replace(/[*#_]/g, '');
-    
     const utterance = new SpeechSynthesisUtterance(cleanText);
-    utterance.lang = 'es-ES'; // Forzar español
+    utterance.lang = 'es-ES';
     utterance.rate = 1.0;
     utterance.pitch = 1.0;
     

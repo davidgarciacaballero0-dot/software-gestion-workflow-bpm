@@ -8,10 +8,13 @@ import com.bpm.data.repositories.TramiteInstanciaRepository;
 import com.bpm.data.repositories.EventoHistorialRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -23,6 +26,7 @@ public class AnaliticaService {
     private final UsuarioRepository usuarioRepository;
     private final EventoHistorialRepository historialRepository;
     private final com.bpm.data.repositories.PoliticaWorkflowRepository politicaRepository;
+    private final MongoTemplate mongoTemplate;
 
     public List<MetricDataDTO> calcularMetricasDepartamentales() {
         return departamentoRepository.findAll().stream().map(dept -> {
@@ -204,6 +208,139 @@ public class AnaliticaService {
 
     public List<com.bpm.data.entities.PoliticaWorkflow> obtenerTodasLasPoliticas() {
         return politicaRepository.findAll();
+    }
+
+    public NlpReportResult ejecutarReporteDinamicoNLP(NlpReportParams params) {
+        String dimension = params.getDimension() != null ? params.getDimension().toLowerCase() : "status";
+        String metric = params.getMetric() != null ? params.getMetric().toLowerCase() : "count";
+        Map<String, Object> filters = params.getFilters() != null ? params.getFilters() : new HashMap<>();
+
+        Query query = new Query();
+
+        // Aplicar filtros seguros sin inyección
+        if (filters.get("status") != null && filters.get("status") != null && !filters.get("status").toString().equalsIgnoreCase("null")) {
+            query.addCriteria(Criteria.where("estadoActual").is(filters.get("status").toString().toUpperCase()));
+        }
+        if (filters.get("priority") != null && !filters.get("priority").toString().equalsIgnoreCase("null")) {
+            try {
+                int priorityVal = Integer.parseInt(filters.get("priority").toString());
+                query.addCriteria(Criteria.where("prioridad").is(priorityVal));
+            } catch (NumberFormatException e) {
+                String priorityStr = filters.get("priority").toString().toUpperCase();
+                int priorityVal = 3;
+                if (priorityStr.contains("HIGH") || priorityStr.contains("ALTA") || priorityStr.contains("CRITIC")) priorityVal = 4;
+                else if (priorityStr.contains("LOW") || priorityStr.contains("BAJA")) priorityVal = 1;
+                query.addCriteria(Criteria.where("prioridad").is(priorityVal));
+            }
+        }
+        if (filters.get("department") != null && !filters.get("department").toString().equalsIgnoreCase("null")) {
+            String deptFilter = filters.get("department").toString();
+            List<String> deptIds = departamentoRepository.findAll().stream()
+                .filter(d -> d.getNombre().equalsIgnoreCase(deptFilter) || d.getId().equalsIgnoreCase(deptFilter))
+                .map(d -> d.getId())
+                .collect(Collectors.toList());
+            if (!deptIds.isEmpty()) {
+                query.addCriteria(Criteria.where("departamentoActualId").in(deptIds));
+            }
+        }
+        if (filters.get("days") != null && !filters.get("days").toString().equalsIgnoreCase("null")) {
+            try {
+                int days = Integer.parseInt(filters.get("days").toString());
+                query.addCriteria(Criteria.where("createdAt").gte(LocalDateTime.now().minusDays(days)));
+            } catch (NumberFormatException ignored) {}
+        }
+
+        List<TramiteInstancia> tramites = mongoTemplate.find(query, TramiteInstancia.class);
+
+        Map<String, List<TramiteInstancia>> agrupados;
+        
+        switch (dimension) {
+            case "department":
+                Map<String, String> deptoNombres = departamentoRepository.findAll().stream()
+                    .collect(Collectors.toMap(d -> d.getId(), d -> d.getNombre(), (v1, v2) -> v1));
+                agrupados = tramites.stream()
+                    .collect(Collectors.groupingBy(t -> {
+                        String id = t.getDepartamentoActualId();
+                        return id != null ? deptoNombres.getOrDefault(id, "Sin Departamento") : "Sin Asignar";
+                    }));
+                break;
+            case "priority":
+                agrupados = tramites.stream()
+                    .collect(Collectors.groupingBy(t -> {
+                        int pri = t.getPrioridad() != null ? t.getPrioridad() : 3;
+                        switch (pri) {
+                            case 1: case 2: return "Prioridad Baja";
+                            case 3: return "Prioridad Media";
+                            case 4: case 5: return "Prioridad Alta/Crítica";
+                            default: return "Prioridad Media";
+                        }
+                    }));
+                break;
+            case "month":
+                agrupados = tramites.stream()
+                    .collect(Collectors.groupingBy(t -> {
+                        if (t.getCreatedAt() == null) return "Desconocido";
+                        return String.format("%d-%02d", t.getCreatedAt().getYear(), t.getCreatedAt().getMonthValue());
+                    }));
+                break;
+            case "status":
+            default:
+                agrupados = tramites.stream()
+                    .collect(Collectors.groupingBy(t -> t.getEstadoActual() != null ? t.getEstadoActual() : "SIN_ESTADO"));
+                break;
+        }
+
+        List<NlpReportPoint> reportPoints = new ArrayList<>();
+        agrupados.forEach((key, list) -> {
+            double val;
+            if ("average_duration".equals(metric)) {
+                val = list.stream()
+                    .mapToLong(t -> {
+                        LocalDateTime start = t.getCreatedAt() != null ? t.getCreatedAt() : LocalDateTime.now();
+                        LocalDateTime end = "FINALIZADO".equalsIgnoreCase(t.getEstadoActual()) && t.getUpdatedAt() != null ? t.getUpdatedAt() : LocalDateTime.now();
+                        return Duration.between(start, end).toHours();
+                    })
+                    .average()
+                    .orElse(0.0);
+            } else {
+                val = list.size();
+            }
+            reportPoints.add(new NlpReportPoint(key, val));
+        });
+
+        reportPoints.sort(Comparator.comparing(NlpReportPoint::getLabel));
+
+        return NlpReportResult.builder()
+            .dimension(dimension)
+            .metric(metric)
+            .data(reportPoints)
+            .build();
+    }
+
+    @lombok.Data
+    @lombok.NoArgsConstructor
+    @lombok.AllArgsConstructor
+    @lombok.Builder
+    public static class NlpReportParams {
+        private String dimension;
+        private String metric;
+        private Map<String, Object> filters;
+    }
+
+    @lombok.Data
+    @lombok.Builder
+    public static class NlpReportResult {
+        private String dimension;
+        private String metric;
+        private List<NlpReportPoint> data;
+    }
+
+    @lombok.Data
+    @lombok.Builder
+    @lombok.AllArgsConstructor
+    public static class NlpReportPoint {
+        private String label;
+        private double value;
     }
 
     @lombok.Data

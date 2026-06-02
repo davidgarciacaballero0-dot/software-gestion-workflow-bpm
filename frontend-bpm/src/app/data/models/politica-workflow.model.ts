@@ -44,6 +44,7 @@ export interface WorkflowNode {
   uiPosition: UIPosition;
   formDefinition?: FormFieldDefinition[];
   requiredDocuments?: string[];
+  gatewayType?: 'FORK' | 'JOIN';
 }
 
 export interface Condition {

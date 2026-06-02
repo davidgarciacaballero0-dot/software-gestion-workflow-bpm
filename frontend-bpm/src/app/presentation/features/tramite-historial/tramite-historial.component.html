@@ -13,6 +13,42 @@
     </div>
   </header>
 
+  <!-- SECCIÓN DE REQUISITOS Y DOCUMENTOS ADJUNTOS PREMIUM (FOTO DE CI / PDFS) -->
+  <section class="attachments-section glass-premium" *ngIf="archivos && archivos.length > 0" style="padding: 1.5rem; border-radius: 1rem; border: 1px solid rgba(255,255,255,0.1); margin-top: 1.5rem; margin-bottom: 2rem;">
+    <h2 style="display:flex; align-items:center; gap:0.5rem; margin-bottom:1.25rem; font-size:1.2rem; font-weight:600; color:var(--primary, #6366f1);"><span class="material-symbols-outlined">description</span> Documentos y Requisitos Adjuntos</h2>
+    
+    <div class="attachments-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:1.25rem;">
+      <div *ngFor="let arch of archivos" class="attachment-card" style="background:rgba(21, 31, 50, 0.6); border:1px solid rgba(255,255,255,0.05); padding:1rem; border-radius:12px; display:flex; flex-direction:column; gap:0.75rem; transition:transform 0.3s ease;">
+        
+        <!-- Previsualización Inline si es una Imagen (ej. foto de CI, planos, fotos físicas) -->
+        <div *ngIf="isImage(arch.contentType)" class="image-preview-container" style="width:100%; height:160px; border-radius:8px; overflow:hidden; background:#0f172a; border:1px solid rgba(255,255,255,0.1); display:flex; justify-content:center; align-items:center;">
+          <img [src]="getDownloadUrl(arch.id)" [alt]="arch.nombreOriginal" style="width:100%; height:100%; object-fit:cover;">
+        </div>
+        
+        <!-- Icono de Tipo de Documento si es PDF o documento general -->
+        <div *ngIf="!isImage(arch.contentType)" class="doc-icon-container" style="width:100%; height:160px; border-radius:8px; background:rgba(30, 41, 59, 0.5); display:flex; flex-direction:column; justify-content:center; align-items:center; gap:0.5rem; border:1px solid rgba(255,255,255,0.1);">
+          <span class="material-symbols-outlined" style="font-size:54px; color:#ef4444;">picture_as_pdf</span>
+          <span style="font-size:0.75rem; color:#94a3b8; text-transform:uppercase; font-weight:700;">{{ arch.contentType.split('/')[1] || 'Documento' }}</span>
+        </div>
+
+        <div class="attachment-info" style="display:flex; flex-direction:column; gap:0.25rem;">
+          <div class="attachment-name" style="font-weight:600; font-size:0.95rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:white;" [title]="arch.nombreOriginal">
+            {{ arch.nombreOriginal }}
+          </div>
+          <div class="attachment-meta" style="font-size:0.75rem; color:#94a3b8;">
+            Tamaño: {{ arch.tamano / 1024 | number:'1.0-1' }} KB | Tipo: {{ arch.contentType.split('/')[1] || 'N/A' }}
+          </div>
+        </div>
+
+        <div class="attachment-actions" style="margin-top:auto;">
+          <button class="btn btn-secondary" (click)="descargarArchivo(arch.id)" style="font-size:0.8rem; padding:8px 12px; display:flex; align-items:center; justify-content:center; gap:0.4rem; cursor:pointer; width:100%; border-radius:8px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.05); color:white; font-weight:600;">
+            <span class="material-symbols-outlined" style="font-size:16px;">download</span> Descargar Documento
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <section class="timeline">
     <div *ngIf="eventos.length === 0" class="no-events">
       No se han registrado eventos para este trámite.

@@ -21,7 +21,18 @@ public class TramiteResponseDTO {
     private String nombreNodoActual;
     private String departamentoActualId;
     private String nombreDepartamentoActual;
+    
+    private java.util.List<String> nodosActualesIds;
+    private java.util.List<String> departamentosActualesIds;
+    private java.util.List<String> nombresNodosActuales;
+    private java.util.List<String> nombresDepartamentosActuales;
     private Integer prioridad;
+    private Integer dynamicPriority;
+    private Boolean esAnomalo;
+    private String anomaliaDetalle;
+    
     private Map<String, Object> datosAcumuladosFormulario;
+    private Map<String, String> archivosAdjuntos;
+    private java.util.List<Map<String, Object>> documentosDinamicosRequeridos;
     private LocalDateTime createdAt;
 }

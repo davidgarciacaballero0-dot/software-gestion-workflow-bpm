@@ -35,6 +35,11 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRATION_MS=${JWT_EXPIRATION_MS:-86400000}
       - IA_SERVICE_URL=http://ia-service:8000/ia
+      - GCP_STORAGE_BUCKET=${GCP_STORAGE_BUCKET:-bpm-documentos-adjuntos-798ae}
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/gcp-creds.json
+    volumes:
+      - ${APPDATA}/gcloud/application_default_credentials.json:/app/gcp-creds.json:ro
+
 
   # ============================================================
   # IA Microservice - FastAPI

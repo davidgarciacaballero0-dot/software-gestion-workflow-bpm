@@ -55,8 +55,9 @@
           <div class="tramite-main">
             <div class="info-group">
               <span class="tramite-code font-strong">{{ t.codigoTramite }}</span>
-              <span class="priority-indicator" [ngClass]="'priority-' + (t.prioridad || 2)">
-                {{ (t.prioridad === 5 ? '🔥 Crítica' : t.prioridad === 4 ? '🟠 Alta' : t.prioridad === 3 ? '🔵 Media' : t.prioridad === 1 ? '🟢 Baja' : '⚪ Normal') }}
+              <span class="priority-indicator" [ngClass]="'priority-' + (t.dynamicPriority || t.prioridad || 2)">
+                {{ ( (t.dynamicPriority || t.prioridad) === 5 ? '🔥 Crítica' : (t.dynamicPriority || t.prioridad) === 4 ? '🟠 Alta' : (t.dynamicPriority || t.prioridad) === 3 ? '🔵 Media' : (t.dynamicPriority || t.prioridad) === 1 ? '🟢 Baja' : '⚪ Normal') }}
+                <span *ngIf="t.dynamicPriority && t.dynamicPriority !== t.prioridad" style="font-size:0.65rem; font-weight:700; background:rgba(99,102,241,0.15); color:#6366f1; padding:0.1rem 0.4rem; border-radius:10px; margin-left:0.2rem; display:inline-block; vertical-align:middle; text-transform:uppercase;">⚡ IA</span>
               </span>
               <span class="badge" [ngClass]="'badge-' + t.estadoActual.toLowerCase()">{{ t.estadoActual }}</span>
             </div>
@@ -64,6 +65,16 @@
               <span class="detail-item" style="display:flex; align-items:center; gap:0.2rem;"><span class="material-symbols-outlined" style="font-size:14px;">calendar_month</span> {{ formatDate(t.createdAt) }}</span>
               <span class="detail-item client-info" style="display:flex; align-items:center; gap:0.2rem;"><span class="material-symbols-outlined" style="font-size:14px;">person</span> {{ t.nombreSolicitante || 'Cliente Externo' }} (CI: {{ t.ciSolicitante || '---' }})</span>
               <span class="detail-item text-secondary ml-1" *ngIf="activeTab === 'department' || resultsSearch.length > 0" style="display:flex; align-items:center; gap:0.2rem;"><span class="material-symbols-outlined" style="font-size:14px;">location_on</span> {{ t.nombreNodoActual }}</span>
+            </div>
+            
+            <!-- Alerta Predictiva de Anomalía SLA (CU-30) -->
+            <div *ngIf="t.esAnomalo" class="anomaly-alert-box animate-pop" 
+                 style="margin-top:0.6rem; background:rgba(239, 68, 68, 0.08); border: 1.5px solid rgba(239, 68, 68, 0.2); border-radius: 8px; padding: 0.5rem 0.8rem; display: flex; align-items: flex-start; gap: 0.4rem; font-size: 0.8rem; animation: fadeIn 0.3s ease;">
+              <span class="material-symbols-outlined" style="color: #ef4444; font-size: 16px; margin-top: 0.15rem; animation: pulse 2s infinite;">warning</span>
+              <div>
+                <strong style="color: #ef4444; display: block; font-weight:600; font-size: 0.78rem;">⚠️ ALERTA SLA: RIESGO DE ESTANCAMIENTO</strong>
+                <span style="color: #b91c1c; font-style: italic; font-size: 0.75rem;">IA advierte: "{{ t.anomaliaDetalle || 'Tiempo límite comprometido.' }}"</span>
+              </div>
             </div>
           </div>
 

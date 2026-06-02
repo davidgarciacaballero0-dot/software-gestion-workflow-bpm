@@ -2,6 +2,7 @@ import { Component, OnInit, ChangeDetectorRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
 import { PoliticaWorkflowService } from '../../../data/services/politica-workflow.service';
 import { TramiteService } from '../../../data/services/tramite.service';
 import { OrganizacionService } from '../../../data/services/organizacion.service';
@@ -31,6 +32,13 @@ export class PoliticaListComponent implements OnInit {
   isDesignerView = false;
   tramitesActivos: TramiteResponseDTO[] = [];
   
+  // --- Asignación por Intención IA (NLP) ---
+  aiSearchQuery = '';
+  searchingAiIntent = false;
+  suggestedPolicy: PoliticaWorkflow | null = null;
+  suggestedScore = 0;
+  aiSearchErrorMessage: string | null = null;
+  
   // Modal de Nueva Política
   showNewModal = false;
   newPolicy = {
@@ -55,7 +63,8 @@ export class PoliticaListComponent implements OnInit {
     private authService: AuthService,
     private cd: ChangeDetectorRef,
     private zone: NgZone,
-    private router: Router
+    private router: Router,
+    private http: HttpClient
   ) {}
 
   ngOnInit(): void {
@@ -281,5 +290,56 @@ export class PoliticaListComponent implements OnInit {
         }
       });
     }
+  }
+
+  // --- BÚSQUEDA POR INTENCIÓN IA ---
+
+  buscarPoliticaPorIntencion() {
+    if (!this.aiSearchQuery || this.aiSearchQuery.trim().length === 0) {
+      this.suggestedPolicy = null;
+      this.suggestedScore = 0;
+      return;
+    }
+
+    this.searchingAiIntent = true;
+    this.suggestedPolicy = null;
+    this.aiSearchErrorMessage = null;
+    this.cd.detectChanges();
+
+    this.http.post<any>('/api/v1/intent/policy', {
+      prompt: this.aiSearchQuery
+    }).subscribe({
+      next: (res: any) => {
+        this.searchingAiIntent = false;
+        if (res && res.politica_asignada) {
+          const assigned = res.politica_asignada;
+          const match = this.politicas.find(p => (p.id || (p as any)._id) === (assigned.id || assigned._id));
+          if (match) {
+            this.suggestedPolicy = match;
+            this.suggestedScore = res.score || 0.0;
+          } else {
+            this.suggestedPolicy = assigned;
+            this.suggestedScore = res.score || 0.0;
+          }
+        } else {
+          this.aiSearchErrorMessage = 'No se encontró una política de negocio que coincida semánticamente con tu requerimiento.';
+        }
+        this.cd.detectChanges();
+      },
+      error: (err: any) => {
+        console.error('Error in intent policy assignment:', err);
+        this.searchingAiIntent = false;
+        this.aiSearchErrorMessage = 'El motor de IA de similitud no pudo procesar la solicitud en este momento.';
+        this.cd.detectChanges();
+      }
+    });
+  }
+
+  limpiarBusquedaIA() {
+    this.aiSearchQuery = '';
+    this.suggestedPolicy = null;
+    this.suggestedScore = 0;
+    this.aiSearchErrorMessage = null;
+    this.cd.detectChanges();
   }
 }

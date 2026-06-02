@@ -127,7 +127,7 @@ import { ChatbotWidgetComponent } from '../../shared/voice-assistant/chatbot-wid
             </a>
             <a routerLink="/app/insights" routerLinkActive="active" class="nav-item" *ngIf="isAdmin()" [title]="isCollapsed() ? 'IA Insights' : ''">
               <span class="material-symbols-outlined icon">smart_toy</span>
-              <span class="label" *ngIf="!isCollapsed()">Reportes IA</span>
+              <span class="label" *ngIf="!isCollapsed()">Reportes Dinamicos</span>
             </a>
           </nav>
 
@@ -721,7 +721,7 @@ export class MainLayoutComponent {
   authService = inject(AuthService);
   notificationService = inject(NotificationService);
   location = inject(Location);
-  
+
   showProfile = signal(false);
   showNotifications = signal(false);
   isCollapsed = signal(false);

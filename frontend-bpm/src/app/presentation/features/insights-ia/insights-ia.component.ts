@@ -6,7 +6,7 @@ import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { AnaliticaService, MetricData } from '../../../data/services/analitica.service';
 import { BaseChartDirective } from 'ng2-charts';
-import { Chart, registerables } from 'chart.js';
+import { Chart, registerables, ChartType } from 'chart.js';
 
 // Registro global necesario para Chart.js en versiones modernas
 Chart.register(...registerables);
@@ -20,13 +20,14 @@ Chart.register(...registerables);
 })
 export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild(BaseChartDirective) chart?: BaseChartDirective;
+  @ViewChild('dynamicChartRef') dynamicChart?: BaseChartDirective;
 
   // --- Estado General ---
   loadingMetrics = false;
   analyzingIA = false;
   executingAction = false;
   filtros = { meses: 0, idDepartamento: '' };
-  activeTab: 'historico' | 'proyeccion' = 'historico';
+  activeTab: 'historico' | 'nlp-reports' | 'proyeccion' = 'historico';
 
   // Métricas para Gráficos e IA
   metrics: MetricData[] = [];
@@ -39,12 +40,41 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
   voiceTranscript = '';
   private recognition: any = null;
 
+  // --- Reportes NLP ---
+  nlpPrompt = '';
+  loadingNlpReport = false;
+  nlpReportData: any = null;
+  isListeningNlp = false;
+  private recognitionNlp: any = null;
+  public nlpChartData: any = null;
+  public nlpChartType: ChartType = 'bar';
+  public nlpChartOptions: any = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: true, labels: { color: '#64748b', font: { family: 'Inter', size: 12 } } }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: { color: '#94a3b8', font: { size: 11 } },
+        grid: { color: 'rgba(0,0,0,0.04)' }
+      },
+      x: {
+        ticks: { color: '#64748b', font: { size: 11 } },
+        grid: { display: false }
+      }
+    }
+  };
+
   // --- Reestructuración ---
   reassignForm = { idOrigen: '', idDestino: '', motivo: 'Reequilibrio sugerido por IA' };
   usuariosOrigen: any[] = [];
   selectedUserIds: string[] = [];
 
   // --- Chart ---
+  public dynamicChartData: any = null;
+  public dynamicChartType: ChartType = 'bar';
   public barChartType: 'bar' | 'line' = 'bar';
   public barChartOptions: any = {
     responsive: true,
@@ -128,6 +158,7 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
   ngOnInit(): void {
     this.cargarMetricas();
     this.initVoiceRecognition();
+    this.initVoiceRecognitionNlp();
   }
 
   ngAfterViewInit(): void {
@@ -226,9 +257,19 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
     setTimeout(() => this.refreshCharts(), 100);
   }
 
-  // ========================================
-  //  ANÁLISIS IA
-  // ========================================
+  limpiarConsultaIA() {
+    this.aiReport = '';
+    this.formattedReport = '';
+    this.dynamicChartData = null;
+    this.voiceTranscript = '';
+    this.isListening = false;
+    if (this.recognition) {
+      try {
+        this.recognition.abort();
+      } catch (_) {}
+    }
+    this.cdr.detectChanges();
+  }
 
   solicitarAnalisisIA() {
     this.analyzingIA = true;
@@ -375,20 +416,16 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
     this.recognition = new SpeechRecognition();
     this.recognition.lang = 'es-ES';
     this.recognition.interimResults = true;
-    this.recognition.continuous = false;
+    this.recognition.continuous = true; // Mantener escuchando hasta que el usuario decida parar
 
     this.recognition.onresult = (event: any) => {
       let transcript = '';
-      for (let i = event.resultIndex; i < event.results.length; i++) {
+      for (let i = 0; i < event.results.length; i++) {
         transcript += event.results[i][0].transcript;
       }
       this.voiceTranscript = transcript;
       this.cdr.detectChanges();
-
-      // Si el resultado es final, enviar al análisis
-      if (event.results[event.results.length - 1].isFinal) {
-        this.processVoiceCommand(transcript);
-      }
+      // Ya no enviamos automáticamente. Esperamos a que el usuario presione STOP.
     };
 
     this.recognition.onerror = (event: any) => {
@@ -420,40 +457,69 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
     }
     this.isListening = false;
     this.cdr.detectChanges();
+    
+    // Procesar comando cuando el usuario presiona STOP
+    if (this.voiceTranscript && this.voiceTranscript.trim().length > 0) {
+       this.processVoiceCommand(this.voiceTranscript);
+    }
   }
 
   private processVoiceCommand(transcript: string) {
     this.isListening = false;
-    const cmd = transcript.toLowerCase();
-
-    // Si la consulta menciona análisis, generar análisis IA
-    if (cmd.includes('analiz') || cmd.includes('reporte') || cmd.includes('cuello') || cmd.includes('botella') ||
-      cmd.includes('carga') || cmd.includes('rendimiento') || cmd.includes('optimiz')) {
-      this.solicitarAnalisisIA();
-      return;
+    
+    if (!transcript || transcript.trim().length === 0) {
+       this.aiReport = "⚠️ No se escuchó ningún comando. Intenta nuevamente.";
+       this.formattedReport = this.formatReport(this.aiReport);
+       this.cdr.detectChanges();
+       return;
     }
 
-    // Si dice "excel", exportar excel
-    if (cmd.includes('excel') || cmd.includes('descargar') || cmd.includes('exportar')) {
-      this.exportarExcel();
-      return;
-    }
-
-    // Para cualquier otra cosa, enviar como prompt genérico al asistente
     this.analyzingIA = true;
     this.aiReport = '';
     this.formattedReport = '';
+    this.dynamicChartData = null; // Reset dynamic chart
     this.cdr.detectChanges();
 
-    this.http.post<any>('/api/v1/optimization/asistente', { prompt: transcript }).subscribe({
+    this.http.post<any>('/api/v1/optimization/voice-orchestrator', { comando: transcript }).subscribe({
       next: (res: any) => {
-        this.aiReport = res.respuesta || res.reporte || JSON.stringify(res);
-        this.formattedReport = this.formatReport(this.aiReport);
         this.analyzingIA = false;
+        const action = res.action;
+        const textResp = res.text_response || '';
+
+        // Display textual explanation if any
+        if (textResp) {
+          this.aiReport = textResp;
+          this.formattedReport = this.formatReport(textResp);
+        }
+
+        switch(action) {
+          case 'EXPORT_EXCEL':
+            this.exportarExcel();
+            break;
+          case 'UPDATE_FILTER':
+            if (res.filter_command && res.filter_command.meses !== undefined) {
+               this.filtros.meses = res.filter_command.meses;
+               this.aplicarFiltros();
+            }
+            break;
+          case 'RENDER_DYNAMIC_CHART':
+            if (res.chart_config) {
+               this.dynamicChartType = res.chart_config.type || 'bar';
+               this.dynamicChartData = {
+                 labels: res.chart_config.labels || [],
+                 datasets: res.chart_config.datasets || []
+               };
+            }
+            break;
+          case 'TEXT_ONLY':
+          default:
+            // Just display the text, already handled above
+            break;
+        }
         this.cdr.detectChanges();
       },
       error: (err: any) => {
-        const backendError = err?.error?.error || 'No se pudo procesar el comando de voz.';
+        const backendError = err?.error?.text_response || 'No se pudo procesar el comando con el orquestador.';
         this.aiReport = `⚠️ Error: ${backendError}`;
         this.formattedReport = this.formatReport(this.aiReport);
         this.analyzingIA = false;
@@ -506,7 +572,9 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
 
     let chartImageBase64 = '';
     try {
-      if (this.chart?.chart) {
+      if (this.dynamicChartData && this.dynamicChart?.chart) {
+        chartImageBase64 = this.dynamicChart.chart.toBase64Image();
+      } else if (this.chart?.chart) {
         chartImageBase64 = this.chart.chart.toBase64Image();
       }
     } catch (e) {
@@ -535,33 +603,24 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  private async _forceDownload(blob: Blob, filename: string, mimeType: string) {
+  private _forceDownload(blob: Blob, filename: string, mimeType: string) {
     try {
-      // Intentar API Nativa (Chrome Desktop) para evitar UUIDs por seguridad del navegador
-      if ('showSaveFilePicker' in window) {
-        const handle = await (window as any).showSaveFilePicker({
-          suggestedName: filename,
-          types: [{
-            description: 'Reporte BPM',
-            accept: { [mimeType]: [filename.endsWith('.pdf') ? '.pdf' : '.xlsx'] },
-          }],
-        });
-        const writable = await handle.createWritable();
-        await writable.write(blob);
-        await writable.close();
-        return;
-      }
-    } catch (err: any) {
-      // El usuario canceló o hubo error, caer al fallback de file-saver
-      if (err.name === 'AbortError') return;
-    }
-
-    // Fallback con file-saver usando objeto File en lugar de Blob
-    try {
-      const file = new File([blob], filename, { type: mimeType });
-      saveAs(file);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
     } catch (e) {
-      saveAs(blob, filename);
+      console.warn('Standard download failed, falling back to file-saver', e);
+      try {
+        const file = new File([blob], filename, { type: mimeType });
+        saveAs(file);
+      } catch (err) {
+        saveAs(blob, filename);
+      }
     }
   }
 
@@ -598,7 +657,7 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
     return text;
   }
 
-  setTab(tab: 'historico' | 'proyeccion') {
+  setTab(tab: 'historico' | 'nlp-reports' | 'proyeccion') {
     this.activeTab = tab;
     if (tab === 'historico') {
       setTimeout(() => this.refreshCharts(), 200);
@@ -762,5 +821,112 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
         this.cdr.detectChanges();
       }
     });
+  }
+
+  // ========================================
+  //  REPORTES DINÁMICOS NLP
+  // ========================================
+
+  generarReporteNLP() {
+    if (!this.nlpPrompt || this.nlpPrompt.trim().length === 0) return;
+    this.loadingNlpReport = true;
+    this.nlpReportData = null;
+    this.nlpChartData = null;
+    this.cdr.detectChanges();
+
+    this.http.post<any>('/api/v1/optimization/nlp-report', { prompt: this.nlpPrompt }).subscribe({
+      next: (res: any) => {
+        this.nlpReportData = res;
+        this.buildNlpChart(res);
+        this.loadingNlpReport = false;
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => {
+        console.error('Error generating NLP report:', err);
+        alert('No se pudo generar el reporte. Verifique que el servicio de IA y el backend de Spring Boot estén en ejecución.');
+        this.loadingNlpReport = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  private buildNlpChart(res: any) {
+    if (!res || !res.result || !res.result.data || res.result.data.length === 0) return;
+    
+    const labels = res.result.data.map((d: any) => d.label);
+    const values = res.result.data.map((d: any) => d.value);
+    
+    const metricLabel = res.params.metric === 'average_duration' ? 'Duración Promedio (Horas)' : 'Cantidad de Trámites';
+    
+    this.nlpChartType = res.params.dimension === 'month' ? 'line' : 'bar';
+    
+    this.nlpChartData = {
+      labels: labels,
+      datasets: [
+        {
+          data: values,
+          label: metricLabel,
+          backgroundColor: 'rgba(99, 102, 241, 0.75)',
+          borderColor: '#6366f1',
+          borderWidth: 1,
+          borderRadius: 6,
+          fill: res.params.dimension === 'month'
+        }
+      ]
+    };
+  }
+
+  initVoiceRecognitionNlp() {
+    const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+    if (!SpeechRecognition) return;
+
+    this.recognitionNlp = new SpeechRecognition();
+    this.recognitionNlp.lang = 'es-ES';
+    this.recognitionNlp.interimResults = true;
+    
+    this.recognitionNlp.onresult = (event: any) => {
+      let transcript = '';
+      for (let i = 0; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
+      }
+      this.nlpPrompt = transcript;
+      this.cdr.detectChanges();
+    };
+
+    this.recognitionNlp.onerror = (event: any) => {
+      console.error('Speech recognition error in NLP:', event.error);
+      this.isListeningNlp = false;
+      this.cdr.detectChanges();
+    };
+
+    this.recognitionNlp.onend = () => {
+      this.isListeningNlp = false;
+      this.cdr.detectChanges();
+      if (this.nlpPrompt && this.nlpPrompt.trim().length > 0) {
+        this.generarReporteNLP();
+      }
+    };
+  }
+
+  startVoiceNlp() {
+    if (!this.recognitionNlp) {
+      this.initVoiceRecognitionNlp();
+    }
+    if (!this.recognitionNlp) {
+      alert('Tu navegador no soporta reconocimiento de voz. Usa Google Chrome.');
+      return;
+    }
+    this.nlpPrompt = '';
+    this.isListeningNlp = true;
+    this.recognitionNlp.start();
+    this.cdr.detectChanges();
+  }
+
+  stopVoiceNlp() {
+    if (this.recognitionNlp) {
+      this.recognitionNlp.stop();
+    }
+    this.isListeningNlp = false;
+    this.cdr.detectChanges();
   }
 }

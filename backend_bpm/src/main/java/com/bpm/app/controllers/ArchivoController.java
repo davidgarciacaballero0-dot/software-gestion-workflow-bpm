@@ -20,11 +20,13 @@ public class ArchivoController {
 
     private final StorageService storageService;
     private final ArchivoAdjuntoRepository archivoRepository;
+    private final com.bpm.domain.services.GoogleDriveService driveService;
 
     @Autowired
-    public ArchivoController(StorageService storageService, ArchivoAdjuntoRepository archivoRepository) {
+    public ArchivoController(StorageService storageService, ArchivoAdjuntoRepository archivoRepository, com.bpm.domain.services.GoogleDriveService driveService) {
         this.storageService = storageService;
         this.archivoRepository = archivoRepository;
+        this.driveService = driveService;
     }
 
     @PostMapping("/upload")
@@ -40,13 +42,13 @@ public class ArchivoController {
             );
 
             ArchivoAdjunto adjunto = ArchivoAdjunto.builder()
-                    .idTramiteInstancia(idTramite)
-                    .idUsuarioSubida(idUsuario)
-                    .nombreOriginal(file.getOriginalFilename())
-                    .contentType(file.getContentType())
-                    .tamano(file.getSize())
-                    .gridFsId(gridFsId)
-                    .build();
+                     .idTramiteInstancia(idTramite)
+                     .idUsuarioSubida(idUsuario)
+                     .nombreOriginal(file.getOriginalFilename())
+                     .contentType(file.getContentType())
+                     .tamano(file.getSize())
+                     .gridFsId(gridFsId)
+                     .build();
 
             return ResponseEntity.ok(archivoRepository.save(adjunto));
         } catch (Exception e) {
@@ -71,4 +73,39 @@ public class ArchivoController {
                 .contentType(MediaType.parseMediaType(adjunto.getContentType()))
                 .body(new InputStreamResource(stream));
     }
+
+    // --- COOPERATIVE EDITING ENPOINTS (CU-24) ---
+
+    @PostMapping("/drive/iniciar")
+    public ResponseEntity<java.util.Map<String, String>> iniciarEdicionColaborativa(
+            @RequestParam("archivoId") String archivoId) {
+        ArchivoAdjunto adjunto = archivoRepository.findById(archivoId)
+                .orElseThrow(() -> new RuntimeException("Metadata de archivo no encontrada: " + archivoId));
+
+        java.util.Map<String, String> session = driveService.iniciarEdicionColaborativa(
+                adjunto.getGridFsId(), 
+                adjunto.getNombreOriginal()
+        );
+        session.put("archivoId", archivoId);
+        return ResponseEntity.ok(session);
+    }
+
+    @PostMapping("/drive/finalizar")
+    public ResponseEntity<ArchivoAdjunto> finalizarEdicionColaborativa(
+            @RequestParam("fileId") String fileId,
+            @RequestParam("archivoId") String archivoId) {
+        
+        String newStorageId = driveService.finalizarEdicionColaborativa(fileId);
+        
+        ArchivoAdjunto adjunto = archivoRepository.findById(archivoId)
+                .orElseThrow(() -> new RuntimeException("Metadata de archivo no encontrada: " + archivoId));
+
+        if (newStorageId != null) {
+            adjunto.setGridFsId(newStorageId);
+            adjunto = archivoRepository.save(adjunto);
+        }
+        return ResponseEntity.ok(adjunto);
+    }
+
+
 }

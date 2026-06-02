@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NotificationService, Notification } from '../../../data/services/notification.service';
 
@@ -73,19 +73,27 @@ export class NotificationToastComponent implements OnInit {
   currentNotification: Notification | null = null;
   private timeoutId: any;
 
-  constructor(private notificationService: NotificationService) {}
+  constructor(
+    private notificationService: NotificationService,
+    private cdr: ChangeDetectorRef
+  ) {}
 
   ngOnInit(): void {
     this.notificationService.getNotifications().subscribe((notif) => {
-      this.currentNotification = notif;
-      
-      // Auto-ocultar después de 5 segundos
-      if (this.timeoutId) clearTimeout(this.timeoutId);
-      this.timeoutId = setTimeout(() => this.clearNotification(), 5000);
+      // Defer state update to next microtask to prevent ExpressionChangedAfterItHasBeenCheckedError
+      Promise.resolve().then(() => {
+        this.currentNotification = notif;
+        this.cdr.detectChanges();
+        
+        // Auto-ocultar después de 5 segundos
+        if (this.timeoutId) clearTimeout(this.timeoutId);
+        this.timeoutId = setTimeout(() => this.clearNotification(), 5000);
+      });
     });
   }
 
   clearNotification(): void {
     this.currentNotification = null;
+    this.cdr.detectChanges();
   }
 }
