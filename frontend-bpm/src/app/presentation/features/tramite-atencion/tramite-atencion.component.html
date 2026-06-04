@@ -20,12 +20,23 @@
       </div>
 
       <div class="dynamic-form mt-1">
-        <div *ngFor="let field of formFields" class="form-group slide-in" [class.dynamic-ia-group]="field.isDynamicIA" [style.border-left]="field.isDynamicIA ? '3px solid #ef4444' : 'none'" [style.padding-left]="field.isDynamicIA ? '0.8rem' : '0'">
-          <label [for]="field.fieldId" [style.color]="field.isDynamicIA ? '#ef4444' : 'inherit'" [style.font-weight]="field.isDynamicIA ? 'bold' : 'normal'">
+        <div *ngFor="let field of formFields" 
+             class="form-group slide-in" 
+             [class.full-width]="field.type === 'FILE'"
+             [class.dynamic-ia-group]="field.isDynamicIA">
+          
+          <!-- Badge de IA para campos sugeridos -->
+          <div *ngIf="field.isDynamicIA" class="dynamic-ia-badge">
+            <span class="material-symbols-outlined" style="font-size: 12px; vertical-align: middle;">insights</span> Sugerido por IA
+          </div>
+
+          <label [for]="field.fieldId" [style.color]="field.isDynamicIA ? '#ef4444' : 'inherit'">
             {{ field.label }} 
             <span *ngIf="field.required" class="required-mark">*</span>
           </label>
-          <div *ngIf="field.isDynamicIA" class="dynamic-ia-explanation" style="font-size: 0.8rem; color: #ef4444; margin-top: -0.2rem; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.3rem;">
+
+          <!-- Explicación de IA -->
+          <div *ngIf="field.isDynamicIA" class="dynamic-ia-explanation" style="font-size: 0.8rem; color: #ef4444; margin-bottom: 0.6rem; display: flex; align-items: center; gap: 0.3rem; font-weight: 500;">
             <span class="material-symbols-outlined" style="font-size: 14px;">warning</span> {{ field.description }}
           </div>
 
@@ -238,18 +249,20 @@
 </div>
 
 <!-- OVERLAY DE EDICIÓN COLABORATIVA DE GOOGLE DRIVE (CU-24) -->
-<div class="success-overlay animate-fade-in" *ngIf="showDriveEditor" style="z-index: 9999; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center;">
-  <div class="success-modal glass-premium shadow-premium animate-zoom-in" style="max-width: 90%; width: 90%; height: 85%; padding: 1.5rem; display: flex; flex-direction: column; background: #0f172a; border: 1px solid #334155; border-radius: 12px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid #334155; padding-bottom: 0.8rem;">
-      <div style="display:flex; align-items:center; gap:0.5rem;">
-        <span class="material-symbols-outlined" style="color: #38bdf8; font-size:28px;">edit_document</span>
-        <h3 class="text-gradient" style="margin: 0; font-size:1.4rem; font-weight:600;">Google Drive API - Espacio Colaborativo de Edición</h3>
+<div class="success-overlay animate-fade-in" *ngIf="showDriveEditor" style="z-index: 9999; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(7, 2, 53, 0.5); backdrop-filter: blur(12px); display: flex; align-items: center; justify-content: center;">
+  <div class="success-modal glass-premium shadow-premium animate-zoom-in" style="max-width: 95%; width: 95%; height: 90%; padding: 1.25rem; display: flex; flex-direction: column; background: rgba(255, 255, 255, 0.9); border: 1px solid rgba(255, 255, 255, 0.6); border-radius: 16px; box-shadow: 0 25px 60px -15px rgba(7, 2, 53, 0.25);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; border-bottom: 1px solid rgba(200, 197, 208, 0.4); padding-bottom: 0.8rem;">
+      <div style="display:flex; align-items:center; gap:0.6rem; color: #070235; font-family: 'Inter', sans-serif;">
+        <span class="material-symbols-outlined" style="color: #070235; font-size:28px;">edit_document</span>
+        <h3 style="margin: 0; font-size:1.25rem; color: #070235; line-height: 1.4; letter-spacing: -0.02em;">
+          <span style="font-weight: 800;">Google Drive API</span><span style="font-weight: 400;"> - Espacio Colaborativo de Edición</span>
+        </h3>
       </div>
-      <button (click)="cerrarEditorDrive()" style="display:flex; align-items:center; gap:0.4rem; font-size: 0.85rem; padding: 8px 16px; cursor: pointer; background: #ef4444; color: white; border: none; border-radius: 6px; font-weight: 600; box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.2);">
+      <button (click)="cerrarEditorDrive()" class="btn-premium" style="background: #ef4444; color: white; display:flex; align-items:center; gap:0.4rem; font-size: 0.85rem; padding: 8px 16px; font-weight: 600; border-radius: 8px; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25); transition: all 0.2s ease;">
         <span class="material-symbols-outlined" style="font-size: 16px;">close</span> Cerrar Editor
       </button>
     </div>
-    <div style="flex: 1; border-radius: 8px; overflow: hidden; background: #0f172a; border: 1px solid #334155;">
+    <div style="flex: 1; border-radius: 8px; overflow: hidden; background: #ffffff; border: 1px solid rgba(7, 2, 53, 0.1);">
       <iframe *ngIf="driveEditorUrl" [src]="driveEditorUrl" style="width: 100%; height: 100%; border: none;"></iframe>
     </div>
   </div>

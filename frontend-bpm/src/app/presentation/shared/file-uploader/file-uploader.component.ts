@@ -13,7 +13,7 @@ import { AuthService } from '../../../data/services/auth.service';
         <label [for]="'fileInput-' + fieldId" class="upload-label">
           <span class="icon">📁</span>
           <span class="text">Seleccionar Archivo</span>
-          <small>Máx: 10MB</small>
+          <small>Máx: 500MB</small>
         </label>
         <input 
           type="file" 
