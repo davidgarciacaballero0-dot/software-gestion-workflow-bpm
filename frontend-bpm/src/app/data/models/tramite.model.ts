@@ -1,6 +1,8 @@
 export interface StartProcedureRequestDTO {
+  id?: string; // UUID generado localmente
   idPolitica: string;
   idUsuarioSolicitante: string;
+  prioridad?: number; // Prioridad opcional (1-5)
   datosIniciales?: any;
 }
 

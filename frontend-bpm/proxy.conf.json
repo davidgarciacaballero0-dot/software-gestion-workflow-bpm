@@ -13,8 +13,8 @@
     "proxyTimeout": 120000
   },
   "/ia": {
-    "target": "https://ia-service-241130514391.us-central1.run.app",
-    "secure": true,
+    "target": "http://localhost:8000",
+    "secure": false,
     "changeOrigin": true,
     "proxyTimeout": 120000
   },

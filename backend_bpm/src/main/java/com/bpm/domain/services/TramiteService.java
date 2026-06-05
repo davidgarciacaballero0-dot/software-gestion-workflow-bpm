@@ -150,6 +150,7 @@ public class TramiteService {
         String idSolicitante = (solicitante != null) ? solicitante.getId() : request.getIdUsuarioSolicitante();
 
         TramiteInstancia instancia = TramiteInstancia.builder()
+                .id(request.getId()) // CU-23: Usar UUID generado en frontend si existe (creación offline)
                 .codigoTramite(code)
                 .idPolitica(politica.getId())
                 .idUsuarioSolicitante(idSolicitante)

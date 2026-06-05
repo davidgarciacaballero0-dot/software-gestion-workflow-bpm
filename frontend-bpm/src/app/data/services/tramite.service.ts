@@ -19,11 +19,32 @@ export class TramiteService {
 
   iniciarTramite(request: StartProcedureRequestDTO): Observable<TramiteResponseDTO> {
     if (!this.offlineService.isOnline) {
-      // Offline fallback: Queue the start request
-      // We generate a temp ID for local tracking
-      const tempId = 'temp-' + Date.now();
-      this.offlineService.queueAction(tempId, 'iniciar', request);
-      const tempResponse: any = { id: tempId, estado: 'PENDIENTE', codigo: 'PENDING_SYNC', ...request };
+      // Generar UUID robusto en el cliente (soporta HTTPS y local dev)
+      const uuid = (typeof crypto !== 'undefined' && crypto.randomUUID) 
+        ? crypto.randomUUID() 
+        : 'f-' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      
+      request.id = uuid;
+      this.offlineService.queueAction(uuid, 'iniciar', request);
+
+      const tempResponse: TramiteResponseDTO = {
+        id: uuid,
+        codigoTramite: 'PENDING_SYNC',
+        nombrePolitica: 'Trámite por Sincronizar',
+        idPolitica: request.idPolitica,
+        idUsuarioSolicitante: request.idUsuarioSolicitante,
+        ciSolicitante: request.datosIniciales?.ci || '',
+        nombreSolicitante: request.datosIniciales?.nombre || 'Cliente Offline',
+        funcionarioAsignadoId: '',
+        estadoActual: 'PENDIENTE_SINC',
+        nodoActualId: '',
+        departamentoActualId: '',
+        prioridad: request.prioridad || 2,
+        createdAt: new Date().toISOString()
+      };
+
+      // Guardar inmediatamente en Dexie de forma optimista
+      this.dexieService.saveTramites([tempResponse]);
       return of(tempResponse);
     }
     return this.http.post<TramiteResponseDTO>(`${this.apiUrl}/iniciar`, request);
@@ -32,8 +53,16 @@ export class TramiteService {
   avanzarTramite(request: any): Observable<TramiteResponseDTO> {
     if (!this.offlineService.isOnline) {
       this.offlineService.queueAction(request.tramiteId, 'avanzar', request);
-      // Optimistic response
-      const tempResponse: any = { id: request.tramiteId, estado: 'SYNC_PENDING', ...request };
+      
+      // Obtener el trámite de la caché local y actualizarlo optimistamente
+      this.dexieService.getTramite(request.tramiteId).then(existing => {
+        if (existing) {
+          existing.estadoActual = 'SYNC_PENDING';
+          this.dexieService.saveTramites([existing]);
+        }
+      });
+
+      const tempResponse: any = { id: request.tramiteId, estadoActual: 'SYNC_PENDING', ...request };
       return of(tempResponse);
     }
     return this.http.post<TramiteResponseDTO>(`${this.apiUrl}/avanzar`, request);
@@ -90,7 +119,16 @@ export class TramiteService {
   asignarFuncionario(tramiteId: string, funcionarioId: string): Observable<TramiteResponseDTO> {
     if (!this.offlineService.isOnline) {
       this.offlineService.queueAction(tramiteId, 'asignar', { funcionarioId });
-      return of({ id: tramiteId, asignadoId: funcionarioId } as any);
+      
+      // Actualizar localmente el asignado
+      this.dexieService.getTramite(tramiteId).then(existing => {
+        if (existing) {
+          existing.funcionarioAsignadoId = funcionarioId;
+          this.dexieService.saveTramites([existing]);
+        }
+      });
+
+      return of({ id: tramiteId, funcionarioAsignadoId: funcionarioId } as any);
     }
     return this.http.patch<TramiteResponseDTO>(`${this.apiUrl}/${tramiteId}/asignar/${funcionarioId}`, {});
   }

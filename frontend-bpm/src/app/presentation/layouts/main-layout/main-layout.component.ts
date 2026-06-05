@@ -4,6 +4,7 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../../data/services/auth.service';
 import { NotificationService } from '../../../data/services/notification.service';
 import { ChatbotWidgetComponent } from '../../shared/voice-assistant/chatbot-widget.component';
+import { OfflineService } from '../../../data/services/offline.service';
 
 @Component({
   selector: 'app-main-layout',
@@ -200,6 +201,46 @@ import { ChatbotWidgetComponent } from '../../shared/voice-assistant/chatbot-wid
                <span class="reg-date">Miembro desde: {{ formatDate(authService.currentUser()?.createdAt) }}</span>
              </div>
            </div>
+        </div>
+      </div>
+
+      <!-- Modal de Resolución de Conflictos (CU-23) -->
+      <div class="profile-modal-overlay" *ngIf="pendingConflict()">
+        <div class="profile-card-glass animate-pop" style="max-width: 500px; padding: 2.5rem; display: flex; flex-direction: column; gap: 1.5rem; border: 1px solid rgba(239, 68, 68, 0.3);">
+          <div class="profile-header" style="border-bottom: 1px solid rgba(239, 68, 68, 0.2); padding-bottom: 1rem; display: flex; align-items: center; gap: 1rem;">
+            <div class="header-avatar" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 1.5rem; font-weight: bold;">⚠️</div>
+            <div class="header-text" style="display: flex; flex-direction: column; gap: 0.25rem;">
+              <h3 style="color: #ef4444; margin: 0; font-size: 1.15rem; font-weight: 700;">Conflicto de Sincronización</h3>
+              <span class="role-badge" style="background: #ef4444; color: white; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.7rem; font-weight: 600; width: fit-content;">Offline Sync Conflict</span>
+            </div>
+          </div>
+          
+          <div style="display: flex; flex-direction: column; gap: 1rem;">
+            <p style="font-size: 0.9rem; line-height: 1.5; color: #4b5563; margin: 0;">
+              {{ pendingConflict()?.errorMsg }}
+            </p>
+            <div style="background: rgba(0,0,0,0.02); border-radius: 6px; padding: 1rem; border: 1px solid rgba(0,0,0,0.05); font-size: 0.8rem; color: #1f2937;">
+              <strong>Operación fallida:</strong> {{ pendingConflict()?.task?.action | uppercase }}<br>
+              <strong>ID Trámite:</strong> {{ pendingConflict()?.task?.tramiteId }}
+            </div>
+            
+            <p style="font-size: 0.85rem; color: #6b7280; font-style: italic; margin: 0;">
+              ¿Qué deseas hacer con tus cambios locales offline?
+            </p>
+            
+            <div style="display: flex; gap: 1rem; margin-top: 1rem; justify-content: flex-end;">
+              <button 
+                style="background: #ef4444; color: white; padding: 0.5rem 1rem; border-radius: 6px; font-weight: 600; font-size: 0.8rem; display: flex; align-items: center; gap: 0.25rem; border: none; cursor: pointer;"
+                (click)="discardConflict()">
+                <span class="material-symbols-outlined" style="font-size: 1.1rem;">delete_forever</span> Descartar mis Cambios
+              </button>
+              <button 
+                style="background: #10b981; color: white; padding: 0.5rem 1rem; border-radius: 6px; font-weight: 600; font-size: 0.8rem; display: flex; align-items: center; gap: 0.25rem; border: none; cursor: pointer;"
+                (click)="overwriteConflict()">
+                <span class="material-symbols-outlined" style="font-size: 1.1rem;">publish</span> Forzar Sobrescritura
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -721,10 +762,36 @@ export class MainLayoutComponent {
   authService = inject(AuthService);
   notificationService = inject(NotificationService);
   location = inject(Location);
+  offlineService = inject(OfflineService);
 
   showProfile = signal(false);
   showNotifications = signal(false);
   isCollapsed = signal(false);
+  pendingConflict = signal<any>(null);
+
+  constructor() {
+    this.offlineService.conflictDetected$.subscribe(conflict => {
+      this.pendingConflict.set(conflict);
+    });
+  }
+
+  discardConflict() {
+    const conflict = this.pendingConflict();
+    if (conflict && conflict.task && conflict.task.id) {
+      this.offlineService.resolveConflictDiscard(conflict.task.id, conflict.task.tramiteId).then(() => {
+        this.pendingConflict.set(null);
+      });
+    }
+  }
+
+  overwriteConflict() {
+    const conflict = this.pendingConflict();
+    if (conflict && conflict.task && conflict.task.id) {
+      this.offlineService.resolveConflictOverwrite(conflict.task.id, conflict.task).then(() => {
+        this.pendingConflict.set(null);
+      });
+    }
+  }
 
   toggleNotifications() {
     this.showNotifications.update(v => !v);

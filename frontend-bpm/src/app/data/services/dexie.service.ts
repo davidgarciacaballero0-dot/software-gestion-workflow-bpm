@@ -17,8 +17,8 @@ export class DexieService extends Dexie {
 
   constructor() {
     super('BPMWorkflowOfflineDB');
-    this.version(1).stores({
-      tramites: 'id, estado, solicitanteId, asignadoId', // Primary key and indexed props
+    this.version(2).stores({
+      tramites: 'id, estadoActual, idUsuarioSolicitante, funcionarioAsignadoId', // Primary key and indexed props
       syncQueue: '++id, tramiteId, action, timestamp'
     });
   }
@@ -36,8 +36,8 @@ export class DexieService extends Dexie {
     return this.tramites.toArray();
   }
 
-  async getTramitesByAsignado(asignadoId: string): Promise<TramiteResponseDTO[]> {
-    return this.tramites.where('asignadoId').equals(asignadoId).toArray();
+  async getTramitesByAsignado(funcionarioId: string): Promise<TramiteResponseDTO[]> {
+    return this.tramites.where('funcionarioAsignadoId').equals(funcionarioId).toArray();
   }
 
   // --- Sync Queue ---
