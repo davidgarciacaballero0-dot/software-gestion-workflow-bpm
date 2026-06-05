@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:workflow_app/features/notifications/presentation/providers/notification_providers.dart';
 import 'package:workflow_app/features/ia/presentation/widgets/chatbot_widget.dart';
+import 'package:workflow_app/shared/widgets/offline_banner.dart';
 
 
 class MainScaffold extends ConsumerWidget {
@@ -29,11 +30,13 @@ class MainScaffold extends ConsumerWidget {
     ref.watch(stompClientProvider);
 
     return Scaffold(
-      body: Stack(
-        children: [
-          navigationShell,
-          const ChatbotWidget(),
-        ],
+      body: OfflineBanner(
+        child: Stack(
+          children: [
+            navigationShell,
+            const ChatbotWidget(),
+          ],
+        ),
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: navigationShell.currentIndex,
@@ -54,9 +57,13 @@ class MainScaffold extends ConsumerWidget {
             selectedIcon: Icon(Icons.list_alt),
             label: 'Catálogo',
           ),
-          const NavigationDestination(
-            icon: Icon(Icons.history_outlined),
-            selectedIcon: Icon(Icons.history),
+          NavigationDestination(
+            icon: SyncBadge(
+              child: const Icon(Icons.history_outlined),
+            ),
+            selectedIcon: SyncBadge(
+              child: const Icon(Icons.history),
+            ),
             label: 'Trámites',
           ),
           NavigationDestination(

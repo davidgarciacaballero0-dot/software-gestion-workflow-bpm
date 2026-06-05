@@ -16,6 +16,8 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.io.ByteArrayOutputStream;
+import org.apache.poi.xwpf.usermodel.*;
 
 @Service
 @RequiredArgsConstructor
@@ -194,6 +196,52 @@ public class AnaliticaService {
         }
     }
 
+    public byte[] generarReporteWord(String analysisText, List<MetricDataDTO> customMetrics) {
+        try (XWPFDocument doc = new XWPFDocument(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            XWPFParagraph title = doc.createParagraph();
+            title.setAlignment(ParagraphAlignment.CENTER);
+            XWPFRun titleRun = title.createRun();
+            titleRun.setText("INFORME ESTRATÉGICO DE GESTIÓN BPM");
+            titleRun.setBold(true);
+            titleRun.setFontSize(18);
+
+            List<MetricDataDTO> data = (customMetrics != null && !customMetrics.isEmpty())
+                    ? customMetrics : calcularMetricasDepartamentales();
+
+            XWPFTable table = doc.createTable(data.size() + 1, 4);
+            XWPFTableRow headerRow = table.getRow(0);
+            headerRow.getCell(0).setText("Departamento");
+            headerRow.getCell(1).setText("Trámites");
+            headerRow.getCell(2).setText("Tiempo Prom. (h)");
+            headerRow.getCell(3).setText("Capacidad");
+
+            for (int i = 0; i < data.size(); i++) {
+                MetricDataDTO m = data.get(i);
+                XWPFTableRow row = table.getRow(i + 1);
+                row.getCell(0).setText(m.getNombreDepartamento());
+                row.getCell(1).setText(String.valueOf(m.getCantidadTramites()));
+                row.getCell(2).setText(String.format("%.2f", m.getTiempoPromedioHoras()));
+                row.getCell(3).setText(String.valueOf(m.getCapacidadPersonal()));
+            }
+
+            XWPFParagraph analysisHeader = doc.createParagraph();
+            XWPFRun analysisHeaderRun = analysisHeader.createRun();
+            analysisHeaderRun.setText("\nANÁLISIS Y JUSTIFICACIÓN DE LA IA:\n");
+            analysisHeaderRun.setBold(true);
+
+            XWPFParagraph analysisBody = doc.createParagraph();
+            XWPFRun analysisBodyRun = analysisBody.createRun();
+            String cleanText = analysisText != null ? analysisText : "Sin análisis disponible.";
+            cleanText = cleanText.replaceAll("\\*\\*", "").replaceAll("##\\s*", "").replaceAll("#\\s*", "");
+            analysisBodyRun.setText(cleanText);
+
+            doc.write(out);
+            return out.toByteArray();
+        } catch (Exception e) {
+            throw new RuntimeException("Error al generar Word", e);
+        }
+    }
+
     @lombok.Data
     @lombok.Builder
     public static class MetricDataDTO {
@@ -282,6 +330,20 @@ public class AnaliticaService {
                         if (t.getCreatedAt() == null) return "Desconocido";
                         return String.format("%d-%02d", t.getCreatedAt().getYear(), t.getCreatedAt().getMonthValue());
                     }));
+                break;
+            case "policy":
+                agrupados = tramites.stream()
+                    .collect(Collectors.groupingBy(t -> {
+                        if (t.getIdPolitica() == null) return "Sin Política";
+                        return politicaRepository.findById(t.getIdPolitica())
+                            .map(p -> p.getNombre()).orElse("Desconocida");
+                    }));
+                break;
+            case "client":
+                agrupados = tramites.stream()
+                    .collect(Collectors.groupingBy(t -> 
+                        t.getNombreSolicitante() != null ? t.getNombreSolicitante() : "Sin Nombre"
+                    ));
                 break;
             case "status":
             default:

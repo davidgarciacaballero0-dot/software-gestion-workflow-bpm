@@ -45,6 +45,29 @@ public class GcsStorageService implements StorageService {
     }
 
     @Override
+    public String uploadFileHierarchical(InputStream inputStream, String filename, String contentType, 
+            String organizacionId, String politicaId, String clienteId, String tramiteId) {
+        
+        String org = (organizacionId != null && !organizacionId.isEmpty()) ? organizacionId : "default_org";
+        String pol = (politicaId != null && !politicaId.isEmpty()) ? politicaId : "default_pol";
+        String cli = (clienteId != null && !clienteId.isEmpty()) ? clienteId : "default_cli";
+        String tra = (tramiteId != null && !tramiteId.isEmpty()) ? tramiteId : "default_tra";
+        
+        String blobName = String.format("%s/%s/%s/%s/%s-%s", 
+            org, pol, cli, tra, UUID.randomUUID().toString(), filename);
+            
+        BlobId blobId = BlobId.of(bucketName, blobName);
+        BlobInfo blobInfo = BlobInfo.newBuilder(blobId).setContentType(contentType).build();
+
+        try {
+            storage.create(blobInfo, inputStream.readAllBytes());
+            return blobName;
+        } catch (IOException e) {
+            throw new RuntimeException("Error al subir archivo jerárquico a Google Cloud Storage", e);
+        }
+    }
+
+    @Override
     public InputStream downloadFile(String storageId) {
         // ESTRATEGIA DE FALLBACK TRANSPARENTE:
         // Si el storageId es un ObjectId de MongoDB (24 caracteres hexadecimales),

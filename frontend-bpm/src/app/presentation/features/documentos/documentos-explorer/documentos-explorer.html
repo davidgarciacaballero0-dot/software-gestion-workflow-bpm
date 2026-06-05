@@ -1,0 +1,50 @@
+<div class="documentos-explorer-container">
+  <div class="header">
+    <h2>Explorador de Documentos</h2>
+    <div class="filtros">
+      <button [class.active]="filtroActual === 'TODOS'" (click)="cambiarFiltro('TODOS')">Global</button>
+      <button [class.active]="filtroActual === 'CLIENTE'" (click)="cambiarFiltro('CLIENTE')">Por Cliente</button>
+      <button [class.active]="filtroActual === 'POLITICA'" (click)="cambiarFiltro('POLITICA')">Por Política</button>
+      
+      <div *ngIf="filtroActual !== 'TODOS'" class="filtro-input">
+        <input type="text" [(ngModel)]="filtroId" placeholder="ID de {{filtroActual}}">
+        <button (click)="aplicarFiltro()">Buscar</button>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="loading" class="loading">Cargando documentos...</div>
+
+  <table *ngIf="!loading && documentos.length > 0" class="docs-table">
+    <thead>
+      <tr>
+        <th>Nombre Original</th>
+        <th>Tipo</th>
+        <th>Tamaño</th>
+        <th>Fecha Subida</th>
+        <th>Cliente ID</th>
+        <th>Política ID</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let doc of documentos">
+        <td>{{ doc.nombreOriginal }}</td>
+        <td>{{ doc.tipoDocumento }}</td>
+        <td>{{ (doc.tamano / 1024).toFixed(2) }} KB</td>
+        <td>{{ doc.createdAt | date:'short' }}</td>
+        <td>{{ doc.idCliente || 'N/A' }}</td>
+        <td>{{ doc.idPolitica || 'N/A' }}</td>
+        <td>
+          <button (click)="verPreview(doc)">Preview</button>
+          <button (click)="descargar(doc)">Descargar</button>
+          <button (click)="gestionarPermisos(doc)">Permisos</button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div *ngIf="!loading && documentos.length === 0" class="empty-state">
+    <p>No se encontraron documentos.</p>
+  </div>
+</div>

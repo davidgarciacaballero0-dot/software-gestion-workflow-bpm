@@ -25,6 +25,10 @@
     "@foblex/platform": "^1.0.4",
     "@foblex/utils": "^1.1.1",
     "@stomp/stompjs": "^7.3.0",
+    "@tiptap/core": "^3.25.0",
+    "@tiptap/extension-collaboration": "^3.25.0",
+    "@tiptap/extension-collaboration-cursor": "^2.26.2",
+    "@tiptap/starter-kit": "^3.25.0",
     "@types/file-saver": "^2.0.7",
     "chart.js": "^4.5.1",
     "dagre": "^0.8.5",
@@ -33,7 +37,9 @@
     "ng2-charts": "^10.0.0",
     "rxjs": "~7.8.0",
     "sockjs-client": "^1.6.1",
-    "tslib": "^2.3.0"
+    "tslib": "^2.3.0",
+    "y-websocket": "^3.0.0",
+    "yjs": "^13.6.31"
   },
   "devDependencies": {
     "@angular/build": "^21.2.7",

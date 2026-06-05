@@ -26,5 +26,37 @@
         ]
       }
     }
+  ],
+  "dataGroups": [
+    {
+      "name": "api-tramites",
+      "urls": ["/api/v1/tramites/**"],
+      "cacheConfig": {
+        "strategy": "freshness",
+        "maxSize": 100,
+        "maxAge": "1d",
+        "timeout": "5s"
+      }
+    },
+    {
+      "name": "api-archivos",
+      "urls": ["/api/v1/archivos/**"],
+      "cacheConfig": {
+        "strategy": "freshness",
+        "maxSize": 50,
+        "maxAge": "1d",
+        "timeout": "5s"
+      }
+    },
+    {
+      "name": "api-optimization",
+      "urls": ["/api/v1/optimization/**"],
+      "cacheConfig": {
+        "strategy": "freshness",
+        "maxSize": 30,
+        "maxAge": "12h",
+        "timeout": "10s"
+      }
+    }
   ]
 }

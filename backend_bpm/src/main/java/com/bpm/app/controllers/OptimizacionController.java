@@ -167,6 +167,34 @@ public class OptimizacionController {
         return new ResponseEntity<>(content, headers, org.springframework.http.HttpStatus.OK);
     }
 
+    @PostMapping("/report/word")
+    public ResponseEntity<byte[]> downloadWordReport(@RequestBody Map<String, Object> request) {
+        String text = (String) request.get("text");
+
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> metricsRaw = (List<Map<String, Object>>) request.get("metrics");
+
+        List<AnaliticaService.MetricDataDTO> metrics = null;
+        if (metricsRaw != null) {
+            metrics = metricsRaw.stream().map(m -> AnaliticaService.MetricDataDTO.builder()
+                    .nombreDepartamento((String) m.get("nombreDepartamento"))
+                    .cantidadTramites(m.get("cantidadTramites") != null ? ((Number) m.get("cantidadTramites")).intValue() : 0)
+                    .tiempoPromedioHoras(Double.valueOf(String.valueOf(m.getOrDefault("tiempoPromedioHoras", 0.0))))
+                    .capacidadPersonal(m.get("capacidadPersonal") != null ? ((Number) m.get("capacidadPersonal")).intValue() : 0)
+                    .build()).collect(Collectors.toList());
+        }
+
+        byte[] content = analiticaService.generarReporteWord(text, metrics);
+        org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+        headers.setContentType(org.springframework.http.MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.wordprocessingml.document"));
+        headers.setContentDisposition(
+                org.springframework.http.ContentDisposition.attachment()
+                        .filename("informe_estrategico.docx")
+                        .build());
+        headers.setContentLength(content.length);
+        return new ResponseEntity<>(content, headers, org.springframework.http.HttpStatus.OK);
+    }
+
     @PostMapping("/asistente")
     public ResponseEntity<Map<String, Object>> chatAssistant(@RequestBody Map<String, String> request) {
         try {

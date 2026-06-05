@@ -23,4 +23,12 @@ public interface StorageService {
      * Elimina un archivo del almacenamiento.
      */
     void deleteFile(String storageId);
+
+    /**
+     * Sube un archivo con estructura jerárquica (ej. organizacionId/politicaId/clienteId/tramiteId/filename)
+     */
+    default String uploadFileHierarchical(InputStream inputStream, String filename, String contentType, 
+            String organizacionId, String politicaId, String clienteId, String tramiteId) {
+        return uploadFile(inputStream, filename, contentType); // Fallback por defecto
+    }
 }

@@ -13,6 +13,51 @@ from dotenv import load_dotenv
 # Cargar variables de entorno
 load_dotenv()
 
+
+import numpy as np
+from models.lstm_delay_predictor import DelayPredictor
+from models.autoencoder_anomaly import AnomalyDetector
+from models.intent_classifier import IntentClassifier
+from models.priority_network import PriorityPredictor
+from models.document_classifier import DocumentClassifier
+
+delay_predictor = None
+anomaly_detector = None
+intent_classifier = None
+priority_predictor = None
+document_classifier = None
+
+def get_delay_predictor():
+    global delay_predictor
+    if delay_predictor is None:
+        delay_predictor = DelayPredictor()
+    return delay_predictor
+
+def get_anomaly_detector():
+    global anomaly_detector
+    if anomaly_detector is None:
+        anomaly_detector = AnomalyDetector()
+    return anomaly_detector
+
+def get_intent_classifier():
+    global intent_classifier
+    if intent_classifier is None:
+        intent_classifier = IntentClassifier()
+    return intent_classifier
+
+def get_priority_predictor():
+    global priority_predictor
+    if priority_predictor is None:
+        priority_predictor = PriorityPredictor()
+    return priority_predictor
+
+def get_document_classifier():
+    global document_classifier
+    if document_classifier is None:
+        document_classifier = DocumentClassifier()
+    return document_classifier
+
+
 app = FastAPI(title="BPM AI Microservice (Vertex AI Agent Platform Edition)")
 
 # Configuración de Google Vertex AI (New SDK 2026)
@@ -297,17 +342,26 @@ async def orquestador_voz(request: Request):
             "RESPONDE EXCLUSIVAMENTE CON UN JSON VÁLIDO. NO uses markdown.\n\n"
             "Estructura JSON requerida:\n"
             "{\n"
-            '  "action": "RENDER_DYNAMIC_CHART" | "EXPORT_EXCEL" | "UPDATE_FILTER" | "TEXT_ONLY",\n'
+            '  "action": "RENDER_DYNAMIC_CHART" | "EXPORT_EXCEL" | "EXPORT_PDF" | "EXPORT_WORD" | "GENERATE_REPORT" | "UPDATE_FILTER" | "TEXT_ONLY",\n'
             '  "text_response": "Explicación breve de lo que hiciste o respuesta al usuario",\n'
             '  "chart_config": {\n'
             '    "type": "bar", // bar, pie, line\n'
             '    "labels": ["Label1", "Label2"],\n'
             '    "datasets": [{"label": "Series", "data": [1, 2]}]\n'
             '  }, // Solo si action es RENDER_DYNAMIC_CHART. chart_config puede ser null en otros casos.\n'
+            '  "report_params": {\n'
+            '    "dimension": "department", // department, status, priority, month, policy, client\n'
+            '    "metric": "count", // count, average_duration\n'
+            '    "filters": { "months": 6 }\n'
+            '  }, // Solo si action es GENERATE_REPORT. Puede ser null en otros casos.\n'
+            '  "format": "pdf", // pdf, excel, word, screen. Solo si action es GENERATE_REPORT o EXPORT_*.\n'
             '  "filter_command": { "meses": 3 } // Solo si action es UPDATE_FILTER. Puede ser null en otros casos.\n'
             "}\n\n"
             "REGLAS:\n"
-            "- Si el usuario pide descargar, exportar, o un excel, usa EXPORT_EXCEL.\n"
+            "- Si el usuario pide generar un reporte con condiciones (ej. 'reporte de trámites por departamento en los últimos 30 días en PDF'), usa GENERATE_REPORT y llena report_params y format.\n"
+            "- Si el usuario pide descargar o exportar a Excel, usa EXPORT_EXCEL.\n"
+            "- Si el usuario pide exportar a PDF, usa EXPORT_PDF.\n"
+            "- Si el usuario pide exportar a Word, usa EXPORT_WORD.\n"
             "- Si pide cambiar el filtro de meses o periodo, usa UPDATE_FILTER.\n"
             "- Si pide una gráfica o comparar datos visualmente, usa RENDER_DYNAMIC_CHART y construye chart_config usando los datos del contexto.\n"
             "- Si hace una pregunta general sobre los datos, usa TEXT_ONLY y responde en text_response.\n"
@@ -411,23 +465,30 @@ async def analisis_intencion_politica(request: Request):
 
         # Intentar obtener embeddings por Vertex AI
         use_fallback = False
+        req_vector = []
+        politica_vectors = []
         try:
             # Obtener embedding del requerimiento
             req_res = client.models.embed_content(
                 model="text-embedding-004",
                 contents=requerimiento
             )
-            req_vector = req_res.embeddings[0].values
+            if req_res and req_res.embeddings and len(req_res.embeddings) > 0:
+                req_vector = req_res.embeddings[0].values
+            else:
+                raise ValueError("No se obtuvieron embeddings para el requerimiento")
             
             # Obtener embeddings de cada política (usando su descripción y nombre)
-            politica_vectors = []
             for pol in politicas:
                 texto_pol = f"{pol.get('nombre', '')}. {pol.get('description', pol.get('descripcion', ''))}"
                 pol_res = client.models.embed_content(
                     model="text-embedding-004",
                     contents=texto_pol
                 )
-                politica_vectors.append(pol_res.embeddings[0].values)
+                if pol_res and pol_res.embeddings and len(pol_res.embeddings) > 0:
+                    politica_vectors.append(pol_res.embeddings[0].values)
+                else:
+                    raise ValueError(f"No se obtuvieron embeddings para la política: {pol.get('nombre')}")
                 
         except Exception as embed_err:
             print(f"WARN: Error en embeddings de Vertex AI ({str(embed_err)}). Usando fallback léxico...")
@@ -487,6 +548,9 @@ async def evaluar_anomalia_sla(request: Request):
     CU-30: Lógica predictiva con Gemini para evaluar si un trámite va camino al estancamiento (anomalía de SLA).
     Calcula simultáneamente la prioridad dinámica para CU-29.
     """
+    dias_activo = 0
+    horas_restantes = 0.0
+    prioridad = 3
     try:
         body = await request.json()
         codigo = body.get("codigoTramite", "TRM-2026")
@@ -562,6 +626,7 @@ async def predecir_transicion(request: Request):
     CU-28: Lógica predictiva con Gemini para evaluar los datos cargados en un formulario 
     y recomendar la transición de nodo más adecuada con un nivel de confianza (score).
     """
+    nodos_siguientes = []
     try:
         body = await request.json()
         datos_formulario = body.get("datosFormulario", {})
@@ -778,6 +843,102 @@ async def analizar_documento(
         if is_quota_error(e):
             raise HTTPException(status_code=429, detail="Cuota agotada en Vertex AI.")
         raise HTTPException(status_code=500, detail=f"Error en procesamiento multimodal: {str(e)}")
+
+# --- TENSORFLOW DL ENDPOINTS ---
+
+def _extract_lstm_sequence(body: dict) -> np.ndarray:
+    """Extrae secuencia temporal del historial de eventos para el LSTM."""
+    historial = body.get("historial", [])
+    seq = np.zeros((1, 10, 3))
+    for i, evento in enumerate(historial[-10:]):
+        idx = min(i, 9)
+        seq[0, idx, 0] = float(evento.get("diasEnNodo", 0))
+        seq[0, idx, 1] = float(hash(evento.get("tipoEvento", "")) % 100) / 100.0
+        seq[0, idx, 2] = float(hash(evento.get("departamento", "")) % 100) / 100.0
+    return seq
+
+def _extract_anomaly_features(body: dict) -> np.ndarray:
+    """Extrae 7 features normalizadas para el autoencoder."""
+    return np.array([[
+        min(float(body.get("diasActivo", 0)) / 30.0, 1.0),
+        min(float(body.get("numEventos", 0)) / 50.0, 1.0),
+        min(float(body.get("numDepartamentos", 1)) / 10.0, 1.0),
+        min(float(body.get("ratioSla", 0.5)), 1.0),
+        min(float(body.get("horasPromedio", 0)) / 100.0, 1.0),
+        min(float(body.get("prioridad", 3)) / 5.0, 1.0),
+        min(float(body.get("numArchivos", 0)) / 20.0, 1.0),
+    ]])
+
+def _extract_priority_features(body: dict) -> np.ndarray:
+    """Extrae 7 features para la red de prioridad."""
+    return np.array([[
+        min(float(body.get("diasActivo", 0)) / 30.0, 1.0),
+        min(float(body.get("horasRestantesSla", 48)) / 100.0, 1.0),
+        min(float(body.get("prioridadOriginal", 3)) / 5.0, 1.0),
+        min(float(body.get("numEventos", 0)) / 50.0, 1.0),
+        float(hash(body.get("departamento", "")) % 100) / 100.0,
+        float(hash(body.get("tipoPolitica", "")) % 100) / 100.0,
+        min(float(body.get("numArchivos", 0)) / 20.0, 1.0),
+    ]])
+
+def _extract_intent_sequence(body: dict) -> np.ndarray:
+    """Tokeniza texto simple para el clasificador de intención CNN."""
+    texto = body.get("texto", body.get("requerimiento", ""))
+    words = texto.lower().split()[:100]
+    seq = np.zeros((1, 100))
+    for i, word in enumerate(words):
+        seq[0, i] = float(hash(word) % 5000)
+    return seq
+
+@app.post("/ia/tf/predecir-demora")
+async def tf_predecir_demora(request: Request):
+    body = await request.json()
+    sequence = _extract_lstm_sequence(body)
+    predictor = get_delay_predictor()
+    horas = predictor.predict(sequence)
+    return {"horas_estimadas": horas, "confianza": 0.85, "modelo": "lstm_v1"}
+
+@app.post("/ia/tf/detectar-anomalia")
+async def tf_detectar_anomalia(request: Request):
+    body = await request.json()
+    features = _extract_anomaly_features(body)
+    detector = get_anomaly_detector()
+    result: dict[str, Any] = detector.predict(features)
+    result["modelo"] = "autoencoder_v1"
+    return result
+
+@app.post("/ia/tf/clasificar-intencion")
+async def tf_clasificar_intencion(request: Request):
+    body = await request.json()
+    text_sequence = _extract_intent_sequence(body)
+    classifier = get_intent_classifier()
+    result: dict[str, Any] = classifier.predict(text_sequence)
+    result["modelo"] = "cnn_intent_v1"
+    return result
+
+@app.post("/ia/tf/calcular-prioridad")
+async def tf_calcular_prioridad(request: Request):
+    body = await request.json()
+    features = _extract_priority_features(body)
+    predictor = get_priority_predictor()
+    result: dict[str, Any] = predictor.predict(features)
+    result["modelo"] = "priority_network_v1"
+    return result
+
+@app.post("/ia/tf/clasificar-documento")
+async def tf_clasificar_documento(file: UploadFile = File(...)):
+    import tempfile
+    classifier = get_document_classifier()
+    with tempfile.NamedTemporaryFile(delete=False) as tmp:
+        content = await file.read()
+        tmp.write(content)
+        tmp_path = tmp.name
+    try:
+        result: dict[str, Any] = classifier.predict(tmp_path)
+    finally:
+        os.remove(tmp_path)
+    result["modelo"] = "cnn_vision_v1"
+    return result
 
 if __name__ == "__main__":
     import uvicorn

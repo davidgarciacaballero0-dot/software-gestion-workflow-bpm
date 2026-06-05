@@ -5,3 +5,10 @@ google-genai
 python-dotenv
 tenacity
 pymongo
+tensorflow>=2.16.0
+numpy
+pandas
+scikit-learn
+joblib
+python-multipart
+Pillow

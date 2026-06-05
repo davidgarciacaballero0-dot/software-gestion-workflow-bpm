@@ -20,6 +20,8 @@ export class ReportesNlpComponent implements OnInit {
   loading: boolean = false;
   resultado: any[] | null = null;
   error: string | null = null;
+  isRecording: boolean = false;
+  private recognition: any;
 
   public chartData: ChartConfiguration<'bar'>['data'] | null = null;
   public chartOptions: ChartConfiguration<'bar'>['options'] = {
@@ -34,7 +36,55 @@ export class ReportesNlpComponent implements OnInit {
 
   constructor(private http: HttpClient, private cd: ChangeDetectorRef) {}
 
-  ngOnInit(): void {}
+  ngOnInit(): void {
+    this.initSpeechRecognition();
+  }
+
+  initSpeechRecognition() {
+    if ('webkitSpeechRecognition' in window) {
+      const { webkitSpeechRecognition }: any = window;
+      this.recognition = new webkitSpeechRecognition();
+      this.recognition.continuous = false;
+      this.recognition.interimResults = false;
+      this.recognition.lang = 'es-ES';
+
+      this.recognition.onstart = () => {
+        this.isRecording = true;
+        this.cd.detectChanges();
+      };
+
+      this.recognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        this.prompt += (this.prompt ? ' ' : '') + transcript;
+        this.cd.detectChanges();
+      };
+
+      this.recognition.onerror = (event: any) => {
+        console.error('Speech recognition error', event.error);
+        this.isRecording = false;
+        this.cd.detectChanges();
+      };
+
+      this.recognition.onend = () => {
+        this.isRecording = false;
+        this.cd.detectChanges();
+      };
+    } else {
+      console.warn('Speech recognition no es soportado en este navegador.');
+    }
+  }
+
+  toggleRecording() {
+    if (!this.recognition) {
+      alert('Tu navegador no soporta reconocimiento de voz.');
+      return;
+    }
+    if (this.isRecording) {
+      this.recognition.stop();
+    } else {
+      this.recognition.start();
+    }
+  }
 
   generarReporte() {
     if (!this.prompt || this.prompt.trim() === '') return;

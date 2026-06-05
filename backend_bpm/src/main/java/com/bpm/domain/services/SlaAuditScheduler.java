@@ -74,12 +74,13 @@ public class SlaAuditScheduler {
                 double horasRestantes = Duration.between(ahora, vencimiento).toMinutes() / 60.0;
 
                 // Obtener nombre del departamento
-                String deptoNombre = "Sin Asignar";
+                String tempDeptoNombre = "Sin Asignar";
                 if (t.getDepartamentoActualId() != null) {
-                    deptoNombre = departamentoRepository.findById(t.getDepartamentoActualId())
+                    tempDeptoNombre = departamentoRepository.findById(t.getDepartamentoActualId())
                             .map(d -> d.getNombre())
                             .orElse("Desconocido");
                 }
+                final String deptoNombre = tempDeptoNombre;
 
                 // Consultar eventos del historial para pasarlos como contexto a la IA
                 List<String> historialSucesos = historialRepository.findByIdTramite(t.getId()).stream()
@@ -96,7 +97,88 @@ public class SlaAuditScheduler {
                 request.put("prioridad", t.getPrioridad() != null ? t.getPrioridad() : 3);
                 request.put("historial", historialSucesos);
 
-                // 4. Invocar asíncronamente el servicio IA de evaluación
+                // === FASE TF: Llamar primero a los modelos TensorFlow para obtener predicciones numéricas ===
+
+                // 3a. LSTM: Predecir horas hasta estancamiento
+                double horasEstimadasDL = -1;
+                try {
+                    Map<String, Object> lstmRequest = new HashMap<>();
+                    lstmRequest.put("diasActivo", diasActivo);
+                    lstmRequest.put("historial", historialSucesos.stream()
+                            .map(h -> Map.of("diasEnNodo", diasActivo, "tipoEvento", "AVANCE", "departamento", deptoNombre))
+                            .collect(Collectors.toList()));
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> lstmResponse = restTemplate.postForObject(
+                            IA_URL.replace("/ia", "") + "/ia/tf/predecir-demora", lstmRequest, 
+                            (Class<Map<String, Object>>) (Class<?>) Map.class);
+                    if (lstmResponse != null && lstmResponse.get("horas_estimadas") != null) {
+                        horasEstimadasDL = ((Number) lstmResponse.get("horas_estimadas")).doubleValue();
+                        log.info("🧠 LSTM predice {} horas hasta estancamiento para {}", 
+                                String.format("%.1f", horasEstimadasDL), t.getCodigoTramite());
+                    }
+                } catch (Exception tfErr) {
+                    log.warn("⚠️ TF LSTM no disponible para {}: {}", t.getCodigoTramite(), tfErr.getMessage());
+                }
+
+                // 3b. Autoencoder: Detectar anomalía por reconstrucción
+                boolean anomaliaDL = false;
+                double reconstructionError = 0;
+                try {
+                    Map<String, Object> aeRequest = new HashMap<>();
+                    aeRequest.put("diasActivo", diasActivo);
+                    aeRequest.put("numEventos", historialSucesos.size());
+                    aeRequest.put("numDepartamentos", 1);
+                    aeRequest.put("ratioSla", horasRestantes > 0 ? 0.8 : 0.2);
+                    aeRequest.put("horasPromedio", diasActivo * 24.0 / Math.max(historialSucesos.size(), 1));
+                    aeRequest.put("prioridad", t.getPrioridad() != null ? t.getPrioridad() : 3);
+                    aeRequest.put("numArchivos", t.getArchivosAdjuntos() != null ? t.getArchivosAdjuntos().size() : 0);
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> aeResponse = restTemplate.postForObject(
+                            IA_URL.replace("/ia", "") + "/ia/tf/detectar-anomalia", aeRequest, 
+                            (Class<Map<String, Object>>) (Class<?>) Map.class);
+                    if (aeResponse != null) {
+                        anomaliaDL = Boolean.TRUE.equals(aeResponse.get("es_anomalo"));
+                        reconstructionError = aeResponse.get("reconstruction_error") != null 
+                                ? ((Number) aeResponse.get("reconstruction_error")).doubleValue() : 0;
+                        log.info("🧠 Autoencoder: anomalía={}, error_reconstrucción={} para {}", 
+                                anomaliaDL, String.format("%.4f", reconstructionError), t.getCodigoTramite());
+                    }
+                } catch (Exception tfErr) {
+                    log.warn("⚠️ TF Autoencoder no disponible para {}: {}", t.getCodigoTramite(), tfErr.getMessage());
+                }
+
+                // 3c. Red de Prioridad: Calcular prioridad dinámica con DL
+                int prioridadDL = t.getPrioridad() != null ? t.getPrioridad() : 3;
+                try {
+                    Map<String, Object> prioRequest = new HashMap<>();
+                    prioRequest.put("diasActivo", diasActivo);
+                    prioRequest.put("horasRestantesSla", horasRestantes);
+                    prioRequest.put("prioridadOriginal", t.getPrioridad() != null ? t.getPrioridad() : 3);
+                    prioRequest.put("numEventos", historialSucesos.size());
+                    prioRequest.put("departamento", deptoNombre);
+                    prioRequest.put("tipoPolitica", t.getIdPolitica() != null ? t.getIdPolitica() : "");
+                    prioRequest.put("numArchivos", t.getArchivosAdjuntos() != null ? t.getArchivosAdjuntos().size() : 0);
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> prioResponse = restTemplate.postForObject(
+                            IA_URL.replace("/ia", "") + "/ia/tf/calcular-prioridad", prioRequest, 
+                            (Class<Map<String, Object>>) (Class<?>) Map.class);
+                    if (prioResponse != null && prioResponse.get("prioridad") != null) {
+                        prioridadDL = ((Number) prioResponse.get("prioridad")).intValue();
+                        log.info("🧠 Red Prioridad: prioridad_dinamica={} para {}", prioridadDL, t.getCodigoTramite());
+                    }
+                } catch (Exception tfErr) {
+                    log.warn("⚠️ TF Priority Network no disponible para {}: {}", t.getCodigoTramite(), tfErr.getMessage());
+                }
+
+                // Enriquecer request para Gemini con predicciones TF
+                request.put("horasEstimadasDL", horasEstimadasDL);
+                request.put("anomaliaDL", anomaliaDL);
+                request.put("reconstructionErrorDL", reconstructionError);
+                request.put("prioridadDL", prioridadDL);
+
+                // === FIN FASE TF ===
+
+                // 4. Invocar Gemini para análisis narrativo (enriquecido con datos TF)
                 @SuppressWarnings("unchecked")
                 Class<Map<String, Object>> responseType = (Class<Map<String, Object>>) (Class<?>) Map.class;
                 Map<String, Object> iaResponse = restTemplate.postForObject(

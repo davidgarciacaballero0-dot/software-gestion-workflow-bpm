@@ -13,6 +13,13 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
 import java.util.List;
+import java.util.Set;
+
+import com.bpm.domain.services.DocumentPermissionService;
+import com.bpm.data.entities.TramiteInstancia;
+import com.bpm.data.repositories.TramiteInstanciaRepository;
+import org.springframework.http.HttpStatus;
+import com.bpm.domain.services.CollaborativeEditService;
 
 @RestController
 @RequestMapping("/api/v1/archivos")
@@ -20,25 +27,52 @@ public class ArchivoController {
 
     private final StorageService storageService;
     private final ArchivoAdjuntoRepository archivoRepository;
-    private final com.bpm.domain.services.GoogleDriveService driveService;
+    private final CollaborativeEditService collaborativeEditService;
+    private final DocumentPermissionService permissionService;
+    private final TramiteInstanciaRepository tramiteRepository;
+
+    private static final Set<String> ALLOWED_TYPES = Set.of(
+        "application/pdf", "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/vnd.ms-excel",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "image/jpeg", "image/png", "image/gif", "image/webp",
+        "video/mp4", "video/webm", "video/avi"
+    );
 
     @Autowired
-    public ArchivoController(StorageService storageService, ArchivoAdjuntoRepository archivoRepository, com.bpm.domain.services.GoogleDriveService driveService) {
+    public ArchivoController(StorageService storageService, ArchivoAdjuntoRepository archivoRepository, 
+            CollaborativeEditService collaborativeEditService,
+            DocumentPermissionService permissionService,
+            TramiteInstanciaRepository tramiteRepository) {
         this.storageService = storageService;
         this.archivoRepository = archivoRepository;
-        this.driveService = driveService;
+        this.collaborativeEditService = collaborativeEditService;
+        this.permissionService = permissionService;
+        this.tramiteRepository = tramiteRepository;
     }
 
     @PostMapping("/upload")
-    public ResponseEntity<ArchivoAdjunto> uploadFile(
+    public ResponseEntity<?> uploadFile(
             @RequestParam("file") MultipartFile file,
             @RequestParam("idTramite") String idTramite,
-            @RequestParam("idUsuario") String idUsuario) {
+            @RequestParam("idUsuario") String idUsuario,
+            @RequestParam(value = "departamentoOrigenId", required = false) String departamentoOrigenId,
+            @RequestParam(value = "idOrganizacion", required = false) String idOrganizacion) {
         try {
-            String gridFsId = storageService.uploadFile(
+            if (file.getContentType() == null || !ALLOWED_TYPES.contains(file.getContentType())) {
+                return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).body("Tipo de archivo no permitido");
+            }
+
+            TramiteInstancia tramite = tramiteRepository.findById(idTramite).orElse(null);
+            String idPolitica = tramite != null ? tramite.getIdPolitica() : null;
+            String idCliente = tramite != null ? tramite.getIdUsuarioSolicitante() : null;
+
+            String gridFsId = storageService.uploadFileHierarchical(
                     file.getInputStream(), 
                     file.getOriginalFilename(), 
-                    file.getContentType()
+                    file.getContentType(),
+                    idOrganizacion, idPolitica, idCliente, idTramite
             );
 
             ArchivoAdjunto adjunto = ArchivoAdjunto.builder()
@@ -48,7 +82,13 @@ public class ArchivoController {
                      .contentType(file.getContentType())
                      .tamano(file.getSize())
                      .gridFsId(gridFsId)
+                     .idPolitica(idPolitica)
+                     .idCliente(idCliente)
+                     .departamentoOrigenId(departamentoOrigenId)
+                     .tipoDocumento((departamentoOrigenId != null && departamentoOrigenId.contains("LEGAL")) ? "CONTRATO" : "GENERAL")
                      .build();
+
+            permissionService.asignarPermisosPorDefecto(adjunto, tramite, departamentoOrigenId);
 
             return ResponseEntity.ok(archivoRepository.save(adjunto));
         } catch (Exception e) {
@@ -62,9 +102,15 @@ public class ArchivoController {
     }
 
     @GetMapping("/download/{id}")
-    public ResponseEntity<InputStreamResource> downloadFile(@PathVariable String id) {
+    public ResponseEntity<?> downloadFile(
+            @PathVariable String id,
+            @RequestParam("idUsuario") String idUsuario) {
         ArchivoAdjunto adjunto = archivoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Metadata de archivo no encontrada: " + id));
+
+        if (!permissionService.verificarPermiso(adjunto, idUsuario, "READ")) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Acceso denegado: no tiene permisos de lectura.");
+        }
 
         InputStream stream = storageService.downloadFile(adjunto.getGridFsId());
 
@@ -74,38 +120,66 @@ public class ArchivoController {
                 .body(new InputStreamResource(stream));
     }
 
-    // --- COOPERATIVE EDITING ENPOINTS (CU-24) ---
+    // --- NUEVOS ENDPOINTS DE BÚSQUEDA ---
 
-    @PostMapping("/drive/iniciar")
-    public ResponseEntity<java.util.Map<String, String>> iniciarEdicionColaborativa(
-            @RequestParam("archivoId") String archivoId) {
-        ArchivoAdjunto adjunto = archivoRepository.findById(archivoId)
-                .orElseThrow(() -> new RuntimeException("Metadata de archivo no encontrada: " + archivoId));
-
-        java.util.Map<String, String> session = driveService.iniciarEdicionColaborativa(
-                adjunto.getGridFsId(), 
-                adjunto.getNombreOriginal()
-        );
-        session.put("archivoId", archivoId);
-        return ResponseEntity.ok(session);
+    @GetMapping("/cliente/{idCliente}")
+    public ResponseEntity<List<ArchivoAdjunto>> listarPorCliente(@PathVariable String idCliente) {
+        return ResponseEntity.ok(archivoRepository.findByIdCliente(idCliente));
     }
 
-    @PostMapping("/drive/finalizar")
-    public ResponseEntity<ArchivoAdjunto> finalizarEdicionColaborativa(
-            @RequestParam("fileId") String fileId,
-            @RequestParam("archivoId") String archivoId) {
-        
-        String newStorageId = driveService.finalizarEdicionColaborativa(fileId);
-        
-        ArchivoAdjunto adjunto = archivoRepository.findById(archivoId)
-                .orElseThrow(() -> new RuntimeException("Metadata de archivo no encontrada: " + archivoId));
+    @GetMapping("/politica/{idPolitica}")
+    public ResponseEntity<List<ArchivoAdjunto>> listarPorPolitica(@PathVariable String idPolitica) {
+        return ResponseEntity.ok(archivoRepository.findByIdPolitica(idPolitica));
+    }
 
-        if (newStorageId != null) {
-            adjunto.setGridFsId(newStorageId);
-            adjunto = archivoRepository.save(adjunto);
+    @GetMapping("/global")
+    public ResponseEntity<List<ArchivoAdjunto>> listarGlobal(
+            @RequestParam("idUsuario") String idUsuario) {
+        // Aquí verificar que el idUsuario sea ADMIN/GERENTE
+        return ResponseEntity.ok(archivoRepository.findAll());
+    }
+
+    // --- NUEVOS ENDPOINTS DE PERMISOS ---
+
+    @GetMapping("/{id}/permisos")
+    public ResponseEntity<?> getPermisos(@PathVariable String id) {
+        ArchivoAdjunto adjunto = archivoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Archivo no encontrado: " + id));
+        return ResponseEntity.ok(adjunto.getPermisos() != null ? adjunto.getPermisos() : List.of());
+    }
+
+    @PatchMapping("/{id}/permisos")
+    public ResponseEntity<?> updatePermisos(
+            @PathVariable String id,
+            @RequestParam("idUsuario") String idUsuario,
+            @RequestBody List<ArchivoAdjunto.DocumentPermission> nuevosPermisos) {
+        ArchivoAdjunto adjunto = archivoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Archivo no encontrado: " + id));
+
+        // Solo ADMIN puede modificar permisos
+        if (!permissionService.verificarPermiso(adjunto, idUsuario, "ADMIN")) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("Solo usuarios con permiso ADMIN pueden modificar permisos de documentos.");
         }
+
+        adjunto.setPermisos(nuevosPermisos);
+        archivoRepository.save(adjunto);
         return ResponseEntity.ok(adjunto);
     }
 
+    // --- COOPERATIVE EDITING ENPOINTS (YJS) ---
 
+    @GetMapping("/yjs/load/{archivoId}")
+    public ResponseEntity<byte[]> loadYjsDocument(@PathVariable String archivoId) {
+        byte[] state = collaborativeEditService.loadYjsState(archivoId);
+        return ResponseEntity.ok(state);
+    }
+
+    @PostMapping("/yjs/save/{archivoId}")
+    public ResponseEntity<String> saveYjsDocument(
+            @PathVariable String archivoId,
+            @RequestBody byte[] yjsState) {
+        collaborativeEditService.saveYjsState(archivoId, yjsState);
+        return ResponseEntity.ok("Estado guardado correctamente");
+    }
 }

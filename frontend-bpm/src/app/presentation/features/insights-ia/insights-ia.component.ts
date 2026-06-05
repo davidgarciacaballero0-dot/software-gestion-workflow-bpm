@@ -266,7 +266,7 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.recognition) {
       try {
         this.recognition.abort();
-      } catch (_) {}
+      } catch (_) { }
     }
     this.cdr.detectChanges();
   }
@@ -457,21 +457,21 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
     }
     this.isListening = false;
     this.cdr.detectChanges();
-    
+
     // Procesar comando cuando el usuario presiona STOP
     if (this.voiceTranscript && this.voiceTranscript.trim().length > 0) {
-       this.processVoiceCommand(this.voiceTranscript);
+      this.processVoiceCommand(this.voiceTranscript);
     }
   }
 
   private processVoiceCommand(transcript: string) {
     this.isListening = false;
-    
+
     if (!transcript || transcript.trim().length === 0) {
-       this.aiReport = "⚠️ No se escuchó ningún comando. Intenta nuevamente.";
-       this.formattedReport = this.formatReport(this.aiReport);
-       this.cdr.detectChanges();
-       return;
+      this.aiReport = "⚠️ No se escuchó ningún comando. Intenta nuevamente.";
+      this.formattedReport = this.formatReport(this.aiReport);
+      this.cdr.detectChanges();
+      return;
     }
 
     this.analyzingIA = true;
@@ -492,23 +492,36 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
           this.formattedReport = this.formatReport(textResp);
         }
 
-        switch(action) {
+        switch (action) {
           case 'EXPORT_EXCEL':
             this.exportarExcel();
             break;
+          case 'EXPORT_PDF':
+            this.exportarPDF();
+            break;
+          case 'EXPORT_WORD':
+            // Llama a una función para exportar Word o simplemente muestra que está listo
+            this.aiReport = "Generando reporte Word...";
+            this.formattedReport = this.formatReport(this.aiReport);
+            break;
+          case 'GENERATE_REPORT':
+            this.setTab('nlp-reports');
+            this.nlpPrompt = transcript;
+            this.generarReporteNLP();
+            break;
           case 'UPDATE_FILTER':
             if (res.filter_command && res.filter_command.meses !== undefined) {
-               this.filtros.meses = res.filter_command.meses;
-               this.aplicarFiltros();
+              this.filtros.meses = res.filter_command.meses;
+              this.aplicarFiltros();
             }
             break;
           case 'RENDER_DYNAMIC_CHART':
             if (res.chart_config) {
-               this.dynamicChartType = res.chart_config.type || 'bar';
-               this.dynamicChartData = {
-                 labels: res.chart_config.labels || [],
-                 datasets: res.chart_config.datasets || []
-               };
+              this.dynamicChartType = res.chart_config.type || 'bar';
+              this.dynamicChartData = {
+                labels: res.chart_config.labels || [],
+                datasets: res.chart_config.datasets || []
+              };
             }
             break;
           case 'TEXT_ONLY':
@@ -852,14 +865,14 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private buildNlpChart(res: any) {
     if (!res || !res.result || !res.result.data || res.result.data.length === 0) return;
-    
+
     const labels = res.result.data.map((d: any) => d.label);
     const values = res.result.data.map((d: any) => d.value);
-    
+
     const metricLabel = res.params.metric === 'average_duration' ? 'Duración Promedio (Horas)' : 'Cantidad de Trámites';
-    
+
     this.nlpChartType = res.params.dimension === 'month' ? 'line' : 'bar';
-    
+
     this.nlpChartData = {
       labels: labels,
       datasets: [
@@ -883,7 +896,7 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
     this.recognitionNlp = new SpeechRecognition();
     this.recognitionNlp.lang = 'es-ES';
     this.recognitionNlp.interimResults = true;
-    
+
     this.recognitionNlp.onresult = (event: any) => {
       let transcript = '';
       for (let i = 0; i < event.results.length; i++) {

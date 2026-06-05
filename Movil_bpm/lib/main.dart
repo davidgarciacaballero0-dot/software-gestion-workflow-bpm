@@ -8,8 +8,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:workflow_app/core/router/app_router.dart';
 import 'package:workflow_app/core/theme/app_theme.dart';
 
-void main() {
+import 'package:hive_flutter/hive_flutter.dart';
+
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Hive.initFlutter();
+  await Hive.openBox<String>('syncQueueBox');
+  await Hive.openBox<String>('tramites_cache');
   runApp(
     const ProviderScope(child: WorkFlowApp()),
   );
