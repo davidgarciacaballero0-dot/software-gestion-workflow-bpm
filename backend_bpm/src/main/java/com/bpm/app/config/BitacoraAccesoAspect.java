@@ -112,19 +112,99 @@ public class BitacoraAccesoAspect {
         }
     }
 
+    @AfterReturning(pointcut = "execution(* com.bpm.app.controllers.OnlyOfficeController.*(..))", returning = "result")
+    public void auditarOnlyOffice(JoinPoint joinPoint, Object result) {
+        try {
+            String methodName = joinPoint.getSignature().getName();
+            String action = "LECTURA";
+            String details = "";
+            String resourceId = "N/A";
+            String explicitUsername = null;
+
+            if (methodName.equals("getConfig")) {
+                action = "LECTURA";
+                details = "Apertura del editor colaborativo OnlyOffice";
+                resourceId = getArgValue(joinPoint, 0); // archivoId
+                explicitUsername = getArgValue(joinPoint, 1); // idUsuario
+            } else if (methodName.equals("downloadForOnlyOffice")) {
+                action = "LECTURA";
+                details = "Descarga de archivo por OnlyOffice Document Server";
+                resourceId = getArgValue(joinPoint, 0); // archivoId
+            } else if (methodName.equals("callback")) {
+                action = "MODIFICACION";
+                details = "Edición y guardado colaborativo en OnlyOffice";
+                
+                // Extraer del body del callback
+                Object[] args = joinPoint.getArgs();
+                if (args != null && args.length > 1 && args[1] instanceof java.util.Map) {
+                    java.util.Map<?, ?> body = (java.util.Map<?, ?>) args[1];
+                    int status = body.containsKey("status") ? (Integer) body.get("status") : 0;
+                    if (status == 2 || status == 3) {
+                        String keyStr = (String) body.get("key");
+                        if (keyStr != null && keyStr.contains("-")) {
+                            resourceId = keyStr.split("-")[0];
+                        }
+                        
+                        // Extraer usuarios que participaron en la edición
+                        if (body.containsKey("users")) {
+                            Object usersObj = body.get("users");
+                            if (usersObj instanceof java.util.List) {
+                                java.util.List<?> usersList = (java.util.List<?>) usersObj;
+                                explicitUsername = usersList.stream()
+                                        .map(Object::toString)
+                                        .collect(Collectors.joining(", "));
+                                details = "Edición colaborativa por los usuarios: " + explicitUsername;
+                            }
+                        }
+                    } else {
+                        return; // No auditar otros estados
+                    }
+                } else {
+                    return;
+                }
+            } else if (methodName.equals("createBlankDocument")) {
+                action = "CREACION";
+                details = "Creación de documento en blanco desde plantilla";
+                if (result instanceof ResponseEntity) {
+                    Object body = ((ResponseEntity<?>) result).getBody();
+                    if (body instanceof ArchivoAdjunto) {
+                        resourceId = ((ArchivoAdjunto) body).getId();
+                        explicitUsername = ((ArchivoAdjunto) body).getIdUsuarioSubida();
+                    }
+                }
+            } else {
+                return;
+            }
+
+            registrarAcceso(action, "ArchivoAdjunto", resourceId, details, explicitUsername);
+
+        } catch (Exception e) {
+            log.warn("[BITACORA ACCESO] Error registrando bitácora para OnlyOffice: {}", e.getMessage());
+        }
+    }
+
     private void registrarAcceso(String action, String resource, String resourceId, String details) {
-        String username = "ANONIMO";
+        registrarAcceso(action, resource, resourceId, details, null);
+    }
+
+    private void registrarAcceso(String action, String resource, String resourceId, String details, String explicitUsername) {
+        String username = explicitUsername;
         String role = "N/A";
         
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.isAuthenticated()) {
-            username = auth.getName();
-            Collection<? extends GrantedAuthority> authorities = auth.getAuthorities();
-            if (authorities != null && !authorities.isEmpty()) {
-                role = authorities.stream()
-                        .map(GrantedAuthority::getAuthority)
-                        .collect(Collectors.joining(","));
+        if (username == null || username.isEmpty() || username.equals("ANONIMO")) {
+            username = "ANONIMO";
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth != null && auth.isAuthenticated()) {
+                username = auth.getName();
+                Collection<? extends GrantedAuthority> authorities = auth.getAuthorities();
+                if (authorities != null && !authorities.isEmpty()) {
+                    role = authorities.stream()
+                            .map(GrantedAuthority::getAuthority)
+                            .collect(Collectors.joining(","));
+                }
             }
+        } else {
+            role = "USUARIO/COLABORADOR";
         }
 
         String ipAddress = "N/A";

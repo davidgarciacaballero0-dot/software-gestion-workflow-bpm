@@ -18,14 +18,73 @@ declare var DocsAPI: any;
           Volver al trámite
         </button>
         <span class="header-title">Editor de Documentos</span>
+        <button class="history-toggle-btn" (click)="toggleHistory()">
+          <span class="material-symbols-outlined">history</span>
+          {{ showHistory ? 'Ocultar Actividad' : 'Ver Actividad' }}
+        </button>
       </div>
-      <div *ngIf="loading" class="loading-overlay">
-        Cargando editor...
+
+      <div *ngIf="isFallback" class="fallback-warning-banner">
+        <span class="material-symbols-outlined">warning</span>
+        <span>Este documento no existía físicamente en el servidor de archivos (GCS/GridFS). Se ha cargado una versión vacía de contingencia. Al guardar cambios se creará el archivo real.</span>
       </div>
-      <div *ngIf="error" class="error-overlay">
-        {{ error }}
+
+      <div class="main-layout">
+        <div class="editor-section">
+          <div *ngIf="loading" class="loading-overlay">
+            <div class="spinner-container">
+              <span class="material-symbols-outlined spin-icon">sync</span>
+              <p>Cargando editor colaborativo...</p>
+            </div>
+          </div>
+          <div *ngIf="error" class="error-overlay">
+            <span class="material-symbols-outlined error-icon">error</span>
+            <p>{{ error }}</p>
+          </div>
+          <div id="onlyoffice-placeholder" class="editor-wrapper"></div>
+        </div>
+
+        <!-- SIDEBAR DE HISTORIAL -->
+        <div class="history-sidebar" [class.open]="showHistory">
+          <div class="sidebar-header">
+            <h3>Actividad del Archivo</h3>
+            <button class="refresh-btn" (click)="loadHistory()" [disabled]="loadingHistory" title="Actualizar bitácora">
+              <span class="material-symbols-outlined" [class.spin-icon]="loadingHistory">refresh</span>
+            </button>
+          </div>
+
+          <div class="sidebar-content">
+            <div *ngIf="loadingHistory" class="sidebar-loading">
+              <span class="material-symbols-outlined spin-icon">sync</span>
+              <p>Cargando bitácora...</p>
+            </div>
+            
+            <div *ngIf="!loadingHistory && history.length === 0" class="no-history">
+              <span class="material-symbols-outlined history-empty-icon">info</span>
+              <p>No hay acciones registradas para este archivo.</p>
+            </div>
+
+            <div *ngIf="!loadingHistory && history.length > 0" class="history-timeline">
+              <div class="history-item" *ngFor="let item of history">
+                <div class="item-icon-wrapper" [ngClass]="item.action.toLowerCase()">
+                  <span class="material-symbols-outlined">{{ getActionIcon(item.action) }}</span>
+                </div>
+                <div class="item-details">
+                  <div class="item-header">
+                    <span class="user-actor">{{ item.username }}</span>
+                    <span class="action-badge" [ngClass]="item.action.toLowerCase()">{{ item.action }}</span>
+                  </div>
+                  <p class="action-description">{{ item.details }}</p>
+                  <div class="item-footer">
+                    <span class="timestamp">{{ item.timestamp | date:'dd/MM/yyyy HH:mm' }}</span>
+                    <span class="ip-address">IP: {{ item.ipAddress }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-      <div id="onlyoffice-placeholder" class="editor-wrapper"></div>
     </div>
   `,
   styles: [`
@@ -35,52 +94,281 @@ declare var DocsAPI: any;
       height: 100vh;
       width: 100vw;
       overflow: hidden;
+      background: #121212;
+      font-family: 'Inter', system-ui, sans-serif;
     }
     .editor-header {
       display: flex;
       align-items: center;
+      justify-content: space-between;
       padding: 10px 20px;
       background: #1e1e1e;
       color: white;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.4);
       z-index: 10;
+      border-bottom: 1px solid #2d2d2d;
+    }
+    .fallback-warning-banner {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 20px;
+      background: rgba(245, 158, 11, 0.15);
+      border-bottom: 1px solid rgba(245, 158, 11, 0.3);
+      color: #fbbf24;
+      font-size: 13px;
+      font-weight: 500;
+      z-index: 9;
     }
     .back-button {
       display: flex;
       align-items: center;
       gap: 8px;
       background: transparent;
-      color: white;
+      color: #e0e0e0;
       border: 1px solid #444;
-      padding: 6px 12px;
-      border-radius: 4px;
+      padding: 8px 16px;
+      border-radius: 6px;
       cursor: pointer;
       font-size: 14px;
+      transition: all 0.2s ease;
     }
     .back-button:hover {
-      background: #333;
+      background: #2a2a2a;
+      color: white;
+      border-color: #666;
     }
     .header-title {
-      margin-left: 20px;
       font-weight: 500;
       font-size: 16px;
+      color: #f5f5f5;
+    }
+    .history-toggle-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: background 0.2s ease;
+    }
+    .history-toggle-btn:hover {
+      background: #1d4ed8;
+    }
+    .main-layout {
+      display: flex;
+      flex: 1;
+      width: 100%;
+      height: calc(100vh - 60px);
+      overflow: hidden;
+    }
+    .editor-section {
+      flex: 1;
+      height: 100%;
+      position: relative;
     }
     .loading-overlay, .error-overlay {
       position: absolute;
-      top: 50px; left: 0; right: 0; bottom: 0;
+      top: 0; left: 0; right: 0; bottom: 0;
       display: flex;
       align-items: center;
       justify-content: center;
-      background: #f5f5f5;
+      background: rgba(18, 18, 18, 0.95);
       font-size: 18px;
-      color: #555;
+      color: #e0e0e0;
       z-index: 5;
     }
-    .error-overlay { color: #d32f2f; }
+    .spinner-container, .error-overlay {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    .spin-icon {
+      animation: spin 1.5s linear infinite;
+      font-size: 36px;
+      color: #2563eb;
+    }
+    .error-icon {
+      font-size: 48px;
+      color: #ef4444;
+    }
+    .error-overlay p {
+      color: #ef4444;
+      font-weight: 500;
+    }
     .editor-wrapper {
-      flex: 1;
       width: 100%;
       height: 100%;
+      background: #ffffff;
+    }
+    
+    /* SIDEBAR STYLES */
+    .history-sidebar {
+      width: 0;
+      background: #1a1a1a;
+      border-left: 1px solid #2d2d2d;
+      display: flex;
+      flex-direction: column;
+      transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      overflow: hidden;
+      height: 100%;
+    }
+    .history-sidebar.open {
+      width: 350px;
+    }
+    .sidebar-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid #2d2d2d;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #202020;
+    }
+    .sidebar-header h3 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: #e2e8f0;
+    }
+    .refresh-btn {
+      background: transparent;
+      color: #a0aec0;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      transition: all 0.2s ease;
+    }
+    .refresh-btn:hover {
+      color: white;
+      background: #2d2d2d;
+    }
+    .sidebar-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+    }
+    .sidebar-loading, .no-history {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 200px;
+      color: #718096;
+      text-align: center;
+      gap: 10px;
+    }
+    .history-empty-icon {
+      font-size: 32px;
+      color: #4a5568;
+    }
+    .history-timeline {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      position: relative;
+    }
+    .history-timeline::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 16px;
+      width: 2px;
+      background: #2d2d2d;
+    }
+    .history-item {
+      display: flex;
+      gap: 14px;
+      position: relative;
+      background: #222;
+      border: 1px solid #2d2d2d;
+      border-radius: 8px;
+      padding: 12px;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+    .history-item:hover {
+      transform: translateY(-2px);
+      border-color: #444;
+      background: #262626;
+    }
+    .item-icon-wrapper {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #333;
+      z-index: 1;
+      flex-shrink: 0;
+    }
+    .item-icon-wrapper span {
+      font-size: 18px;
+    }
+    
+    /* Action Type Themes */
+    .item-icon-wrapper.creacion { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+    .item-icon-wrapper.lectura { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+    .item-icon-wrapper.modificacion { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+    .item-icon-wrapper.eliminacion { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+
+    .action-badge {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+    .action-badge.creacion { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+    .action-badge.lectura { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+    .action-badge.modificacion { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+    .action-badge.eliminacion { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+
+    .item-details {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+    .user-actor {
+      font-weight: 600;
+      font-size: 13px;
+      color: #e2e8f0;
+    }
+    .action-description {
+      margin: 0;
+      font-size: 12px;
+      color: #cbd5e0;
+      line-height: 1.4;
+    }
+    .item-footer {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      color: #718096;
+      margin-top: 4px;
+      border-top: 1px solid #2d2d2d;
+      padding-top: 4px;
+    }
+    
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
     }
   `]
 })
@@ -90,6 +378,12 @@ export class OnlyofficeEditor implements OnInit, AfterViewInit, OnDestroy {
   loading: boolean = true;
   error: string | null = null;
   docEditor: any;
+
+  // History Sidebar variables
+  history: any[] = [];
+  showHistory: boolean = false;
+  loadingHistory: boolean = false;
+  isFallback: boolean = false;
 
   constructor(
     private route: ActivatedRoute,
@@ -101,6 +395,7 @@ export class OnlyofficeEditor implements OnInit, AfterViewInit, OnDestroy {
   ngOnInit() {
     this.archivoId = this.route.snapshot.paramMap.get('id') || '';
     this.tramiteId = this.route.snapshot.queryParamMap.get('tramiteId') || '';
+    this.loadHistory();
   }
 
   ngAfterViewInit() {
@@ -126,16 +421,15 @@ export class OnlyofficeEditor implements OnInit, AfterViewInit, OnDestroy {
       next: (config) => {
         this.loading = false;
         
-        // Ensure OnlyOffice script is loaded
         if (typeof DocsAPI === 'undefined') {
           this.error = "No se pudo cargar la API de OnlyOffice. Verifica que el Document Server esté en ejecución.";
           return;
         }
 
-        // Add event handlers
         config.events = {
           "onDocumentStateChange": (event: any) => {
             console.log("OnlyOffice state changed:", event.data);
+            this.loadHistory();
           },
           "onError": (event: any) => {
             console.error("OnlyOffice error:", event.data);
@@ -155,6 +449,44 @@ export class OnlyofficeEditor implements OnInit, AfterViewInit, OnDestroy {
         this.loading = false;
       }
     });
+  }
+
+  toggleHistory() {
+    this.showHistory = !this.showHistory;
+    if (this.showHistory) {
+      this.loadHistory();
+    }
+  }
+
+  loadHistory() {
+    if (!this.archivoId) return;
+    this.loadingHistory = true;
+    const usuarioActual = this.authService.currentUser();
+    const idUsuario = usuarioActual ? usuarioActual.id : 'unknown';
+    
+    this.http.get<any[]>(`/api/v1/archivos/${this.archivoId}/historial?idUsuario=${idUsuario}`).subscribe({
+      next: (data) => {
+        this.history = data;
+        this.isFallback = data.some(item => 
+          item.details && item.details.includes("Archivo físico ausente")
+        );
+        this.loadingHistory = false;
+      },
+      error: (err) => {
+        console.error("Error al cargar historial del archivo:", err);
+        this.loadingHistory = false;
+      }
+    });
+  }
+
+  getActionIcon(action: string): string {
+    switch (action) {
+      case 'CREACION': return 'cloud_upload';
+      case 'LECTURA': return 'visibility';
+      case 'MODIFICACION': return 'edit';
+      case 'ELIMINACION': return 'delete';
+      default: return 'info';
+    }
   }
 
   goBack() {

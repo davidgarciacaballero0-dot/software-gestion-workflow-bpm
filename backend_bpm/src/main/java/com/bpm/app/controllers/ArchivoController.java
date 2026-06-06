@@ -18,6 +18,8 @@ import java.util.Set;
 import com.bpm.domain.services.DocumentPermissionService;
 import com.bpm.data.entities.TramiteInstancia;
 import com.bpm.data.repositories.TramiteInstanciaRepository;
+import com.bpm.data.entities.BitacoraAcceso;
+import com.bpm.data.repositories.BitacoraAccesoRepository;
 import org.springframework.http.HttpStatus;
 
 @RestController
@@ -28,6 +30,7 @@ public class ArchivoController {
     private final ArchivoAdjuntoRepository archivoRepository;
     private final DocumentPermissionService permissionService;
     private final TramiteInstanciaRepository tramiteRepository;
+    private final BitacoraAccesoRepository bitacoraRepository;
 
     private static final Set<String> ALLOWED_TYPES = Set.of(
         "application/pdf", "application/msword",
@@ -41,11 +44,13 @@ public class ArchivoController {
     @Autowired
     public ArchivoController(StorageService storageService, ArchivoAdjuntoRepository archivoRepository,
             DocumentPermissionService permissionService,
-            TramiteInstanciaRepository tramiteRepository) {
+            TramiteInstanciaRepository tramiteRepository,
+            BitacoraAccesoRepository bitacoraRepository) {
         this.storageService = storageService;
         this.archivoRepository = archivoRepository;
         this.permissionService = permissionService;
         this.tramiteRepository = tramiteRepository;
+        this.bitacoraRepository = bitacoraRepository;
     }
 
     @PostMapping("/upload")
@@ -168,6 +173,21 @@ public class ArchivoController {
         adjunto.setPermisos(nuevosPermisos);
         archivoRepository.save(adjunto);
         return ResponseEntity.ok(adjunto);
+    }
+
+    @GetMapping("/{id}/historial")
+    public ResponseEntity<List<BitacoraAcceso>> getHistorialArchivo(
+            @PathVariable String id,
+            @RequestParam("idUsuario") String idUsuario) {
+        ArchivoAdjunto adjunto = archivoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Archivo no encontrado: " + id));
+
+        // Verificar permisos de lectura antes de mostrar el historial
+        if (!permissionService.verificarPermiso(adjunto, idUsuario, "READ")) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        return ResponseEntity.ok(bitacoraRepository.findByResourceId(id));
     }
 
 }
