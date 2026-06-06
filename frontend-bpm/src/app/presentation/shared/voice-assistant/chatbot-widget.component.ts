@@ -15,6 +15,9 @@ interface ChatMessage {
     route: string;
     queryParams?: any;
   };
+  // RF-2.3: Gestión inteligente de requisitos
+  pendingDocs?: { nombre: string; descripcion: string; urgente: boolean }[];
+  tramiteIdForUpload?: string;
 }
 
 @Component({
@@ -61,6 +64,21 @@ interface ChatMessage {
               <button class="chat-action-btn" (click)="executeAction(msg.actionButton)">
                 {{ msg.actionButton.label }}
               </button>
+            </div>
+
+            <!-- RF-2.3: Documentos faltantes con botón de subida inline -->
+            <div *ngIf="msg.pendingDocs && msg.pendingDocs.length > 0" style="margin-top:0.6rem; display:flex; flex-direction:column; gap:0.4rem;">
+              <div *ngFor="let doc of msg.pendingDocs" 
+                   style="display:flex; align-items:center; gap:0.4rem; padding:0.4rem 0.6rem; background:rgba(99,102,241,0.08); border-radius:8px; font-size:0.8rem;">
+                <span>📄</span>
+                <span style="flex:1; font-weight:500;">{{ doc.nombre }}</span>
+                <span *ngIf="doc.urgente" style="font-size:0.65rem; background:#fecaca; color:#dc2626; padding:0.1rem 0.3rem; border-radius:3px; font-weight:700;">URGENTE</span>
+                <button (click)="docUploadInput.click()" 
+                        style="background:#6366f1; color:white; border:none; padding:0.25rem 0.5rem; border-radius:6px; font-size:0.7rem; cursor:pointer; font-weight:600;">
+                  📎 Subir
+                </button>
+                <input #docUploadInput type="file" style="display:none" (change)="onDocRequirementUpload($event, msg.tramiteIdForUpload, doc.nombre)">
+              </div>
             </div>
             
             <span class="time">{{ msg.timestamp | date:'HH:mm' }}</span>
@@ -348,12 +366,14 @@ export class ChatbotWidgetComponent implements AfterViewChecked {
       rol: this.authService.currentUser()?.nombreRol || 'CLIENTE'
     };
 
-    this.http.post('/ia/chat-interactivo', payload).subscribe({
+    this.http.post('/api/v1/optimization/asistente', payload).subscribe({
       next: (res: any) => {
         this.isTyping.set(false);
         const aiResponse = res.respuesta;
         this.messages.update(prev => [...prev, { text: aiResponse, isAi: true, timestamp: new Date() }]);
         this.speakText(aiResponse);
+        // RF-2.3: Verificar documentos faltantes para trámites activos
+        this.checkPendingDocuments();
       },
       error: (err) => {
         this.isTyping.set(false);
@@ -365,6 +385,97 @@ export class ChatbotWidgetComponent implements AfterViewChecked {
         }]);
       }
     });
+  }
+
+  // =============================================
+  // RF-2.3: Gestión Inteligente de Requisitos
+  // =============================================
+
+  private checkPendingDocuments() {
+    const user = this.authService.currentUser();
+    if (!user || user.nombreRol !== 'CLIENTE') return;
+
+    // Buscar el trámite activo más reciente del cliente
+    this.http.get<any[]>(`/api/v1/tramites/mis-tramites`).subscribe({
+      next: (tramites) => {
+        const activo = tramites.find(t => 
+          t.estadoActual !== 'FINALIZADO' && t.estadoActual !== 'RECHAZADO'
+        );
+        if (!activo) return;
+
+        // Validar documentación con IA
+        this.http.post<any>('/api/v1/optimization/asistente', {
+          prompt: `¿Qué documentos le faltan al trámite ${activo.codigoTramite}?`,
+          rol: 'SISTEMA_VALIDACION'
+        }).subscribe();
+
+        // Usar el endpoint de validación documental del microservicio IA
+        this.http.post<any>('/ia/validar-documentacion-dinamica', {
+          politica: activo.nombrePolitica || activo.idPolitica,
+          documentos_actuales: activo.archivosAdjuntos?.map((a: any) => a.nombreOriginal) || [],
+          datos_formulario: activo.datosFormulario || {}
+        }).subscribe({
+          next: (res: any) => {
+            const docsRequeridos = res.documentos_requeridos || [];
+            if (docsRequeridos.length > 0) {
+              const docsList = docsRequeridos.map((d: any) => ({
+                nombre: d.nombre || d,
+                descripcion: d.motivo || 'Documento requerido para este trámite',
+                urgente: d.urgente || false
+              }));
+
+              this.messages.update(prev => [...prev, {
+                text: `📋 He detectado que al trámite ${activo.codigoTramite} le faltan los siguientes documentos. Puedes subirlos directamente desde aquí:`,
+                isAi: true,
+                timestamp: new Date(),
+                pendingDocs: docsList,
+                tramiteIdForUpload: activo.id
+              }]);
+            }
+          },
+          error: () => { /* Silencioso: no interrumpir la conversación si falla */ }
+        });
+      },
+      error: () => { /* Silencioso */ }
+    });
+  }
+
+  onDocRequirementUpload(event: any, tramiteId: string | undefined, docName: string) {
+    const file = event.target.files?.[0];
+    if (!file || !tramiteId) return;
+
+    this.messages.update(prev => [...prev, {
+      text: `📤 Subiendo "${file.name}" como ${docName}...`,
+      isAi: false,
+      timestamp: new Date()
+    }]);
+    this.isTyping.set(true);
+
+    const formData = new FormData();
+    formData.append('archivo', file);
+    formData.append('idTramiteInstancia', tramiteId);
+
+    this.http.post('/api/v1/archivos/upload', formData).subscribe({
+      next: () => {
+        this.isTyping.set(false);
+        this.messages.update(prev => [...prev, {
+          text: `✅ Documento "${docName}" adjuntado correctamente al trámite. ¡Buen trabajo!`,
+          isAi: true,
+          timestamp: new Date()
+        }]);
+        this.speakText(`Documento ${docName} adjuntado correctamente.`);
+      },
+      error: () => {
+        this.isTyping.set(false);
+        this.messages.update(prev => [...prev, {
+          text: `❌ Error al subir "${docName}". Intenta de nuevo.`,
+          isAi: true,
+          timestamp: new Date()
+        }]);
+      }
+    });
+
+    event.target.value = '';
   }
 
   onFileSelected(event: any) {

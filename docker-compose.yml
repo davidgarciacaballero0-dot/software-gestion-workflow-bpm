@@ -77,5 +77,20 @@ services:
       - backend-spring
     restart: unless-stopped
 
+  # ============================================================
+  # OnlyOffice Document Server
+  # ============================================================
+  onlyoffice:
+    image: onlyoffice/documentserver:latest
+    container_name: onlyoffice_server
+    ports:
+      - "8081:80"
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - JWT_SECRET=${ONLYOFFICE_JWT_SECRET:-secret-jwt-onlyoffice}
+      - JWT_HEADER=Authorization
+
 volumes:
   mongodb_data:

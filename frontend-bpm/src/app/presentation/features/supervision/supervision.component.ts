@@ -60,6 +60,11 @@ export class SupervisionComponent implements OnInit {
   selectedUserIds: string[] = [];
   executingAction = false;
 
+  // RF-3.4: Sugerencias de reasignación IA
+  sugerenciasIA: any[] = [];
+  loadingSugerencias = false;
+  processingId: string | null = null;
+
   constructor(
     private tramiteService: TramiteService,
     private authService: AuthService,
@@ -98,6 +103,7 @@ export class SupervisionComponent implements OnInit {
     this.cargarDatos();
     this.cargarCatalogos();
     this.cargarMetricas();
+    this.cargarSugerenciasIA();
   }
 
   cargarMetricas(): void {
@@ -310,5 +316,87 @@ export class SupervisionComponent implements OnInit {
         this.cd.detectChanges();
       }
     });
+  }
+
+  // ============================================================
+  //  RF-3.4: Sugerencias de Reasignación Semi-automática (IA)
+  // ============================================================
+
+  cargarSugerenciasIA(): void {
+    this.loadingSugerencias = true;
+    this.analiticaService.getSugerenciasReasignacion().subscribe({
+      next: (data) => {
+        this.zone.run(() => {
+          this.sugerenciasIA = data || [];
+          this.loadingSugerencias = false;
+          this.cd.detectChanges();
+        });
+      },
+      error: () => {
+        this.loadingSugerencias = false;
+        this.sugerenciasIA = [];
+        this.cd.detectChanges();
+      }
+    });
+  }
+
+  aprobarSugerencia(id: string): void {
+    this.processingId = id;
+    this.analiticaService.aprobarReasignacion(id).subscribe({
+      next: () => {
+        this.zone.run(() => {
+          this.resultMessage = '✅ Reasignación aprobada y ejecutada automáticamente.';
+          this.resultIsError = false;
+          this.processingId = null;
+          this.cargarSugerenciasIA();
+          this.cargarMetricas();
+          this.cargarDatos();
+          this.cd.detectChanges();
+        });
+      },
+      error: () => {
+        this.zone.run(() => {
+          this.resultMessage = '❌ Error al aprobar la reasignación.';
+          this.resultIsError = true;
+          this.processingId = null;
+          this.cd.detectChanges();
+        });
+      }
+    });
+  }
+
+  rechazarSugerencia(id: string): void {
+    this.processingId = id;
+    this.analiticaService.rechazarReasignacion(id).subscribe({
+      next: () => {
+        this.zone.run(() => {
+          this.resultMessage = '🚫 Sugerencia de reasignación rechazada.';
+          this.resultIsError = false;
+          this.processingId = null;
+          this.cargarSugerenciasIA();
+          this.cd.detectChanges();
+        });
+      },
+      error: () => {
+        this.zone.run(() => {
+          this.resultMessage = '❌ Error al rechazar la sugerencia.';
+          this.resultIsError = true;
+          this.processingId = null;
+          this.cd.detectChanges();
+        });
+      }
+    });
+  }
+
+  getSeverityClass(ratio: number): string {
+    if (ratio >= 1.5) return 'severity-critical';
+    if (ratio >= 1.2) return 'severity-high';
+    return 'severity-medium';
+  }
+
+  getSeverityLabel(ratio: number): string {
+    if (ratio >= 1.5) return 'CRÍTICA';
+    if (ratio >= 1.2) return 'ALTA';
+    return 'MEDIA';
   }
 }

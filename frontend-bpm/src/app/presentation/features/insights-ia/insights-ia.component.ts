@@ -67,6 +67,10 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   };
 
+  // --- Sugerencias Proactivas IA (RF-4.4) ---
+  proactiveSuggestions: any[] = [];
+  loadingSuggestions = false;
+
   // --- Reestructuración ---
   reassignForm = { idOrigen: '', idDestino: '', motivo: 'Reequilibrio sugerido por IA' };
   usuariosOrigen: any[] = [];
@@ -159,6 +163,7 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
     this.cargarMetricas();
     this.initVoiceRecognition();
     this.initVoiceRecognitionNlp();
+    this.cargarSugerenciasProactivas();
   }
 
   ngAfterViewInit(): void {
@@ -212,6 +217,32 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
   aplicarFiltros() {
     this.loadingMetrics = true;
     this.fetchFilteredMetrics();
+  }
+
+  // ========================================
+  //  SUGERENCIAS PROACTIVAS IA (RF-4.4)
+  // ========================================
+
+  cargarSugerenciasProactivas() {
+    this.loadingSuggestions = true;
+    this.http.get<any>('/api/v1/optimization/suggestions').subscribe({
+      next: (res: any) => {
+        this.proactiveSuggestions = res.suggestions || [];
+        this.loadingSuggestions = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.proactiveSuggestions = [];
+        this.loadingSuggestions = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  ejecutarSugerencia(suggestion: any) {
+    this.setTab('nlp-reports');
+    this.nlpPrompt = suggestion.prompt_nlp;
+    this.generarReporteNLP();
   }
 
   // ========================================
@@ -500,9 +531,7 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
             this.exportarPDF();
             break;
           case 'EXPORT_WORD':
-            // Llama a una función para exportar Word o simplemente muestra que está listo
-            this.aiReport = "Generando reporte Word...";
-            this.formattedReport = this.formatReport(this.aiReport);
+            this.exportarWord();
             break;
           case 'GENERATE_REPORT':
             this.setTab('nlp-reports');
@@ -635,6 +664,42 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
         saveAs(blob, filename);
       }
     }
+  }
+
+  exportarWord() {
+    if (!this.aiReport) {
+      alert('Primero genere un análisis IA para poder exportar el reporte Word.');
+      return;
+    }
+
+    let contentToExport = '';
+    try {
+      const parsed = typeof this.aiReport === 'string' ? JSON.parse(this.aiReport) : this.aiReport;
+      contentToExport = this.flattenReportToText(parsed);
+    } catch {
+      contentToExport = this.aiReport;
+    }
+
+    this.http.post('/api/v1/optimization/report/word',
+      { text: contentToExport, metrics: this.metrics },
+      { responseType: 'blob', observe: 'response' }
+    ).subscribe({
+      next: (resp) => {
+        const blob = resp.body!;
+        const contentDisposition = resp.headers.get('Content-Disposition');
+        let filename = 'informe_estrategico.docx';
+        if (contentDisposition) {
+          const match = contentDisposition.match(/filename[^;=\n]*=\s*"?([^";\n]+)"?/);
+          if (match && match[1]) {
+            filename = match[1];
+          }
+        }
+        this._forceDownload(blob, filename, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+      },
+      error: () => {
+        alert('Error al descargar el informe Word. Verifique el backend.');
+      }
+    });
   }
 
   /**

@@ -270,6 +270,14 @@ public class TramiteService {
         TramiteInstancia instancia = tramiteRepository.findById(request.getIdTramite())
                 .orElseThrow(() -> new WorkflowValidationException("Trámite no encontrado: " + request.getIdTramite()));
 
+        // CU-23: Validación de Optimistic Locking para cambios offline/concurrencia
+        if (request.getVersion() != null && instancia.getVersion() != null && !request.getVersion().equals(instancia.getVersion())) {
+            throw new org.springframework.dao.OptimisticLockingFailureException(
+                "Conflicto de concurrencia: la versión del trámite enviada (" + request.getVersion() + 
+                ") no coincide con la versión en la base de datos (" + instancia.getVersion() + ")."
+            );
+        }
+
         if ("FINALIZADO".equals(instancia.getEstadoActual())) {
             throw new WorkflowValidationException("El trámite ya fue finalizado. No se puede avanzar.");
         }

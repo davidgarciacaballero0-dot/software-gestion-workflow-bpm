@@ -1,9 +1,12 @@
 package com.bpm.domain.services;
 
 import com.bpm.data.entities.TramiteInstancia;
+import com.bpm.data.entities.SugerenciaReasignacion;
 import com.bpm.data.repositories.DepartamentoRepository;
 import com.bpm.data.repositories.EventoHistorialRepository;
 import com.bpm.data.repositories.TramiteInstanciaRepository;
+import com.bpm.data.repositories.SugerenciaReasignacionRepository;
+import com.bpm.data.repositories.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,6 +31,8 @@ public class SlaAuditScheduler {
     private final DepartamentoRepository departamentoRepository;
     private final EventoHistorialRepository historialRepository;
     private final NotificationService notificationService;
+    private final SugerenciaReasignacionRepository sugerenciaRepository;
+    private final UsuarioRepository usuarioRepository;
 
     @Value("${ia.service.url:http://localhost:8000/ia}")
     private String IA_URL;
@@ -213,6 +218,113 @@ public class SlaAuditScheduler {
             } catch (Exception e) {
                 log.error("❌ Error al evaluar SLA/Prioridad para trámite {}: {}", t.getCodigoTramite(), e.getMessage());
             }
+        }
+
+        // RF-3.4: Detectar sobrecarga departamental y generar sugerencias de reasignación
+        detectarSobrecargaYSugerir(tramitesActivos);
+    }
+
+    // ===============================================================
+    // RF-3.4: Reasignación Semi-automática de Recursos
+    // ===============================================================
+
+    private void detectarSobrecargaYSugerir(List<TramiteInstancia> tramitesActivos) {
+        try {
+            // 1. Agrupar trámites por departamento
+            Map<String, List<TramiteInstancia>> porDepto = tramitesActivos.stream()
+                    .filter(t -> t.getDepartamentoActualId() != null)
+                    .collect(Collectors.groupingBy(TramiteInstancia::getDepartamentoActualId));
+
+            // 2. Calcular capacidad vs carga
+            Map<String, Integer> capacidad = new HashMap<>();   // deptoId -> num funcionarios
+            Map<String, Integer> carga = new HashMap<>();       // deptoId -> num tramites activos
+            Map<String, String> nombres = new HashMap<>();      // deptoId -> nombre
+
+            departamentoRepository.findAll().forEach(d -> {
+                int personal = usuarioRepository.findByIdDepartamento(d.getId()).size();
+                capacidad.put(d.getId(), Math.max(personal, 1)); // mínimo 1 para evitar división por 0
+                carga.put(d.getId(), porDepto.getOrDefault(d.getId(), List.of()).size());
+                nombres.put(d.getId(), d.getNombre());
+            });
+
+            // 3. Detectar departamentos sobrecargados (>120% de su capacidad × ratio)
+            int ratioTramitesPorPersona = 5; // Umbral: 5 trámites por persona es "carga normal"
+            List<String> sobrecargados = new java.util.ArrayList<>();
+            List<String> subcargados = new java.util.ArrayList<>();
+
+            for (Map.Entry<String, Integer> entry : capacidad.entrySet()) {
+                String deptoId = entry.getKey();
+                int cap = entry.getValue();
+                int tramiteCount = carga.getOrDefault(deptoId, 0);
+                double ratio = (double) tramiteCount / (cap * ratioTramitesPorPersona);
+
+                if (ratio > 1.2) {
+                    sobrecargados.add(deptoId);
+                } else if (ratio < 0.6) {
+                    subcargados.add(deptoId);
+                }
+            }
+
+            if (sobrecargados.isEmpty() || subcargados.isEmpty()) {
+                return; // No hay desequilibrio que corregir
+            }
+
+            // 4. Generar sugerencias: mover trámites de mayor prioridad dinámica a departamentos menos cargados
+            for (String deptoSobrecargado : sobrecargados) {
+                List<TramiteInstancia> tramitesDepto = porDepto.getOrDefault(deptoSobrecargado, List.of());
+                
+                // Seleccionar los trámites de menor prioridad (candidatos a reubicar)
+                List<TramiteInstancia> candidatos = tramitesDepto.stream()
+                        .sorted((a, b) -> {
+                            int pa = a.getDynamicPriority() != null ? a.getDynamicPriority() : a.getPrioridad() != null ? a.getPrioridad() : 3;
+                            int pb = b.getDynamicPriority() != null ? b.getDynamicPriority() : b.getPrioridad() != null ? b.getPrioridad() : 3;
+                            return Integer.compare(pa, pb);
+                        })
+                        .limit(3) // Máximo 3 sugerencias por departamento sobrecargado
+                        .collect(Collectors.toList());
+
+                String deptoDestino = subcargados.get(0); // Primero el menos cargado
+
+                for (TramiteInstancia candidato : candidatos) {
+                    // Verificar que no exista ya una sugerencia pendiente para este trámite
+                    boolean yaExiste = sugerenciaRepository.findByEstado("PENDIENTE").stream()
+                            .anyMatch(s -> candidato.getId().equals(s.getTramiteId()));
+                    if (yaExiste) continue;
+
+                    SugerenciaReasignacion sugerencia = SugerenciaReasignacion.builder()
+                            .tramiteId(candidato.getId())
+                            .codigoTramite(candidato.getCodigoTramite())
+                            .departamentoOrigenId(deptoSobrecargado)
+                            .departamentoOrigenNombre(nombres.getOrDefault(deptoSobrecargado, "Desconocido"))
+                            .departamentoDestinoId(deptoDestino)
+                            .departamentoDestinoNombre(nombres.getOrDefault(deptoDestino, "Desconocido"))
+                            .motivo(String.format("Departamento '%s' sobrecargado (%d trámites, %d personal). Se sugiere redistribuir a '%s' (carga baja).",
+                                    nombres.getOrDefault(deptoSobrecargado, ""),
+                                    carga.getOrDefault(deptoSobrecargado, 0),
+                                    capacidad.getOrDefault(deptoSobrecargado, 0),
+                                    nombres.getOrDefault(deptoDestino, "")))
+                            .prioridadDinamica(candidato.getDynamicPriority() != null ? candidato.getDynamicPriority() : 3)
+                            .ratioSobrecarga((double) carga.getOrDefault(deptoSobrecargado, 0) / (capacidad.getOrDefault(deptoSobrecargado, 1) * ratioTramitesPorPersona))
+                            .estado("PENDIENTE")
+                            .creadaPor("IA_SCHEDULER")
+                            .createdAt(LocalDateTime.now())
+                            .build();
+
+                    sugerenciaRepository.save(sugerencia);
+                    log.info("💡 Sugerencia de reasignación creada: Trámite {} de {} → {}",
+                            candidato.getCodigoTramite(),
+                            nombres.getOrDefault(deptoSobrecargado, ""),
+                            nombres.getOrDefault(deptoDestino, ""));
+
+                    // Notificar al supervisor del departamento sobrecargado
+                    notificationService.notificarDepartamento(deptoSobrecargado,
+                            "💡 Sugerencia de Reasignación",
+                            String.format("La IA sugiere redistribuir el trámite %s a %s por sobrecarga.",
+                                    candidato.getCodigoTramite(), nombres.getOrDefault(deptoDestino, "")));
+                }
+            }
+        } catch (Exception e) {
+            log.error("❌ Error en detección de sobrecarga departamental: {}", e.getMessage());
         }
     }
 }

@@ -28,19 +28,55 @@ public class DocumentPermissionService {
             Rol rol = rolRepository.findById(usuario.getIdRol()).orElse(null);
             if (rol != null) {
                 String roleName = rol.getNombre();
-                if ("ADMINISTRADOR".equals(roleName) || "GERENTE_GENERAL".equals(roleName)) {
+                if ("ADMINISTRADOR".equals(roleName) || "GERENTE_GENERAL".equals(roleName) || "ADMIN".equals(roleName)) {
                     return true;
                 }
             }
         }
 
-        if (archivo.getPermisos() == null || archivo.getPermisos().isEmpty()) {
-            return false;
+        List<ArchivoAdjunto.DocumentPermission> permisos = archivo.getPermisos();
+        if (permisos == null || permisos.isEmpty()) {
+            permisos = new ArrayList<>();
+            if ("CONTRATO".equals(archivo.getTipoDocumento())) {
+                permisos.add(ArchivoAdjunto.DocumentPermission.builder()
+                        .sujetoId("LEGAL_DEPT_ID")
+                        .tipoSujeto("DEPARTMENT")
+                        .nivel("WRITE")
+                        .build());
+                permisos.add(ArchivoAdjunto.DocumentPermission.builder()
+                        .sujetoId("ADMINISTRADOR")
+                        .tipoSujeto("ROLE")
+                        .nivel("ADMIN")
+                        .build());
+                permisos.add(ArchivoAdjunto.DocumentPermission.builder()
+                        .sujetoId("GERENTE_GENERAL")
+                        .tipoSujeto("ROLE")
+                        .nivel("ADMIN")
+                        .build());
+            } else {
+                if (archivo.getIdUsuarioSubida() != null) {
+                    permisos.add(ArchivoAdjunto.DocumentPermission.builder()
+                            .sujetoId(archivo.getIdUsuarioSubida())
+                            .tipoSujeto("USER")
+                            .nivel("ADMIN")
+                            .build());
+                }
+                permisos.add(ArchivoAdjunto.DocumentPermission.builder()
+                        .sujetoId("FUNCIONARIO")
+                        .tipoSujeto("ROLE")
+                        .nivel("WRITE")
+                        .build());
+                permisos.add(ArchivoAdjunto.DocumentPermission.builder()
+                        .sujetoId("JEFE")
+                        .tipoSujeto("ROLE")
+                        .nivel("WRITE")
+                        .build());
+            }
         }
 
         int requiredWeight = getWeight(nivelRequerido);
 
-        for (ArchivoAdjunto.DocumentPermission perm : archivo.getPermisos()) {
+        for (ArchivoAdjunto.DocumentPermission perm : permisos) {
             if (matchesSubject(perm, usuario) && getWeight(perm.getNivel()) >= requiredWeight) {
                 return true;
             }
@@ -118,13 +154,18 @@ public class DocumentPermissionService {
                         .nivel("WRITE")
                         .build());
             }
-            if (archivo.getIdCliente() != null) {
-                permisos.add(ArchivoAdjunto.DocumentPermission.builder()
-                        .sujetoId(archivo.getIdCliente())
-                        .tipoSujeto("USER")
-                        .nivel("READ")
-                        .build());
-            }
+            
+            // Permisos globales a funcionarios y jefes
+            permisos.add(ArchivoAdjunto.DocumentPermission.builder()
+                    .sujetoId("FUNCIONARIO")
+                    .tipoSujeto("ROLE")
+                    .nivel("WRITE")
+                    .build());
+            permisos.add(ArchivoAdjunto.DocumentPermission.builder()
+                    .sujetoId("JEFE")
+                    .tipoSujeto("ROLE")
+                    .nivel("WRITE")
+                    .build());
         }
         archivo.setPermisos(permisos);
     }

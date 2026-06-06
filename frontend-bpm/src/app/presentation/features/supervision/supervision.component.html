@@ -63,9 +63,74 @@
 
     <hr style="margin: 2rem 0; opacity: 0.1;">
 
+    <!-- RF-3.4: Sugerencias de Reasignación IA -->
+    <div class="ia-suggestions-section" *ngIf="sugerenciasIA.length > 0 || loadingSugerencias">
+      <h3 class="section-title" style="display:flex; align-items:center; gap:0.5rem;">
+        <span class="material-symbols-outlined">auto_awesome</span>
+        Sugerencias de Reasignación (IA)
+        <span class="ia-badge">AUTOMÁTICO</span>
+        <button class="btn btn-secondary btn-sm" (click)="cargarSugerenciasIA()" 
+          style="margin-left:auto; display:flex; align-items:center; gap:0.3rem;">
+          <span class="material-symbols-outlined" style="font-size:16px;">refresh</span> Actualizar
+        </button>
+      </h3>
+
+      <div *ngIf="loadingSugerencias" class="loading-state" style="padding: 1rem;">
+        <span class="spinner"></span> Cargando sugerencias del motor de IA...
+      </div>
+
+      <div class="suggestions-grid" *ngIf="!loadingSugerencias">
+        <div class="suggestion-card" *ngFor="let s of sugerenciasIA" 
+             [class.processing]="processingId === s.id">
+          <div class="suggestion-header">
+            <span class="severity-badge" [ngClass]="getSeverityClass(s.ratioSobrecarga || 1.2)">
+              {{ getSeverityLabel(s.ratioSobrecarga || 1.2) }}
+            </span>
+            <span class="suggestion-date">{{ s.createdAt | date:'dd/MM HH:mm' }}</span>
+          </div>
+          <div class="suggestion-body">
+            <div class="suggestion-route">
+              <div class="route-from">
+                <span class="material-symbols-outlined" style="font-size:16px; color:#ef4444;">trending_up</span>
+                <span class="route-label">{{ s.departamentoOrigenNombre || 'Depto. Origen' }}</span>
+              </div>
+              <span class="material-symbols-outlined route-arrow">arrow_forward</span>
+              <div class="route-to">
+                <span class="material-symbols-outlined" style="font-size:16px; color:#10b981;">trending_down</span>
+                <span class="route-label">{{ s.departamentoDestinoNombre || 'Depto. Destino' }}</span>
+              </div>
+            </div>
+            <p class="suggestion-motivo">{{ s.motivo }}</p>
+            <div class="suggestion-meta">
+              <span>Trámite: <strong>{{ s.tramiteId | slice:0:8 }}...</strong></span>
+            </div>
+          </div>
+          <div class="suggestion-actions">
+            <button class="btn-approve" (click)="aprobarSugerencia(s.id)" 
+                    [disabled]="processingId === s.id">
+              <span class="material-symbols-outlined" style="font-size:16px;">check_circle</span>
+              Aprobar
+            </button>
+            <button class="btn-reject" (click)="rechazarSugerencia(s.id)" 
+                    [disabled]="processingId === s.id">
+              <span class="material-symbols-outlined" style="font-size:16px;">cancel</span>
+              Rechazar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="no-suggestions" *ngIf="!loadingSugerencias && sugerenciasIA.length === 0">
+        <span class="material-symbols-outlined" style="font-size:2rem; opacity:0.3;">celebration</span>
+        <p>No hay sugerencias pendientes. La carga está equilibrada.</p>
+      </div>
+    </div>
+
+    <hr style="margin: 2rem 0; opacity: 0.1;">
+
     <!-- Consola de Reestructuración -->
     <h3 class="section-title" style="display:flex; align-items:center; gap:0.5rem;"><span
-        class="material-symbols-outlined">sync</span> Consola de Reestructuración</h3>
+        class="material-symbols-outlined">sync</span> Consola de Reestructuración Manual</h3>
     <div class="reassign-grid">
       <div class="reassign-source">
         <div class="form-row">

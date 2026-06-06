@@ -7,6 +7,7 @@ import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.BinaryWebSocketHandler;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -14,7 +15,9 @@ import java.util.concurrent.CopyOnWriteArraySet;
 
 import com.bpm.domain.services.DocumentPermissionService;
 import com.bpm.data.repositories.ArchivoAdjuntoRepository;
+import com.bpm.data.repositories.BitacoraAccesoRepository;
 import com.bpm.data.entities.ArchivoAdjunto;
+import com.bpm.data.entities.BitacoraAcceso;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @Component
@@ -28,11 +31,19 @@ public class YjsWebSocketHandler extends BinaryWebSocketHandler {
 
     private final DocumentPermissionService permissionService;
     private final ArchivoAdjuntoRepository archivoRepository;
+    private final BitacoraAccesoRepository bitacoraRepository;
+
+    // RF-1.6: Debounce para trazabilidad - evita saturar la BD con un registro por keystroke
+    private final Map<String, Long> lastAuditTimestamp = new ConcurrentHashMap<>();
+    private static final long AUDIT_DEBOUNCE_MS = 10_000; // 10 segundos
 
     @Autowired
-    public YjsWebSocketHandler(DocumentPermissionService permissionService, ArchivoAdjuntoRepository archivoRepository) {
+    public YjsWebSocketHandler(DocumentPermissionService permissionService, 
+                                ArchivoAdjuntoRepository archivoRepository,
+                                BitacoraAccesoRepository bitacoraRepository) {
         this.permissionService = permissionService;
         this.archivoRepository = archivoRepository;
+        this.bitacoraRepository = bitacoraRepository;
     }
 
     @Override
@@ -87,6 +98,32 @@ public class YjsWebSocketHandler extends BinaryWebSocketHandler {
     protected void handleBinaryMessage(WebSocketSession session, BinaryMessage message) {
         String docId = getDocId(session);
         if (docId != null) {
+            // RF-1.6: Registrar edición en BitacoraAcceso con debounce
+            String userId = getUserId(session);
+            if (userId != null) {
+                String debounceKey = userId + ":" + docId;
+                long now = System.currentTimeMillis();
+                Long lastTime = lastAuditTimestamp.get(debounceKey);
+                if (lastTime == null || (now - lastTime) > AUDIT_DEBOUNCE_MS) {
+                    lastAuditTimestamp.put(debounceKey, now);
+                    try {
+                        String nombreDoc = archivoRepository.findById(docId)
+                                .map(ArchivoAdjunto::getNombreOriginal).orElse(docId);
+                        BitacoraAcceso registro = BitacoraAcceso.builder()
+                                .username(userId)
+                                .action("MODIFICACION")
+                                .resource("Documento Colaborativo")
+                                .resourceId(docId)
+                                .details("Edición en sesión colaborativa: " + nombreDoc)
+                                .timestamp(LocalDateTime.now())
+                                .build();
+                        bitacoraRepository.save(registro);
+                    } catch (Exception e) {
+                        System.err.println("Error registrando edición colaborativa en bitácora: " + e.getMessage());
+                    }
+                }
+            }
+
             Set<WebSocketSession> room = rooms.get(docId);
             if (room != null) {
                 for (WebSocketSession s : room) {

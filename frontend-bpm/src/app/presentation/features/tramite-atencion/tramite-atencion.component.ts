@@ -27,11 +27,6 @@ export class TramiteAtencionComponent implements OnInit {
   submitting = false;
   errorMessage: string | null = null;
 
-  // Collaborative editing (CU-24)
-  showDriveEditor = false;
-  driveEditorUrl: SafeResourceUrl | null = null;
-  activeDriveFileId = '';
-  activeDriveArchivoId = '';
   archivosSubidos: any[] = [];
 
   // Modal de Éxito Premium
@@ -68,12 +63,6 @@ export class TramiteAtencionComponent implements OnInit {
       this.cargarArchivosTramite(tramiteId);
     }
 
-    // Escuchar mensajes del iframe editor colaborativo (CU-24)
-    window.addEventListener('message', (event) => {
-      if (event.data === 'closeDriveEditor') {
-        this.cerrarEditorDrive();
-      }
-    });
   }
 
   cargarTramite(id: string): void {
@@ -208,7 +197,7 @@ export class TramiteAtencionComponent implements OnInit {
   }
 
   descargarArchivo(fileId: string): void {
-    const url = `/api/v1/archivos/download/${fileId}`;
+    const url = `/api/v1/archivos/download/${fileId}?idUsuario=${this.userId}`;
     this.http.get(url, { responseType: 'blob' }).subscribe({
       next: (blob) => {
         const objectUrl = window.URL.createObjectURL(blob);
@@ -277,52 +266,27 @@ export class TramiteAtencionComponent implements OnInit {
   }
 
   iniciarEdicionColaborativa(archivoId: string): void {
-    this.errorMessage = null;
-    this.http.post<any>(`/api/v1/archivos/drive/iniciar?archivoId=${archivoId}`, {}).subscribe({
-      next: (res) => {
-        this.zone.run(() => {
-          this.activeDriveFileId = res.fileId;
-          this.activeDriveArchivoId = res.archivoId;
-          this.driveEditorUrl = this.sanitizer.bypassSecurityTrustResourceUrl(res.editUrl);
-          this.showDriveEditor = true;
-          this.cd.detectChanges();
-        });
-      },
-      error: (err) => {
-        this.zone.run(() => {
-          this.errorMessage = 'No se pudo iniciar la sesión colaborativa: ' + (err.error?.message || 'Error de Google Drive API');
-          this.cd.detectChanges();
-        });
-      }
+    // Redirigir al nuevo editor de OnlyOffice
+    this.router.navigate(['/app/onlyoffice-editor', archivoId], {
+      queryParams: { tramiteId: this.tramite.id }
     });
   }
 
-  cerrarEditorDrive(): void {
-    if (!this.activeDriveFileId || !this.activeDriveArchivoId) {
-      this.showDriveEditor = false;
-      this.driveEditorUrl = null;
-      return;
-    }
+  crearDocumentoBlanco(tipo: string): void {
+    const url = `/api/v1/onlyoffice/create-blank`;
+    const formData = new FormData();
+    formData.append('tipo', tipo);
+    formData.append('idTramite', this.tramite.id);
+    formData.append('idUsuario', this.userId);
 
-    this.http.post<any>(`/api/v1/archivos/drive/finalizar?fileId=${this.activeDriveFileId}&archivoId=${this.activeDriveArchivoId}`, {}).subscribe({
-      next: () => {
-        this.zone.run(() => {
-          this.showDriveEditor = false;
-          this.driveEditorUrl = null;
-          // Recargar archivos del trámite para ver los cambios actualizados
-          if (this.tramite && this.tramite.id) {
-            this.cargarArchivosTramite(this.tramite.id);
-          }
-          this.cd.detectChanges();
-        });
+    this.http.post(url, formData).subscribe({
+      next: (archivo: any) => {
+        this.cargarArchivosTramite(this.tramite.id);
+        this.iniciarEdicionColaborativa(archivo.id);
       },
       error: (err) => {
-        this.zone.run(() => {
-          this.showDriveEditor = false;
-          this.driveEditorUrl = null;
-          this.errorMessage = 'La edición colaborativa finalizó pero hubo un problema al sincronizar con GCS.';
-          this.cd.detectChanges();
-        });
+        console.error('Error creando documento en blanco', err);
+        this.errorMessage = 'No se pudo crear el documento en blanco.';
       }
     });
   }

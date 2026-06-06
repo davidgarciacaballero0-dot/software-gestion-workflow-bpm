@@ -151,10 +151,20 @@
         </div>
       </div>
 
-      <!-- Gestión Documental en la Nube (GCS & Drive - CU-24) -->
-      <div class="grid-card glass-premium shadow-ambient mt-2" *ngIf="archivosSubidos && archivosSubidos.length > 0">
-        <h3 style="display:flex; align-items:center; gap:0.5rem; margin-bottom: 1rem;"><span class="material-symbols-outlined">cloud_done</span> Gestión Documental (GCS)</h3>
-        <div class="attachments-list" style="display:flex; flex-direction:column; gap:0.8rem;">
+      <!-- Gestión Documental en la Nube (GCS & OnlyOffice) -->
+      <div class="grid-card glass-premium shadow-ambient mt-2">
+        <h3 style="display:flex; align-items:center; gap:0.5rem; margin-bottom: 1rem;"><span class="material-symbols-outlined">cloud_done</span> Gestión Documental (OnlyOffice)</h3>
+        
+        <div class="create-docs-actions" style="display:flex; gap:0.5rem; margin-bottom:1rem;">
+          <button class="btn btn-primary w-full" (click)="crearDocumentoBlanco('word')" style="font-size:0.75rem; padding:6px 10px; display:flex; align-items:center; justify-content:center; gap:0.3rem; cursor:pointer;">
+            <span class="material-symbols-outlined" style="font-size:14px;">description</span> Crear Word
+          </button>
+          <button class="btn btn-primary w-full" (click)="crearDocumentoBlanco('excel')" style="font-size:0.75rem; padding:6px 10px; display:flex; align-items:center; justify-content:center; gap:0.3rem; cursor:pointer;">
+            <span class="material-symbols-outlined" style="font-size:14px;">table</span> Crear Excel
+          </button>
+        </div>
+
+        <div class="attachments-list" style="display:flex; flex-direction:column; gap:0.8rem;" *ngIf="archivosSubidos && archivosSubidos.length > 0">
           <div *ngFor="let arch of archivosSubidos" class="attachment-item monolith-surface" style="padding:10px; border:1px solid var(--outline-variant); margin-bottom:0.5rem;">
             <div style="font-weight:600; font-size:0.9rem; margin-bottom:0.3rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--text-main);" [title]="arch.nombreOriginal">
               {{ arch.nombreOriginal }}
@@ -167,7 +177,7 @@
                 <span class="material-symbols-outlined" style="font-size:14px;">download</span> Descargar
               </button>
               <button class="btn-premium btn-premium-primary w-full" (click)="iniciarEdicionColaborativa(arch.id)" style="font-size:0.75rem; padding:6px 10px; display:flex; align-items:center; justify-content:center; gap:0.3rem; cursor:pointer;">
-                <span class="material-symbols-outlined" style="font-size:14px;">group</span> Editar (Drive)
+                <span class="material-symbols-outlined" style="font-size:14px;">edit_document</span> Editar en OnlyOffice
               </button>
             </div>
           </div>
@@ -248,22 +258,3 @@
   </div>
 </div>
 
-<!-- OVERLAY DE EDICIÓN COLABORATIVA DE GOOGLE DRIVE (CU-24) -->
-<div class="success-overlay animate-fade-in" *ngIf="showDriveEditor" style="z-index: 9999; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(7, 2, 53, 0.5); backdrop-filter: blur(12px); display: flex; align-items: center; justify-content: center;">
-  <div class="success-modal glass-premium shadow-premium animate-zoom-in" style="max-width: 95%; width: 95%; height: 90%; padding: 1.25rem; display: flex; flex-direction: column; background: rgba(255, 255, 255, 0.9); border: 1px solid rgba(255, 255, 255, 0.6); border-radius: 16px; box-shadow: 0 25px 60px -15px rgba(7, 2, 53, 0.25);">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; border-bottom: 1px solid rgba(200, 197, 208, 0.4); padding-bottom: 0.8rem;">
-      <div style="display:flex; align-items:center; gap:0.6rem; color: #070235; font-family: 'Inter', sans-serif;">
-        <span class="material-symbols-outlined" style="color: #070235; font-size:28px;">edit_document</span>
-        <h3 style="margin: 0; font-size:1.25rem; color: #070235; line-height: 1.4; letter-spacing: -0.02em;">
-          <span style="font-weight: 800;">Google Drive API</span><span style="font-weight: 400;"> - Espacio Colaborativo de Edición</span>
-        </h3>
-      </div>
-      <button (click)="cerrarEditorDrive()" class="btn-premium" style="background: #ef4444; color: white; display:flex; align-items:center; gap:0.4rem; font-size: 0.85rem; padding: 8px 16px; font-weight: 600; border-radius: 8px; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25); transition: all 0.2s ease;">
-        <span class="material-symbols-outlined" style="font-size: 16px;">close</span> Cerrar Editor
-      </button>
-    </div>
-    <div style="flex: 1; border-radius: 8px; overflow: hidden; background: #ffffff; border: 1px solid rgba(7, 2, 53, 0.1);">
-      <iframe *ngIf="driveEditorUrl" [src]="driveEditorUrl" style="width: 100%; height: 100%; border: none;"></iframe>
-    </div>
-  </div>
-</div>

@@ -37,6 +37,11 @@ import { OfflineService } from '../../../data/services/offline.service';
         </nav>
 
         <div class="navbar-right">
+          <!-- Indicador de Sincronización Offline -->
+          <div class="sync-status-indicator animate-fade-in" *ngIf="isSyncing()" title="Sincronizando cambios locales con el servidor...">
+             <span class="material-symbols-outlined spin-animation">sync</span>
+          </div>
+
           <button class="icon-btn" (click)="toggleNotifications()">
             <span class="material-symbols-outlined">notifications</span>
             <span class="notification-dot" *ngIf="notificationService.unreadCount() > 0"></span>
@@ -71,6 +76,12 @@ import { OfflineService } from '../../../data/services/offline.service';
           </div>
         </div>
       </header>
+
+      <!-- Banner de Estado de Conexión Offline -->
+      <div class="offline-banner animate-fade-in" *ngIf="!isOnline()">
+        <span class="material-symbols-outlined">cloud_off</span>
+        <span>Modo sin conexión activo. Los cambios se guardarán localmente y se sincronizarán al reconectar.</span>
+      </div>
 
       <!-- Layout Body -->
       <div class="layout-body">
@@ -756,6 +767,44 @@ import { OfflineService } from '../../../data/services/offline.service';
 
     .animate-pop { animation: pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
     @keyframes pop { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+
+    /* OFFLINE & SYNC UX/UI */
+    .offline-banner {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: white;
+      text-align: center;
+      padding: 0.5rem 1rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      box-shadow: inset 0 -2px 5px rgba(0,0,0,0.05);
+      z-index: 99;
+    }
+    .offline-banner span {
+      font-size: 1.15rem;
+    }
+    .sync-status-indicator {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--primary);
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: rgba(99, 102, 241, 0.08);
+      margin-right: 0.5rem;
+    }
+    .spin-animation {
+      animation: spin 1.5s linear infinite;
+      display: inline-block;
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
   `]
 })
 export class MainLayoutComponent {
@@ -768,10 +817,20 @@ export class MainLayoutComponent {
   showNotifications = signal(false);
   isCollapsed = signal(false);
   pendingConflict = signal<any>(null);
+  isOnline = signal<boolean>(this.offlineService.isOnline);
+  isSyncing = signal<boolean>(false);
 
   constructor() {
     this.offlineService.conflictDetected$.subscribe(conflict => {
       this.pendingConflict.set(conflict);
+    });
+
+    this.offlineService.isOnline$.subscribe(online => {
+      this.isOnline.set(online);
+    });
+
+    this.offlineService.isSyncing$.subscribe(syncing => {
+      this.isSyncing.set(syncing);
     });
   }
 

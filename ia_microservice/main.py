@@ -449,9 +449,9 @@ async def parsear_reporte_nlp(request: Request):
 @app.post("/ia/analisis-intencion-politica")
 async def analisis_intencion_politica(request: Request):
     """
-    CU-26: Análisis de intención mediante embeddings para asignar políticas de negocio.
-    Genera embeddings para el requerimiento del usuario y los compara mediante similitud del coseno
-    contra las descripciones de las políticas de negocio disponibles.
+    CU-26: Análisis de intención mediante embeddings combinados con TensorFlow IntentClassifier.
+    Genera embeddings para el requerimiento del usuario, obtiene la clasificación por red neuronal
+    CNN de TensorFlow, y pondera ambos resultados para determinar la política idónea.
     """
     try:
         body = await request.json()
@@ -463,12 +463,24 @@ async def analisis_intencion_politica(request: Request):
         if not politicas:
             raise HTTPException(status_code=400, detail="La lista de políticas no puede estar vacía.")
 
-        # Intentar obtener embeddings por Vertex AI
+        # 1. Clasificación con TensorFlow
+        tf_class_idx = -1
+        tf_score = 0.0
+        try:
+            text_sequence = _extract_intent_sequence({"requerimiento": requerimiento})
+            classifier = get_intent_classifier()
+            pred = classifier.predict(text_sequence)
+            tf_class_idx = pred["class_idx"]
+            tf_score = pred["score"]
+            print(f"🧠 TensorFlow CNN clasificó intención: class_idx={tf_class_idx}, score={tf_score}")
+        except Exception as tf_err:
+            print(f"WARN: TensorFlow classifier falló ({str(tf_err)})")
+
+        # 2. Embeddings con Vertex AI / Gemini
         use_fallback = False
         req_vector = []
         politica_vectors = []
         try:
-            # Obtener embedding del requerimiento
             req_res = client.models.embed_content(
                 model="text-embedding-004",
                 contents=requerimiento
@@ -478,7 +490,6 @@ async def analisis_intencion_politica(request: Request):
             else:
                 raise ValueError("No se obtuvieron embeddings para el requerimiento")
             
-            # Obtener embeddings de cada política (usando su descripción y nombre)
             for pol in politicas:
                 texto_pol = f"{pol.get('nombre', '')}. {pol.get('description', pol.get('descripcion', ''))}"
                 pol_res = client.models.embed_content(
@@ -512,7 +523,7 @@ async def analisis_intencion_politica(request: Request):
                 return 0.0
             return len(intersection) / len(union)
 
-        # Evaluar similitudes
+        # 3. Evaluar similitudes y fusionar con la predicción de TensorFlow
         resultados = []
         for i, pol in enumerate(politicas):
             if not use_fallback:
@@ -521,22 +532,29 @@ async def analisis_intencion_politica(request: Request):
                 texto_pol = f"{pol.get('nombre', '')} {pol.get('description', pol.get('descripcion', ''))}"
                 sim = lexical_similarity(requerimiento, texto_pol)
             
+            # Ponderación: Si el índice modular de la clase predicha por TF coincide con el de la política, se le da un bonus.
+            is_tf_match = (tf_class_idx != -1 and (tf_class_idx % len(politicas)) == i)
+            tf_bonus = 0.4 if is_tf_match else 0.0
+            # Score final combinado
+            combined_score = 0.6 * sim + tf_bonus
+
             resultados.append({
                 "politica": pol,
-                "score": sim
+                "score": combined_score,
+                "score_semantic_lexical": sim,
+                "tf_match": is_tf_match
             })
 
-        # Ordenar por score descendente
         resultados.sort(key=lambda x: x["score"], reverse=True)
-        
-        # Obtener la mejor coincidencia
         mejor_coincidencia = resultados[0]["politica"] if resultados else None
         mejor_score = resultados[0]["score"] if resultados else 0.0
 
         return {
             "politica_asignada": mejor_coincidencia,
             "score": mejor_score,
-            "metodo": "embeddings_cosine" if not use_fallback else "lexical_jaccard",
+            "metodo": "tensorflow_cnn_hybrid",
+            "tf_intent_class": tf_class_idx,
+            "tf_intent_score": tf_score,
             "detalles": resultados
         }
     except Exception as e:
@@ -939,6 +957,83 @@ async def tf_clasificar_documento(file: UploadFile = File(...)):
         os.remove(tmp_path)
     result["modelo"] = "cnn_vision_v1"
     return result
+
+# ======================================================================
+# RF-4.4: Sugerencias Proactivas de IA
+# ======================================================================
+
+class SugerirReportesRequest(BaseModel):
+    total_tramites_activos: int = 0
+    total_anomalos: int = 0
+    departamento_mas_cargado: Optional[str] = None
+    tramite_mas_antiguo_dias: int = 0
+    total_departamentos: int = 0
+    retrasos_sla: int = 0
+
+@app.post("/ia/sugerir-reportes")
+async def sugerir_reportes(request: SugerirReportesRequest):
+    """RF-4.4: Genera sugerencias proactivas de reportes basadas en el estado actual del sistema."""
+    try:
+        prompt = f"""Eres un analista de gestión BPM. Basándote en el estado actual del sistema, sugiere exactamente 5 reportes que serían más útiles para el administrador en este momento.
+
+ESTADO ACTUAL DEL SISTEMA:
+- Trámites activos: {request.total_tramites_activos}
+- Trámites con anomalía detectada: {request.total_anomalos}
+- Departamento con mayor carga: {request.departamento_mas_cargado or 'No disponible'}
+- Trámite más antiguo: {request.tramite_mas_antiguo_dias} días
+- Total departamentos: {request.total_departamentos}
+- Retrasos SLA acumulados: {request.retrasos_sla}
+
+Responde SOLO con un JSON array de 5 objetos, cada uno con:
+- "titulo": título corto del reporte (máximo 8 palabras)
+- "descripcion": una frase explicando por qué es relevante ahora
+- "prompt_nlp": el prompt exacto en lenguaje natural que el usuario puede ejecutar para generar este reporte
+- "urgencia": "alta", "media" o "baja"
+- "icono": un emoji representativo
+
+Ejemplo de formato:
+[
+  {{"titulo": "Carga por Departamento", "descripcion": "Permite detectar desequilibrios de carga", "prompt_nlp": "Muéstrame la cantidad de trámites por departamento", "urgencia": "alta", "icono": "📊"}}
+]
+
+IMPORTANTE: Responde SOLO el JSON array, sin texto adicional, sin markdown."""
+
+        response = generate_with_fallback(
+            MODEL_FLASH,
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                temperature=0.7,
+                max_output_tokens=1500,
+            )
+        )
+
+        text = response.text.strip()
+        # Limpiar posible markdown wrapping
+        if text.startswith("```"):
+            text = text.split("\n", 1)[1] if "\n" in text else text[3:]
+        if text.endswith("```"):
+            text = text[:-3]
+        text = text.strip()
+
+        suggestions = json.loads(text)
+        return {"suggestions": suggestions, "status": "success"}
+
+    except json.JSONDecodeError:
+        # Fallback: sugerencias estáticas si la IA no devuelve JSON válido
+        return {
+            "suggestions": [
+                {"titulo": "Trámites por Departamento", "descripcion": "Visualice la distribución de carga actual", "prompt_nlp": "Muéstrame la cantidad de trámites por departamento", "urgencia": "alta", "icono": "📊"},
+                {"titulo": "Retrasos SLA Últimos 30 Días", "descripcion": "Identifique los cuellos de botella recientes", "prompt_nlp": "Muéstrame los trámites con retraso de los últimos 30 días", "urgencia": "alta", "icono": "⚠️"},
+                {"titulo": "Tendencia Mensual", "descripcion": "Analice la evolución temporal de trámites", "prompt_nlp": "Muéstrame la cantidad de trámites por mes", "urgencia": "media", "icono": "📈"},
+                {"titulo": "Distribución por Prioridad", "descripcion": "Verifique el balance de prioridades asignadas", "prompt_nlp": "Muéstrame la cantidad de trámites agrupados por prioridad", "urgencia": "media", "icono": "🎯"},
+                {"titulo": "Estado General de Trámites", "descripcion": "Obtenga una vista global de los estados", "prompt_nlp": "Muéstrame la cantidad de trámites por estado", "urgencia": "baja", "icono": "📋"}
+            ],
+            "status": "fallback"
+        }
+    except Exception as e:
+        if is_quota_error(e):
+            raise HTTPException(status_code=429, detail="Cuota de IA agotada. Intente en unos minutos.")
+        raise HTTPException(status_code=500, detail=f"Error generando sugerencias: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn

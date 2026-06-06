@@ -19,7 +19,6 @@ import com.bpm.domain.services.DocumentPermissionService;
 import com.bpm.data.entities.TramiteInstancia;
 import com.bpm.data.repositories.TramiteInstanciaRepository;
 import org.springframework.http.HttpStatus;
-import com.bpm.domain.services.CollaborativeEditService;
 
 @RestController
 @RequestMapping("/api/v1/archivos")
@@ -27,7 +26,6 @@ public class ArchivoController {
 
     private final StorageService storageService;
     private final ArchivoAdjuntoRepository archivoRepository;
-    private final CollaborativeEditService collaborativeEditService;
     private final DocumentPermissionService permissionService;
     private final TramiteInstanciaRepository tramiteRepository;
 
@@ -41,13 +39,11 @@ public class ArchivoController {
     );
 
     @Autowired
-    public ArchivoController(StorageService storageService, ArchivoAdjuntoRepository archivoRepository, 
-            CollaborativeEditService collaborativeEditService,
+    public ArchivoController(StorageService storageService, ArchivoAdjuntoRepository archivoRepository,
             DocumentPermissionService permissionService,
             TramiteInstanciaRepository tramiteRepository) {
         this.storageService = storageService;
         this.archivoRepository = archivoRepository;
-        this.collaborativeEditService = collaborativeEditService;
         this.permissionService = permissionService;
         this.tramiteRepository = tramiteRepository;
     }
@@ -141,6 +137,13 @@ public class ArchivoController {
 
     // --- NUEVOS ENDPOINTS DE PERMISOS ---
 
+    @GetMapping("/{id}/metadata")
+    public ResponseEntity<?> getMetadata(@PathVariable String id) {
+        ArchivoAdjunto adjunto = archivoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Archivo no encontrado: " + id));
+        return ResponseEntity.ok(adjunto);
+    }
+
     @GetMapping("/{id}/permisos")
     public ResponseEntity<?> getPermisos(@PathVariable String id) {
         ArchivoAdjunto adjunto = archivoRepository.findById(id)
@@ -167,19 +170,4 @@ public class ArchivoController {
         return ResponseEntity.ok(adjunto);
     }
 
-    // --- COOPERATIVE EDITING ENPOINTS (YJS) ---
-
-    @GetMapping("/yjs/load/{archivoId}")
-    public ResponseEntity<byte[]> loadYjsDocument(@PathVariable String archivoId) {
-        byte[] state = collaborativeEditService.loadYjsState(archivoId);
-        return ResponseEntity.ok(state);
-    }
-
-    @PostMapping("/yjs/save/{archivoId}")
-    public ResponseEntity<String> saveYjsDocument(
-            @PathVariable String archivoId,
-            @RequestBody byte[] yjsState) {
-        collaborativeEditService.saveYjsState(archivoId, yjsState);
-        return ResponseEntity.ok("Estado guardado correctamente");
-    }
 }

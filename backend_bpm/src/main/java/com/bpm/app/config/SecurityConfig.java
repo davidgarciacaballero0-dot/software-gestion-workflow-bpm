@@ -75,7 +75,8 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/v1/auth/**", "/ws-bpm/**").permitAll()
+                .requestMatchers("/api/v1/auth/**", "/ws-bpm/**", "/api/v1/yjs/**").permitAll()
+                .requestMatchers("/api/v1/onlyoffice/download/**", "/api/v1/onlyoffice/callback").permitAll()
                 .requestMatchers("/api/v1/optimization/**").authenticated()
                 .anyRequest().authenticated()
             )

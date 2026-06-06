@@ -50,4 +50,17 @@ export class AnaliticaService {
   getUsersByDepartamento(idDept: string): Observable<any[]> {
     return this.http.get<any[]>('/api/v1/usuarios/departamento/' + idDept);
   }
+
+  // RF-3.4: Sugerencias de Reasignación IA
+  getSugerenciasReasignacion(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/suggestions/reassign`);
+  }
+
+  aprobarReasignacion(id: string): Observable<any> {
+    return this.http.patch(`${this.apiUrl}/suggestions/reassign/${id}/approve`, {});
+  }
+
+  rechazarReasignacion(id: string): Observable<any> {
+    return this.http.patch(`${this.apiUrl}/suggestions/reassign/${id}/reject`, {});
+  }
 }

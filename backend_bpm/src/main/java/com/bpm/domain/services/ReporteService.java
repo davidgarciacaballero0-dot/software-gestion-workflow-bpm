@@ -7,6 +7,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.aggregation.AggregationResults;
+import org.springframework.data.mongodb.core.aggregation.DateOperators;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
@@ -97,17 +98,20 @@ public class ReporteService {
         String groupByField = "estadoActual"; // Default
         if ("department".equalsIgnoreCase(dimension)) groupByField = "departamentoActualId";
         if ("priority".equalsIgnoreCase(dimension)) groupByField = "prioridad";
-        if ("month".equalsIgnoreCase(dimension)) {
-            // Requiere manipulación de fechas en Mongo, usaremos estadoActual temporalmente como fallback
-            groupByField = "estadoActual"; 
-        }
 
         Aggregation aggregation;
 
-        if ("average_duration".equalsIgnoreCase(metric)) {
+        // Caso especial: Dimensión "month" requiere $dateToString
+        if ("month".equalsIgnoreCase(dimension)) {
+            aggregation = Aggregation.newAggregation(
+                    Aggregation.match(criteria),
+                    Aggregation.project()
+                            .and(DateOperators.DateToString.dateOf("createdAt").toString("%Y-%m")).as("mes"),
+                    Aggregation.group("mes").count().as("total"),
+                    Aggregation.sort(Sort.Direction.ASC, "_id")
+            );
+        } else if ("average_duration".equalsIgnoreCase(metric)) {
             // Métrica: Promedio de duración
-            // NOTA: Para un cálculo exacto de duración requiere un campo precalculado o operaciones de resta de fechas en aggregation.
-            // Para simplicidad en este caso, si no tenemos el campo duration calculado, contamos.
             aggregation = Aggregation.newAggregation(
                     Aggregation.match(criteria),
                     Aggregation.group(groupByField).count().as("total"),

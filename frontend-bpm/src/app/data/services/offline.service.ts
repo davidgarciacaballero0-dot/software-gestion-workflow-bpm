@@ -2,6 +2,7 @@ import { Injectable, ApplicationRef } from '@angular/core';
 import { DexieService } from './dexie.service';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, first, Subject } from 'rxjs';
+import { NotificationService } from './notification.service';
 
 @Injectable({
   providedIn: 'root'
@@ -13,12 +14,14 @@ export class OfflineService {
   // Emitido cuando se detecta un conflicto 409 al sincronizar
   public conflictDetected$ = new Subject<{ task: any; errorMsg: string }>();
 
-  private isSyncing = false;
+  private isSyncingSubject = new BehaviorSubject<boolean>(false);
+  public isSyncing$ = this.isSyncingSubject.asObservable();
 
   constructor(
     private dexieService: DexieService,
     private http: HttpClient,
-    private appRef: ApplicationRef
+    private appRef: ApplicationRef,
+    private notificationService: NotificationService
   ) {
     this.initNetworkMonitoring();
   }
@@ -50,12 +53,15 @@ export class OfflineService {
   }
 
   async syncQueuedTasks(): Promise<void> {
-    if (!this.isOnline || this.isSyncing) return;
-    this.isSyncing = true;
+    if (!this.isOnline || this.isSyncingSubject.getValue()) return;
+    this.isSyncingSubject.next(true);
 
     try {
       const queue = await this.dexieService.getSyncQueue();
       if (queue.length === 0) return;
+
+      let syncedCount = 0;
+      let hasConflict = false;
 
       for (const task of queue) {
         try {
@@ -84,6 +90,7 @@ export class OfflineService {
           // Remove task on success
           if (task.id) {
              await this.dexieService.removeSyncTask(task.id);
+             syncedCount++;
           }
         } catch (error: any) {
           console.error(`Failed to sync task ${task.id}:`, error);
@@ -93,13 +100,21 @@ export class OfflineService {
              // Emitimos el conflicto para la UI y pausamos la sync de esta cola
              const errorMsg = error.error?.message || 'El registro ha sido modificado en el servidor.';
              this.conflictDetected$.next({ task, errorMsg });
+             hasConflict = true;
              break; // Detener la sincronización secuencial hasta que se resuelva este paso
           }
           // Para otros errores (ej. 500), lo dejamos en la cola para reintentar después
         }
       }
+
+      if (syncedCount > 0 && !hasConflict) {
+        this.notificationService.notify(
+          `Sincronización completada con éxito. Se procesaron ${syncedCount} cambios offline.`,
+          'Modo Offline'
+        );
+      }
     } finally {
-      this.isSyncing = false;
+      this.isSyncingSubject.next(false);
     }
   }
 

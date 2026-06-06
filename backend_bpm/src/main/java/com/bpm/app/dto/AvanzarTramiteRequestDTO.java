@@ -9,4 +9,6 @@ public class AvanzarTramiteRequestDTO {
     private String idUsuarioAccion;
     private String nodoActualId; // Opcional: Especifica cuál de los nodos activos se está completando en ejecución paralela
     private Map<String, Object> datosFormulario;
+    private Long version; // CU-23: Versión del trámite para mitigar o forzar resolución de conflictos
 }
+

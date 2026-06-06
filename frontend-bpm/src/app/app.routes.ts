@@ -40,7 +40,8 @@ export const routes: Routes = [
       { path: 'users', component: UsuarioListComponent },
       { path: 'roles', component: RolViewComponent },
       { path: 'audit', component: AuditoriaListComponent },
-      { path: 'insights', loadComponent: () => import('./presentation/features/insights-ia/insights-ia.component').then(m => m.InsightsIAComponent) }
+      { path: 'insights', loadComponent: () => import('./presentation/features/insights-ia/insights-ia.component').then(m => m.InsightsIAComponent) },
+      { path: 'onlyoffice-editor/:id', loadComponent: () => import('./presentation/features/onlyoffice-editor/onlyoffice-editor').then(m => m.OnlyofficeEditor) }
     ]
   },
   { path: '**', redirectTo: 'app' }

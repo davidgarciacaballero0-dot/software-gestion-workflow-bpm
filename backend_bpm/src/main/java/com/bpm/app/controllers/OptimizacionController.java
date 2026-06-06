@@ -1,7 +1,9 @@
 package com.bpm.app.controllers;
 
 import com.bpm.app.dto.TramiteResponseDTO;
+import com.bpm.data.entities.TramiteInstancia;
 import com.bpm.data.entities.Usuario;
+import com.bpm.data.repositories.TramiteInstanciaRepository;
 import com.bpm.data.repositories.UsuarioRepository;
 import com.bpm.domain.services.AnaliticaService;
 import com.bpm.domain.services.TramiteService;
@@ -25,6 +27,8 @@ public class OptimizacionController {
     private final AnaliticaService analiticaService;
     private final TramiteService tramiteService;
     private final UsuarioRepository usuarioRepository;
+    private final TramiteInstanciaRepository tramiteInstanciaRepository;
+    private final com.bpm.data.repositories.SugerenciaReasignacionRepository sugerenciaReasignacionRepository;
 
     // Timeout de 120 segundos para dar tiempo al modelo Pro de Gemini
     private final RestTemplate restTemplate = createRestTemplate();
@@ -493,4 +497,104 @@ public class OptimizacionController {
             return ResponseEntity.status(500).body(error);
         }
     }
+
+    // =====================================================
+    // RF-4.4: Sugerencias Proactivas de IA
+    // =====================================================
+
+    @GetMapping("/suggestions")
+    public ResponseEntity<Map<String, Object>> getProactiveSuggestions() {
+        try {
+            // 1. Recopilar estadísticas rápidas del sistema
+            List<AnaliticaService.MetricDataDTO> metrics = analiticaService.calcularMetricasDepartamentales();
+            
+            int totalTramites = metrics.stream().mapToInt(AnaliticaService.MetricDataDTO::getCantidadTramites).sum();
+            int totalRetrasos = metrics.stream().mapToInt(AnaliticaService.MetricDataDTO::getRetrasosSla).sum();
+            String deptoMasCargado = metrics.stream()
+                    .max(java.util.Comparator.comparingInt(AnaliticaService.MetricDataDTO::getCantidadTramites))
+                    .map(AnaliticaService.MetricDataDTO::getNombreDepartamento)
+                    .orElse("N/A");
+
+            // Calcular trámites anómalos y más antiguo
+            List<TramiteInstancia> activos = tramiteInstanciaRepository.findAll().stream()
+                    .filter(t -> !"FINALIZADO".equalsIgnoreCase(t.getEstadoActual())
+                            && !"RECHAZADO".equalsIgnoreCase(t.getEstadoActual()))
+                    .collect(Collectors.toList());
+
+            long anomalos = activos.stream().filter(t -> Boolean.TRUE.equals(t.getEsAnomalo())).count();
+            long diasMasAntiguo = activos.stream()
+                    .filter(t -> t.getCreatedAt() != null)
+                    .mapToLong(t -> java.time.Duration.between(t.getCreatedAt(), java.time.LocalDateTime.now()).toDays())
+                    .max().orElse(0);
+
+            // 2. Construir petición para FastAPI
+            Map<String, Object> iaRequest = new HashMap<>();
+            iaRequest.put("total_tramites_activos", totalTramites);
+            iaRequest.put("total_anomalos", (int) anomalos);
+            iaRequest.put("departamento_mas_cargado", deptoMasCargado);
+            iaRequest.put("tramite_mas_antiguo_dias", (int) diasMasAntiguo);
+            iaRequest.put("total_departamentos", metrics.size());
+            iaRequest.put("retrasos_sla", totalRetrasos);
+
+            @SuppressWarnings("unchecked")
+            Class<Map<String, Object>> responseType = (Class<Map<String, Object>>) (Class<?>) Map.class;
+            ResponseEntity<Map<String, Object>> response = restTemplate.postForEntity(
+                    IA_URL + "/sugerir-reportes", iaRequest, responseType);
+
+            return ResponseEntity.ok(response.getBody());
+        } catch (Exception e) {
+            // Fallback: sugerencias estáticas si la IA no responde
+            Map<String, Object> fallback = new HashMap<>();
+            List<Map<String, String>> suggestions = new java.util.ArrayList<>();
+            suggestions.add(Map.of("titulo", "Trámites por Departamento", "descripcion", "Visualice la distribución de carga actual", "prompt_nlp", "Muéstrame la cantidad de trámites por departamento", "urgencia", "alta", "icono", "📊"));
+            suggestions.add(Map.of("titulo", "Retrasos SLA", "descripcion", "Identifique los cuellos de botella recientes", "prompt_nlp", "Muéstrame los trámites con retraso de los últimos 30 días", "urgencia", "alta", "icono", "⚠️"));
+            suggestions.add(Map.of("titulo", "Tendencia Mensual", "descripcion", "Analice la evolución temporal", "prompt_nlp", "Muéstrame la cantidad de trámites por mes", "urgencia", "media", "icono", "📈"));
+            fallback.put("suggestions", suggestions);
+            fallback.put("status", "fallback");
+            return ResponseEntity.ok(fallback);
+        }
+    }
+
+    // =====================================================
+    // RF-3.4: Reasignación Semi-automática de Recursos
+    // =====================================================
+
+    @GetMapping("/suggestions/reassign")
+    public ResponseEntity<java.util.List<com.bpm.data.entities.SugerenciaReasignacion>> getPendingReassignments() {
+        return ResponseEntity.ok(sugerenciaReasignacionRepository.findByEstadoOrderByCreatedAtDesc("PENDIENTE"));
+    }
+
+    @PatchMapping("/suggestions/reassign/{id}/approve")
+    public ResponseEntity<Map<String, String>> approveReassignment(@PathVariable String id) {
+        return sugerenciaReasignacionRepository.findById(id).map(s -> {
+            s.setEstado("APROBADA");
+            s.setResueltaPor("SUPERVISOR");
+            s.setResolvedAt(java.time.LocalDateTime.now());
+            sugerenciaReasignacionRepository.save(s);
+
+            tramiteInstanciaRepository.findById(s.getTramiteId()).ifPresent(t -> {
+                t.setDepartamentoActualId(s.getDepartamentoDestinoId());
+                tramiteInstanciaRepository.save(t);
+            });
+
+            Map<String, String> res = new HashMap<>();
+            res.put("message", "Reasignación aprobada y ejecutada.");
+            return ResponseEntity.ok(res);
+        }).orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @PatchMapping("/suggestions/reassign/{id}/reject")
+    public ResponseEntity<Map<String, String>> rejectReassignment(@PathVariable String id) {
+        return sugerenciaReasignacionRepository.findById(id).map(s -> {
+            s.setEstado("RECHAZADA");
+            s.setResueltaPor("SUPERVISOR");
+            s.setResolvedAt(java.time.LocalDateTime.now());
+            sugerenciaReasignacionRepository.save(s);
+
+            Map<String, String> res = new HashMap<>();
+            res.put("message", "Sugerencia rechazada.");
+            return ResponseEntity.ok(res);
+        }).orElseGet(() -> ResponseEntity.notFound().build());
+    }
 }
+

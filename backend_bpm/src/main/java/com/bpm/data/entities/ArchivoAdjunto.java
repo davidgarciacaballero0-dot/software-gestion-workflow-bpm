@@ -32,6 +32,9 @@ public class ArchivoAdjunto {
     @CreatedDate
     private LocalDateTime createdAt;
 
+    @org.springframework.data.annotation.LastModifiedDate
+    private LocalDateTime updatedAt;
+
     // --- NUEVOS CAMPOS FASE 2: GESTIÓN DOCUMENTAL ---
     private String idPolitica;        // Referencia para queries por política
     private String idCliente;         // Referencia para queries por cliente (idUsuarioSolicitante)

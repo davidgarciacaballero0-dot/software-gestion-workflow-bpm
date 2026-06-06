@@ -223,6 +223,29 @@
         </h3>
         <p>Escribe tu prompt o usa el dictado por voz para generar gráficas interactivas basadas en tus datos BPM en tiempo real.</p>
         
+        <!-- RF-4.4: Sugerencias Proactivas de IA -->
+        <div *ngIf="proactiveSuggestions.length > 0 && !nlpReportData" class="suggestions-grid mt-3"
+             style="display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:0.75rem; margin-bottom:1rem;">
+          <div *ngFor="let s of proactiveSuggestions" 
+               (click)="ejecutarSugerencia(s)"
+               class="suggestion-card"
+               style="background:rgba(99,102,241,0.04); border:1px solid rgba(99,102,241,0.15); border-radius:12px; padding:0.8rem 1rem; cursor:pointer; transition:all 0.2s ease; display:flex; flex-direction:column; gap:0.3rem;"
+               onmouseenter="this.style.background='rgba(99,102,241,0.1)'; this.style.borderColor='rgba(99,102,241,0.4)'; this.style.transform='translateY(-2px)';"
+               onmouseleave="this.style.background='rgba(99,102,241,0.04)'; this.style.borderColor='rgba(99,102,241,0.15)'; this.style.transform='translateY(0)';">
+            <div style="display:flex; align-items:center; gap:0.4rem;">
+              <span style="font-size:1.2rem;">{{ s.icono }}</span>
+              <span style="font-size:0.82rem; font-weight:600; color:var(--text-primary);">{{ s.titulo }}</span>
+              <span *ngIf="s.urgencia === 'alta'" 
+                    style="font-size:0.65rem; background:rgba(239,68,68,0.15); color:#ef4444; padding:0.1rem 0.4rem; border-radius:4px; font-weight:700; margin-left:auto;">URGENTE</span>
+            </div>
+            <span style="font-size:0.75rem; color:#64748b; line-height:1.3;">{{ s.descripcion }}</span>
+          </div>
+        </div>
+        <div *ngIf="loadingSuggestions" style="display:flex; align-items:center; gap:0.5rem; margin-bottom:1rem; padding:0.5rem; color:#64748b; font-size:0.85rem;">
+          <div class="loader-ring" style="width:20px; height:20px;"></div>
+          <span>Cargando sugerencias de la IA...</span>
+        </div>
+
         <div class="nlp-input-wrapper mt-4">
           <div class="nlp-input-box" style="display:flex; gap:0.5rem; align-items:center; background:rgba(255,255,255,0.06); padding:0.5rem 1rem; border-radius:12px; border:1px solid rgba(255,255,255,0.1);">
             <input type="text" [(ngModel)]="nlpPrompt" placeholder="Ej: 'Muestra la cantidad de trámites por departamento en progreso' o 'Tiempos de resolución promedio por prioridad'" 
