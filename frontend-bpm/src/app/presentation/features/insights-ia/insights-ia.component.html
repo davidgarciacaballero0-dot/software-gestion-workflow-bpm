@@ -14,11 +14,11 @@
   <div class="tabs-navigation glass-premium animate-fade-in">
     <button class="tab-btn" [class.active]="activeTab === 'historico'" (click)="setTab('historico')"
       style="display:flex; align-items:center; gap:0.4rem;">
-      <span class="material-symbols-outlined" style="font-size:18px;">bar_chart</span> Histórico y Diagnóstico
+      <span class="material-symbols-outlined" style="font-size:18px;">bar_chart</span> Dashboard General
     </button>
     <button class="tab-btn" [class.active]="activeTab === 'nlp-reports'" (click)="setTab('nlp-reports')"
       style="display:flex; align-items:center; gap:0.4rem;">
-      <span class="material-symbols-outlined" style="font-size:18px;">analytics</span> Reportes NLP
+      <span class="material-symbols-outlined" style="font-size:18px;">analytics</span> Asistente Analítico
     </button>
     <button class="tab-btn" [class.active]="activeTab === 'proyeccion'" (click)="setTab('proyeccion')"
       style="display:flex; align-items:center; gap:0.4rem;">
@@ -58,85 +58,23 @@
         </div>
       </div>
 
-      <!-- Columna Reporte IA -->
-      <div class="insight-card report-card">
-        <div class="card-title">
-          <div style="display: flex; align-items: center; gap: 0.5rem;">
-            <span class="card-icon material-symbols-outlined">assignment</span>
-            <h3>Consultoría de Optimización</h3>
+      <!-- Distribución de Carga por Departamento (Gráfico de Torta/Dona) -->
+      <div class="insight-card">
+        <div class="card-title" style="display:flex; justify-content:space-between; align-items:center;">
+          <div style="display:flex; align-items:center; gap:0.6rem;">
+            <span class="card-icon material-symbols-outlined" style="color:#10b981;">pie_chart</span>
+            <h3>Distribución de Carga por Departamento</h3>
           </div>
-          <div class="card-actions">
-            <button class="btn-icon-refresh" (click)="limpiarConsultaIA()" [class.spinning]="analyzingIA"
-              style="display:flex; align-items:center; justify-content:center;"><span
-                class="material-symbols-outlined">refresh</span></button>
-          </div>
+          <button class="btn-toggle-chart" (click)="togglePieChartType()">
+            {{ pieChartType === 'pie' ? 'Dona' : 'Torta' }}
+          </button>
         </div>
-
-        <div *ngIf="!aiReport && !analyzingIA" class="report-empty-state">
-          <div class="mic-icon-large" [class.pulse-active]="isListening"
-            (click)="isListening ? stopVoice() : startVoice()">
-            <span class="material-symbols-outlined">
-              {{ isListening ? 'stop' : 'mic' }}
-            </span>
-            <div *ngIf="isListening" class="pulse-ring"></div>
-          </div>
-
-          <p *ngIf="!isListening">Solicita un análisis de cuellos de botella para comenzar.</p>
-          <p *ngIf="isListening" class="listening-status"
-            style="font-weight:600; color:#ef4444; margin-top:0.5rem; display:flex; align-items:center; gap:0.4rem; justify-content:center;">
-            <span class="listening-pulse-dot"></span> Escuchando tu consulta...
-          </p>
-
-          <div *ngIf="isListening && voiceTranscript" class="live-transcript-box mt-3"
-            style="width:100%; max-width:320px; padding:0.8rem; background:rgba(99,102,241,0.05); border:1px dashed rgba(99,102,241,0.3); border-radius:8px; font-size:0.85rem; font-style:italic; color:#4f46e5; text-align:center; max-height:80px; overflow-y:auto;">
-            "{{ voiceTranscript }}"
-          </div>
-
-          <button *ngIf="!isListening" class="btn-premium btn-premium-primary mt-4" (click)="solicitarAnalisisIA()"
-            style="display:flex; align-items:center; justify-content:center; gap:0.5rem;"><span
-              class="material-symbols-outlined">psychology</span> Iniciar Consultoría IA</button>
-
-          <button *ngIf="isListening" class="btn-premium btn-premium-danger mt-4" (click)="stopVoice()"
-            style="display:flex; align-items:center; justify-content:center; gap:0.5rem; background:linear-gradient(135deg, #ef4444, #dc2626); border:none; color:white; font-weight:700;"><span
-              class="material-symbols-outlined">stop</span> Detener y Procesar</button>
-        </div>
-
-        <div *ngIf="analyzingIA" class="report-loading-state">
-          <div class="loader-ring"></div>
-          <p>El Asistente IA está analizando los datos...</p>
-        </div>
-
-        <div *ngIf="aiReport && !analyzingIA" class="report-result">
-          <!-- Banner de Escucha Activa cuando ya hay un reporte -->
-          <div *ngIf="isListening" class="listening-overlay mb-3"
-            style="display:flex; align-items:center; justify-content:space-between; padding:0.8rem 1rem; background:rgba(239, 68, 68, 0.08); border: 1.5px solid rgba(239, 68, 68, 0.2); border-radius:10px; animation: fadeIn 0.3s ease;">
-            <div style="display:flex; align-items:center; gap:0.5rem; flex: 1; overflow: hidden;">
-              <span class="listening-pulse-dot"></span>
-              <span style="font-size:0.8rem; font-weight:600; color:#ef4444; flex-shrink: 0;">Escuchando:</span>
-              <span
-                style="font-size:0.8rem; font-style:italic; color:#b91c1c; text-overflow:ellipsis; overflow:hidden; white-space:nowrap; padding-left:0.2rem;">"{{
-                voiceTranscript || 'Esperando voz...' }}"</span>
-            </div>
-            <button (click)="stopVoice()"
-              style="padding:0.4rem 0.8rem; font-size:0.75rem; display:flex; align-items:center; gap:0.2rem; background:#ef4444; color:white; border:none; border-radius:6px; cursor:pointer; font-weight: 700; flex-shrink: 0;"><span
-                class="material-symbols-outlined" style="font-size:14px;">stop</span> Detener</button>
-          </div>
-
-          <div class="report-text-content" [innerHTML]="formattedReport"></div>
-
-          <!-- Gráfica Dinámica Creada por Voz -->
-          <div *ngIf="dynamicChartData" class="chart-wrapper mt-4" style="height: 300px;">
-            <canvas #dynamicChartRef baseChart [data]="dynamicChartData" [options]="barChartOptions"
-              [type]="dynamicChartType">
-            </canvas>
-          </div>
-          <div class="mt-4" style="display: flex; gap: 1rem;">
-            <button class="btn-premium btn-premium-secondary" (click)="exportarPDF()"
-              style="display:flex; align-items:center; justify-content:center; gap:0.4rem;"><span
-                class="material-symbols-outlined">picture_as_pdf</span> Exportar Informe PDF</button>
-            <button class="btn-premium btn-premium-secondary" (click)="exportarExcel()"
-              style="display:flex; align-items:center; justify-content:center; gap:0.4rem;"><span
-                class="material-symbols-outlined">table_view</span> Data Excel</button>
+        <div class="chart-wrapper" style="height: 280px; display: flex; align-items: center; justify-content: center;">
+          <canvas *ngIf="pieChartData.labels.length > 0" baseChart [data]="pieChartData" [options]="pieChartOptions"
+            [type]="pieChartType">
+          </canvas>
+          <div *ngIf="pieChartData.labels.length === 0" class="empty-state-small">
+            No hay datos disponibles para el periodo seleccionado.
           </div>
         </div>
       </div>
@@ -221,47 +159,54 @@
         <h3 style="display:flex; align-items:center; gap:0.5rem;">
           <span class="material-symbols-outlined">query_stats</span> Asistente de Reportes Inteligentes
         </h3>
-        <p>Escribe tu prompt o usa el dictado por voz para generar gráficas interactivas basadas en tus datos BPM en tiempo real.</p>
-        
+        <p>Escribe tu prompt o usa el dictado por voz para generar gráficas interactivas basadas en tus datos BPM en
+          tiempo real.</p>
+
         <!-- RF-4.4: Sugerencias Proactivas de IA -->
         <div *ngIf="proactiveSuggestions.length > 0 && !nlpReportData" class="suggestions-grid mt-3"
-             style="display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:0.75rem; margin-bottom:1rem;">
-          <div *ngFor="let s of proactiveSuggestions" 
-               (click)="ejecutarSugerencia(s)"
-               class="suggestion-card"
-               style="background:rgba(99,102,241,0.04); border:1px solid rgba(99,102,241,0.15); border-radius:12px; padding:0.8rem 1rem; cursor:pointer; transition:all 0.2s ease; display:flex; flex-direction:column; gap:0.3rem;"
-               onmouseenter="this.style.background='rgba(99,102,241,0.1)'; this.style.borderColor='rgba(99,102,241,0.4)'; this.style.transform='translateY(-2px)';"
-               onmouseleave="this.style.background='rgba(99,102,241,0.04)'; this.style.borderColor='rgba(99,102,241,0.15)'; this.style.transform='translateY(0)';">
+          style="display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:0.75rem; margin-bottom:1rem;">
+          <div *ngFor="let s of proactiveSuggestions" (click)="ejecutarSugerencia(s)" class="suggestion-card"
+            style="background:rgba(99,102,241,0.04); border:1px solid rgba(99,102,241,0.15); border-radius:12px; padding:0.8rem 1rem; cursor:pointer; transition:all 0.2s ease; display:flex; flex-direction:column; gap:0.3rem;"
+            onmouseenter="this.style.background='rgba(99,102,241,0.1)'; this.style.borderColor='rgba(99,102,241,0.4)'; this.style.transform='translateY(-2px)';"
+            onmouseleave="this.style.background='rgba(99,102,241,0.04)'; this.style.borderColor='rgba(99,102,241,0.15)'; this.style.transform='translateY(0)';">
             <div style="display:flex; align-items:center; gap:0.4rem;">
               <span style="font-size:1.2rem;">{{ s.icono }}</span>
               <span style="font-size:0.82rem; font-weight:600; color:var(--text-primary);">{{ s.titulo }}</span>
-              <span *ngIf="s.urgencia === 'alta'" 
-                    style="font-size:0.65rem; background:rgba(239,68,68,0.15); color:#ef4444; padding:0.1rem 0.4rem; border-radius:4px; font-weight:700; margin-left:auto;">URGENTE</span>
+              <span *ngIf="s.urgencia === 'alta'"
+                style="font-size:0.65rem; background:rgba(239,68,68,0.15); color:#ef4444; padding:0.1rem 0.4rem; border-radius:4px; font-weight:700; margin-left:auto;">URGENTE</span>
             </div>
             <span style="font-size:0.75rem; color:#64748b; line-height:1.3;">{{ s.descripcion }}</span>
           </div>
         </div>
-        <div *ngIf="loadingSuggestions" style="display:flex; align-items:center; gap:0.5rem; margin-bottom:1rem; padding:0.5rem; color:#64748b; font-size:0.85rem;">
+        <div *ngIf="loadingSuggestions"
+          style="display:flex; align-items:center; gap:0.5rem; margin-bottom:1rem; padding:0.5rem; color:#64748b; font-size:0.85rem;">
           <div class="loader-ring" style="width:20px; height:20px;"></div>
           <span>Cargando sugerencias de la IA...</span>
         </div>
 
         <div class="nlp-input-wrapper mt-4">
-          <div class="nlp-input-box" style="display:flex; gap:0.5rem; align-items:center; background:rgba(255,255,255,0.06); padding:0.5rem 1rem; border-radius:12px; border:1px solid rgba(255,255,255,0.1);">
-            <input type="text" [(ngModel)]="nlpPrompt" placeholder="Ej: 'Muestra la cantidad de trámites por departamento en progreso' o 'Tiempos de resolución promedio por prioridad'" 
-                   (keyup.enter)="generarReporteNLP()" class="select-premium" style="width:100%; border:none; background:transparent; font-size:0.9rem; color:white; outline:none;" />
-            
-            <button class="mic-btn-premium" [class.listening]="isListeningNlp" (click)="isListeningNlp ? stopVoiceNlp() : startVoiceNlp()"
-                    style="background:none; border:none; cursor:pointer; color:#94a3b8; display:flex; align-items:center; justify-content:center; padding:0;">
-              <span class="material-symbols-outlined" [style.color]="isListeningNlp ? '#ef4444' : '#6366f1'">{{ isListeningNlp ? 'stop' : 'mic' }}</span>
+          <div class="nlp-input-box"
+            style="display:flex; gap:0.5rem; align-items:center; background:rgba(255,255,255,0.06); padding:0.5rem 1rem; border-radius:12px; border:1px solid rgba(255,255,255,0.1);">
+            <input type="text" [(ngModel)]="nlpPrompt"
+              placeholder="Ej: 'Muestra la cantidad de trámites por departamento en progreso' o 'Tiempos de resolución promedio por prioridad'"
+              (keyup.enter)="generarReporteNLP()" class="select-premium"
+              style="width:100%; border:none; background:transparent; font-size:0.9rem; color:white; outline:none;" />
+
+            <button class="mic-btn-premium" [class.listening]="isListeningNlp"
+              (click)="isListeningNlp ? stopVoiceNlp() : startVoiceNlp()"
+              style="background:none; border:none; cursor:pointer; color:#94a3b8; display:flex; align-items:center; justify-content:center; padding:0;">
+              <span class="material-symbols-outlined" [style.color]="isListeningNlp ? '#ef4444' : '#6366f1'">{{
+                isListeningNlp ? 'stop' : 'mic' }}</span>
             </button>
           </div>
-          <div *ngIf="isListeningNlp" style="font-size:0.8rem; color:#ef4444; margin-top:0.4rem; font-style:italic; display:flex; align-items:center; gap:0.3rem; justify-content:flex-start;">
+          <div *ngIf="isListeningNlp"
+            style="font-size:0.8rem; color:#ef4444; margin-top:0.4rem; font-style:italic; display:flex; align-items:center; gap:0.3rem; justify-content:flex-start;">
             <span class="listening-pulse-dot"></span> Escuchando: "{{ nlpPrompt }}"
           </div>
-          
-          <button class="btn-premium btn-premium-primary mt-3" style="display:flex; align-items:center; gap:0.5rem; justify-content:center;"
-                  (click)="generarReporteNLP()" [disabled]="loadingNlpReport || !nlpPrompt">
+
+          <button class="btn-premium btn-premium-primary mt-3"
+            style="display:flex; align-items:center; gap:0.5rem; justify-content:center;" (click)="generarReporteNLP()"
+            [disabled]="loadingNlpReport || !nlpPrompt">
             <span class="material-symbols-outlined">{{ loadingNlpReport ? 'hourglass_empty' : 'analytics' }}</span>
             {{ loadingNlpReport ? 'Consultando IA...' : 'Generar Reporte' }}
           </button>
@@ -274,72 +219,146 @@
       <div class="insights-grid">
         <!-- Gráfica Dinámica Generada -->
         <div class="insight-card">
-          <div class="card-title">
-            <span class="card-icon material-symbols-outlined">bar_chart</span>
-            <h3>Visualización Interactiva</h3>
+          <div class="card-title" style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="display:flex; align-items:center; gap:0.6rem;">
+              <span class="card-icon material-symbols-outlined">bar_chart</span>
+              <h3>Visualización Interactiva</h3>
+            </div>
+            <div class="card-actions" *ngIf="!loadingNlpReport && nlpChartData">
+              <button class="btn-toggle-chart" [class.active]="nlpChartType === 'bar'" (click)="setNlpChartType('bar')"
+                style="font-size: 0.65rem; padding: 0.2rem 0.5rem; margin-right: 0.2rem; min-height: 24px;">Barras</button>
+              <button class="btn-toggle-chart" [class.active]="nlpChartType === 'line'"
+                (click)="setNlpChartType('line')"
+                style="font-size: 0.65rem; padding: 0.2rem 0.5rem; margin-right: 0.2rem; min-height: 24px;">Líneas</button>
+              <button class="btn-toggle-chart" [class.active]="nlpChartType === 'pie'" (click)="setNlpChartType('pie')"
+                style="font-size: 0.65rem; padding: 0.2rem 0.5rem; margin-right: 0.2rem; min-height: 24px;">Torta</button>
+              <button class="btn-toggle-chart" [class.active]="nlpChartType === 'doughnut'"
+                (click)="setNlpChartType('doughnut')"
+                style="font-size: 0.65rem; padding: 0.2rem 0.5rem; min-height: 24px;">Dona</button>
+            </div>
           </div>
           <div class="chart-wrapper" style="height:320px; display:flex; align-items:center; justify-content:center;">
-            <div *ngIf="loadingNlpReport" class="report-loading-state" style="display:flex; flex-direction:column; align-items:center; gap:0.5rem;">
+            <div *ngIf="loadingNlpReport" class="report-loading-state"
+              style="display:flex; flex-direction:column; align-items:center; gap:0.5rem;">
               <div class="loader-ring"></div>
               <p style="color:#64748b; font-size:0.9rem;">Generando gráfica en base al prompt...</p>
             </div>
-            
-            <canvas *ngIf="!loadingNlpReport && nlpChartData" baseChart [data]="nlpChartData" [options]="nlpChartOptions" [type]="nlpChartType">
+
+            <canvas *ngIf="!loadingNlpReport && nlpChartData" baseChart [data]="nlpChartData"
+              [options]="nlpChartOptions" [type]="nlpChartType">
             </canvas>
-            
+
             <div *ngIf="!loadingNlpReport && !nlpChartData" style="color:#64748b; font-size:0.9rem;">
               No se pudieron recuperar datos para este reporte.
             </div>
           </div>
+          <!-- Botones de Exportación para Reporte Dinámico -->
+          <div *ngIf="!loadingNlpReport && nlpChartData"
+            style="display:flex; gap:1rem; margin-top:1rem; justify-content:center; padding: 0 1rem 1rem 1rem;">
+            <button class="btn-premium btn-premium-secondary" (click)="exportarNlpPDF()"
+              style="display:flex; align-items:center; justify-content:center; gap:0.4rem; padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.85rem;"><span
+                class="material-symbols-outlined" style="font-size: 18px;">picture_as_pdf</span> Exportar PDF</button>
+            <button class="btn-premium btn-premium-secondary" (click)="exportarNlpExcel()"
+              style="display:flex; align-items:center; justify-content:center; gap:0.4rem; padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.85rem;"><span
+                class="material-symbols-outlined" style="font-size: 18px;">table_view</span> Descargar Excel</button>
+          </div>
         </div>
 
-        <!-- Interpretación y Parámetros extraídos -->
+        <!-- Consultoría y Sugerencias de Optimización IA -->
         <div class="insight-card report-card" *ngIf="!loadingNlpReport && nlpReportData">
-          <div class="card-title">
-            <span class="card-icon material-symbols-outlined">tune</span>
-            <h3>Parámetros del Reporte</h3>
+          <div class="card-title"
+            style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid rgba(0,0,0,0.06); padding-bottom: 0.8rem; margin-bottom: 1rem;">
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <span class="card-icon material-symbols-outlined" style="color:#6366f1;">psychology</span>
+              <h3>Consultoría y Sugerencias de Optimización IA</h3>
+            </div>
+            <div class="card-actions" *ngIf="nlpConsultoriaData && !loadingNlpConsultoria">
+              <button class="btn-premium btn-premium-primary" (click)="reproducirConsultoriaVoz()"
+                style="display:flex; align-items:center; justify-content:center; gap:0.4rem; padding: 0.4rem 0.8rem; font-size: 0.8rem;">
+                <span class="material-symbols-outlined" style="font-size: 16px;">{{ isSpeakingConsultoria ?
+                  'stop_circle' : 'record_voice_over' }}</span>
+                {{ isSpeakingConsultoria ? 'Detener Voz' : 'Escuchar Análisis' }}
+              </button>
+            </div>
           </div>
-          
-          <div class="report-result" style="padding:1rem;">
-            <!-- Informe de Análisis IA -->
-            <div style="background:rgba(16, 185, 129, 0.06); padding:1rem; border-radius:12px; border-left:4px solid #10b981; margin-bottom:1rem; border-top:1px solid rgba(16, 185, 129, 0.1); border-right:1px solid rgba(16, 185, 129, 0.1); border-bottom:1px solid rgba(16, 185, 129, 0.1);">
-              <h4 style="color:#10b981; margin:0 0 0.5rem 0; font-size:0.9rem; font-weight:600; display:flex; align-items:center; gap:0.4rem;">
-                <span class="material-symbols-outlined" style="font-size:18px;">analytics</span> Informe de Análisis IA
-              </h4>
-              <p style="margin:0; font-size:0.85rem; line-height:1.5; color:#f1f5f9; font-style:italic;">
-                "{{ nlpReportData.summary }}"
-              </p>
+
+          <div class="report-result" style="padding:0;">
+            <!-- Estado Cargando Consultoría -->
+            <div *ngIf="loadingNlpConsultoria" class="report-loading-state" style="padding: 2rem 1rem;">
+              <div class="loader-ring"></div>
+              <p style="color:#64748b; font-size:0.9rem;">El Asistente IA está analizando los datos y formulando
+                recomendaciones...</p>
             </div>
 
-            <!-- Detalles Técnicos -->
-            <details style="margin-bottom: 1rem; cursor: pointer;">
-              <summary style="font-size:0.8rem; color:#64748b; font-weight:600; outline:none; user-select:none; display:flex; align-items:center; gap:0.2rem;">
-                <span class="material-symbols-outlined" style="font-size:14px;">settings</span> Mostrar Detalles de Traducción Técnica
+            <!-- Contenido Consultoría Listo -->
+            <div *ngIf="!loadingNlpConsultoria && nlpConsultoriaData" style="margin-bottom: 1rem;">
+              <div class="report-text-content" [innerHTML]="nlpConsultoriaFormatted" style="margin-bottom: 1rem;"></div>
+            </div>
+
+            <!-- Detalles Técnicos y de Respaldo Collapsible -->
+            <details
+              style="margin-top: 1rem; border-top: 1px solid rgba(0,0,0,0.06); padding-top: 0.8rem; cursor: pointer;">
+              <summary
+                style="font-size:0.8rem; color:#64748b; font-weight:600; outline:none; user-select:none; display:flex; align-items:center; gap:0.2rem; margin-bottom: 0.5rem;">
+                <span class="material-symbols-outlined" style="font-size:16px;">settings</span> Mostrar Detalles de
+                Traducción Técnica
               </summary>
-              <div style="background:rgba(99, 102, 241, 0.03); padding:0.8rem; border-radius:8px; border:1px solid rgba(99, 102, 241, 0.1); margin-top:0.4rem;">
-                <p style="margin:0.2rem 0; font-size:0.8rem; color:#94a3b8;"><strong style="color:#64748b;">Dimensión:</strong> {{ nlpReportData.params.dimension | uppercase }}</p>
-                <p style="margin:0.2rem 0; font-size:0.8rem; color:#94a3b8;"><strong style="color:#64748b;">Métrica:</strong> {{ nlpReportData.params.metric | uppercase }}</p>
-                <p style="margin:0.2rem 0; font-size:0.8rem; color:#94a3b8;"><strong style="color:#64748b;">Filtros Aplicados:</strong> {{ nlpReportData.params.filters | json }}</p>
+
+              <div style="display: flex; flex-direction: column; gap: 0.8rem; padding: 0.5rem 0;">
+                <!-- Resumen original corto -->
+                <div *ngIf="nlpReportData?.summary"
+                  style="background:rgba(16, 185, 129, 0.04); padding:0.6rem 0.8rem; border-radius:8px; border-left:3px solid #10b981; border-top:1px solid rgba(16, 185, 129, 0.08); border-right:1px solid rgba(16, 185, 129, 0.08); border-bottom:1px solid rgba(16, 185, 129, 0.08);">
+                  <h5
+                    style="color:#10b981; margin:0 0 0.3rem 0; font-size:0.8rem; font-weight:600; display:flex; align-items:center; gap:0.3rem;">
+                    <span class="material-symbols-outlined" style="font-size:16px;">analytics</span> Resumen del Reporte
+                  </h5>
+                  <p style="margin:0; font-size:0.78rem; line-height:1.4; color:#334155; font-style:italic;">
+                    "{{ nlpReportData.summary }}"
+                  </p>
+                </div>
+
+                <!-- Traducción Técnica -->
+                <div
+                  style="background:rgba(99, 102, 241, 0.03); padding:0.6rem 0.8rem; border-radius:8px; border:1px solid rgba(99, 102, 241, 0.08);">
+                  <h5
+                    style="color:#6366f1; margin:0 0 0.3rem 0; font-size:0.8rem; font-weight:600; display:flex; align-items:center; gap:0.3rem;">
+                    <span class="material-symbols-outlined" style="font-size:16px;">settings</span> Parámetros de
+                    Traducción NLP
+                  </h5>
+                  <p style="margin:0.2rem 0; font-size:0.75rem; color:#64748b;"><strong
+                      style="color:#475569;">Dimensión:</strong> {{ nlpReportData.params.dimension | uppercase }}</p>
+                  <p style="margin:0.2rem 0; font-size:0.75rem; color:#64748b;"><strong
+                      style="color:#475569;">Métrica:</strong> {{ nlpReportData.params.metric | uppercase }}</p>
+                  <p style="margin:0.2rem 0; font-size:0.75rem; color:#64748b;"><strong
+                      style="color:#475569;">Filtros:</strong> {{ nlpReportData.params.filters | json }}</p>
+                </div>
+
+                <!-- Datos Obtenidos -->
+                <div>
+                  <h5 style="margin:0 0 0.3rem 0; font-size:0.8rem; font-weight:600; color:var(--text-primary);">Datos
+                    Obtenidos:</h5>
+                  <div
+                    style="max-height:120px; overflow-y:auto; border:1px solid rgba(0,0,0,0.05); border-radius:8px; padding:0.4rem; background: rgba(255,255,255,0.3);">
+                    <table style="width:100%; border-collapse:collapse; font-size:0.78rem; text-align:left;">
+                      <thead>
+                        <tr style="border-bottom:1.5px solid rgba(0,0,0,0.08); color:#64748b;">
+                          <th style="padding:0.3rem 0.4rem;">Etiqueta ({{ nlpReportData.params.dimension }})</th>
+                          <th style="padding:0.3rem 0.4rem; text-align:right;">Valor</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr *ngFor="let pt of nlpReportData.result.data"
+                          style="border-bottom:1px solid rgba(0,0,0,0.04); color:#334155;">
+                          <td style="padding:0.3rem 0.4rem;">{{ pt.label }}</td>
+                          <td style="padding:0.3rem 0.4rem; text-align:right; font-weight:600; color:#6366f1;">{{
+                            pt.value | number:'1.0-2' }}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </div>
             </details>
-            
-            <h4 style="margin:0 0 0.5rem 0; font-size:0.9rem; font-weight:600; color:var(--text-primary);">Datos Obtenidos:</h4>
-            <div style="max-height:160px; overflow-y:auto; border:1px solid rgba(0,0,0,0.05); border-radius:8px; padding:0.5rem;">
-              <table style="width:100%; border-collapse:collapse; font-size:0.85rem; text-align:left;">
-                <thead>
-                  <tr style="border-bottom:1.5px solid rgba(0,0,0,0.08); color:#64748b;">
-                    <th style="padding:0.4rem 0.5rem;">Etiqueta ({{ nlpReportData.params.dimension }})</th>
-                    <th style="padding:0.4rem 0.5rem; text-align:right;">Valor</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let pt of nlpReportData.result.data" style="border-bottom:1px solid rgba(0,0,0,0.04); color:#334155;">
-                    <td style="padding:0.4rem 0.5rem;">{{ pt.label }}</td>
-                    <td style="padding:0.4rem 0.5rem; text-align:right; font-weight:600; color:#6366f1;">{{ pt.value | number:'1.0-2' }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
           </div>
         </div>
       </div>

@@ -915,3 +915,9 @@
   color: #ef4444 !important;
   animation: pulse-border 1.5s infinite;
 }
+
+.btn-toggle-chart.active {
+  background: #6366f1 !important;
+  color: white !important;
+  border-color: #6366f1 !important;
+}

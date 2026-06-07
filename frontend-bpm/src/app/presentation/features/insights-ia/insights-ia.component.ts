@@ -67,6 +67,13 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   };
 
+  // --- Consultoria de Reportes (NLP + Consultor) ---
+  loadingNlpConsultoria = false;
+  nlpConsultoriaData: any = null;
+  nlpConsultoriaFormatted: SafeHtml = '';
+  isSpeakingConsultoria = false;
+  private speechSynthesis: SpeechSynthesisUtterance | null = null;
+
   // --- Sugerencias Proactivas IA (RF-4.4) ---
   proactiveSuggestions: any[] = [];
   loadingSuggestions = false;
@@ -80,6 +87,47 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
   public dynamicChartData: any = null;
   public dynamicChartType: ChartType = 'bar';
   public barChartType: 'bar' | 'line' = 'bar';
+  
+  // --- Pie/Doughnut Chart (Distribución por Departamento) ---
+  public pieChartType: 'pie' | 'doughnut' = 'doughnut';
+  public pieChartOptions: any = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: true,
+        position: 'right',
+        labels: {
+          color: '#64748b',
+          font: { family: 'Inter', size: 10 }
+        }
+      },
+      tooltip: {
+        callbacks: {
+          label: (context: any) => {
+            const label = context.label || '';
+            const value = context.raw || 0;
+            const dataset = context.dataset.data || [];
+            const total = dataset.reduce((a: number, b: number) => a + b, 0);
+            const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0';
+            return ` ${label}: ${value} trámites (${percentage}%)`;
+          }
+        }
+      }
+    }
+  };
+  public pieChartData: any = {
+    labels: [],
+    datasets: [
+      {
+        data: [],
+        backgroundColor: [],
+        borderColor: [],
+        borderWidth: 1.5
+      }
+    ]
+  };
+
   public barChartOptions: any = {
     responsive: true,
     maintainAspectRatio: false,
@@ -251,6 +299,8 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
 
   updateChartData() {
     if (!this.metrics.length) return;
+    
+    // Gráfico de barras/líneas de Tendencia Global
     this.barChartData = {
       ...this.barChartData,
       labels: this.metrics.map(m => this.truncateName(m.nombreDepartamento)),
@@ -269,7 +319,43 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
         }
       ]
     };
+
+    // Gráfico de Torta/Dona de distribución de trámites activos por departamento
+    const validMetrics = this.metrics.filter(m => m.cantidadTramites > 0);
+    const pieLabels = validMetrics.map(m => m.nombreDepartamento);
+    const pieValues = validMetrics.map(m => m.cantidadTramites);
+
+    const colors = [
+      'rgba(99, 102, 241, 0.75)',  // Indigo
+      'rgba(16, 185, 129, 0.75)',  // Emerald
+      'rgba(245, 158, 11, 0.75)',  // Amber
+      'rgba(239, 68, 68, 0.75)',   // Red
+      'rgba(139, 92, 246, 0.75)',  // Violet
+      'rgba(6, 182, 212, 0.75)',   // Cyan
+      'rgba(236, 72, 153, 0.75)',  // Pink
+      'rgba(20, 184, 166, 0.75)',  // Teal
+      'rgba(249, 115, 22, 0.75)'   // Orange
+    ];
+    const selectedColors = Array.from({ length: pieLabels.length }, (_, i) => colors[i % colors.length]);
+
+    this.pieChartData = {
+      labels: pieLabels,
+      datasets: [
+        {
+          data: pieValues,
+          backgroundColor: selectedColors,
+          borderColor: selectedColors.map(c => c.replace('0.75', '1.0')),
+          borderWidth: 1.5
+        }
+      ]
+    };
+
     this.refreshCharts();
+  }
+
+  togglePieChartType() {
+    this.pieChartType = this.pieChartType === 'pie' ? 'doughnut' : 'pie';
+    this.cdr.detectChanges();
   }
 
   private truncateName(name: string): string {
@@ -647,22 +733,9 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private _forceDownload(blob: Blob, filename: string, mimeType: string) {
     try {
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      saveAs(blob, filename);
     } catch (e) {
-      console.warn('Standard download failed, falling back to file-saver', e);
-      try {
-        const file = new File([blob], filename, { type: mimeType });
-        saveAs(file);
-      } catch (err) {
-        saveAs(blob, filename);
-      }
+      console.error('Error al descargar el archivo con file-saver:', e);
     }
   }
 
@@ -910,6 +983,9 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
     this.loadingNlpReport = true;
     this.nlpReportData = null;
     this.nlpChartData = null;
+    this.nlpConsultoriaData = null;
+    this.nlpConsultoriaFormatted = '';
+    if (this.isSpeakingConsultoria) this.detenerConsultoriaVoz();
     this.cdr.detectChanges();
 
     this.http.post<any>('/api/v1/optimization/nlp-report', { prompt: this.nlpPrompt }).subscribe({
@@ -918,6 +994,9 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
         this.buildNlpChart(res);
         this.loadingNlpReport = false;
         this.cdr.detectChanges();
+
+        // Llamar en cascada a la consultoría
+        this.generarConsultoriaBasadaEnDatos(res);
       },
       error: (err: any) => {
         console.error('Error generating NLP report:', err);
@@ -928,6 +1007,122 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
+  generarConsultoriaBasadaEnDatos(reporteRes: any) {
+    this.loadingNlpConsultoria = true;
+    this.cdr.detectChanges();
+
+    this.http.post<any>('/api/v1/optimization/consultoria-reporte', {
+        prompt: this.nlpPrompt,
+        dimension: reporteRes.params?.dimension || '',
+        metric: reporteRes.params?.metric || '',
+        data: reporteRes.result?.data || []
+    }).subscribe({
+      next: (res: any) => {
+        this.nlpConsultoriaData = res.consultoria;
+        this.nlpConsultoriaFormatted = this.formatReport(res.consultoria);
+        this.loadingNlpConsultoria = false;
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => {
+        console.error('Error generando consultoria:', err);
+        this.nlpConsultoriaData = "⚠️ Hubo un error generando la consultoría estratégica.";
+        this.nlpConsultoriaFormatted = this.sanitizer.bypassSecurityTrustHtml('<p style="color:#ef4444;">Hubo un error generando la consultoría estratégica.</p>');
+        this.loadingNlpConsultoria = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  reproducirConsultoriaVoz() {
+    if (this.isSpeakingConsultoria) {
+      this.detenerConsultoriaVoz();
+      return;
+    }
+
+    if (!this.nlpConsultoriaData || !('speechSynthesis' in window)) {
+      alert("El navegador no soporta Text-to-Speech o no hay datos para leer.");
+      return;
+    }
+
+    let plainText = typeof this.nlpConsultoriaData === 'string' ? this.nlpConsultoriaData : JSON.stringify(this.nlpConsultoriaData);
+    plainText = plainText.replace(/[*#_]/g, '');
+
+    this.speechSynthesis = new SpeechSynthesisUtterance(plainText);
+    this.speechSynthesis.lang = 'es-ES';
+    this.speechSynthesis.rate = 1.0;
+    
+    this.speechSynthesis.onend = () => {
+      this.isSpeakingConsultoria = false;
+      this.cdr.detectChanges();
+    };
+
+    this.speechSynthesis.onerror = () => {
+      this.isSpeakingConsultoria = false;
+      this.cdr.detectChanges();
+    };
+
+    this.isSpeakingConsultoria = true;
+    window.speechSynthesis.speak(this.speechSynthesis);
+    this.cdr.detectChanges();
+  }
+
+  detenerConsultoriaVoz() {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+    this.isSpeakingConsultoria = false;
+    this.cdr.detectChanges();
+  }
+
+  public setNlpChartType(type: ChartType) {
+    this.nlpChartType = type;
+    
+    // Configurar las opciones del gráfico dinámicamente para ocultar/mostrar ejes
+    const isPieOrDoughnut = type === 'pie' || type === 'doughnut';
+    this.nlpChartOptions = {
+      ...this.nlpChartOptions,
+      scales: isPieOrDoughnut ? {
+        x: { display: false },
+        y: { display: false }
+      } : {
+        y: {
+          beginAtZero: true,
+          ticks: { color: '#94a3b8', font: { size: 11 } },
+          grid: { color: 'rgba(0,0,0,0.04)' }
+        },
+        x: {
+          ticks: { color: '#64748b', font: { size: 11 } },
+          grid: { display: false }
+        }
+      }
+    };
+
+    // Para gráficos de torta/dona, asignamos colores variados
+    if (isPieOrDoughnut && this.nlpChartData?.datasets?.[0]) {
+      const length = this.nlpChartData.labels?.length || 1;
+      const colors = [
+        'rgba(99, 102, 241, 0.75)',  // Indigo
+        'rgba(16, 185, 129, 0.75)',  // Emerald
+        'rgba(245, 158, 11, 0.75)',  // Amber
+        'rgba(239, 68, 68, 0.75)',   // Red
+        'rgba(139, 92, 246, 0.75)',  // Violet
+        'rgba(6, 182, 212, 0.75)',   // Cyan
+        'rgba(236, 72, 153, 0.75)'   // Pink
+      ];
+      const selectedColors = Array.from({ length }, (_, i) => colors[i % colors.length]);
+      this.nlpChartData.datasets[0].backgroundColor = selectedColors;
+      this.nlpChartData.datasets[0].borderColor = selectedColors.map(c => c.replace('0.75', '1.0'));
+    } else if (this.nlpChartData?.datasets?.[0]) {
+      // Restaurar el color plano morado original para barras/líneas
+      this.nlpChartData.datasets[0].backgroundColor = 'rgba(99, 102, 241, 0.75)';
+      this.nlpChartData.datasets[0].borderColor = '#6366f1';
+    }
+
+    setTimeout(() => {
+      this.cdr.detectChanges();
+    }, 50);
+  }
+
   private buildNlpChart(res: any) {
     if (!res || !res.result || !res.result.data || res.result.data.length === 0) return;
 
@@ -936,7 +1131,20 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const metricLabel = res.params.metric === 'average_duration' ? 'Duración Promedio (Horas)' : 'Cantidad de Trámites';
 
-    this.nlpChartType = res.params.dimension === 'month' ? 'line' : 'bar';
+    // Selección inteligente del gráfico inicial
+    let initialType: ChartType = 'bar';
+    if (res.params && res.params.chartType) {
+      initialType = res.params.chartType as ChartType;
+    } else {
+      const dimension = res.params?.dimension;
+      if (dimension === 'month') {
+        initialType = 'line'; // Las tendencias en el tiempo se ven mejor en líneas
+      } else if ((dimension === 'status' || dimension === 'priority') && labels.length <= 5) {
+        initialType = 'doughnut'; // Distribuciones con pocas categorías se entienden mejor en torta/dona
+      } else {
+        initialType = 'bar'; // Por defecto barras para comparativas amplias (ej. departamentos)
+      }
+    }
 
     this.nlpChartData = {
       labels: labels,
@@ -952,6 +1160,79 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
         }
       ]
     };
+
+    this.setNlpChartType(initialType);
+  }
+
+  exportarNlpExcel() {
+    if (!this.nlpReportData || !this.nlpReportData.result || !this.nlpReportData.result.data) {
+      alert('Primero genere un reporte de IA para poder exportar los datos.');
+      return;
+    }
+    const data = this.nlpReportData.result.data;
+    const dimension = this.nlpReportData.params.dimension || 'Dimensión';
+    const metric = this.nlpReportData.params.metric || 'Métrica';
+
+    // Generar contenido CSV
+    let csvContent = '\uFEFF'; // UTF-8 BOM
+    csvContent += `Reporte Inteligente IA: ${this.nlpPrompt}\n`;
+    csvContent += `Fecha: ${new Date().toLocaleDateString()}\n`;
+    csvContent += `Resumen IA: "${this.nlpReportData.summary || ''}"\n\n`;
+    csvContent += `${dimension};${metric}\n`;
+
+    data.forEach((row: any) => {
+      csvContent += `"${row.label}";${row.value}\n`;
+    });
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const filename = `Reporte_IA_NLP_${new Date().getTime()}.csv`;
+    this._forceDownload(blob, filename, 'text/csv');
+  }
+
+  exportarNlpPDF() {
+    if (!this.nlpReportData) {
+      alert('Primero genere un reporte de IA para poder exportar el PDF.');
+      return;
+    }
+
+    // Preparar el texto del reporte (el análisis de la IA)
+    const contentToExport = `Reporte Inteligente de Trámites\n` +
+      `Consulta: ${this.nlpPrompt}\n\n` +
+      `Resumen de Análisis IA:\n` +
+      `"${this.nlpReportData.summary || 'Sin análisis disponible.'}"`;
+
+    // Obtener la imagen base64 del gráfico de NLP si está disponible
+    let chartImageBase64 = '';
+    try {
+      const canvasEl = document.querySelector('canvas') as HTMLCanvasElement;
+      if (canvasEl) {
+        chartImageBase64 = canvasEl.toDataURL('image/png');
+      }
+    } catch (e) {
+      console.warn('No se pudo extraer la imagen del gráfico de NLP', e);
+    }
+
+    // Convertir los datos a la estructura esperada por el backend
+    const mappedMetrics = (this.nlpReportData.result.data || []).map((pt: any) => ({
+      nombreDepartamento: pt.label,
+      cantidadTramites: pt.value,
+      tiempoPromedioHoras: 0.0,
+      capacidadPersonal: 0
+    }));
+
+    this.http.post('/api/v1/optimization/report/pdf',
+      { text: contentToExport, chartImage: chartImageBase64, metrics: mappedMetrics },
+      { responseType: 'blob', observe: 'response' }
+    ).subscribe({
+      next: (resp) => {
+        const blob = resp.body!;
+        const filename = `Reporte_IA_NLP_${new Date().getTime()}.pdf`;
+        this._forceDownload(blob, filename, 'application/pdf');
+      },
+      error: () => {
+        alert('Error al descargar el informe PDF de NLP. Verifique el backend.');
+      }
+    });
   }
 
   initVoiceRecognitionNlp() {
@@ -981,7 +1262,16 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
       this.isListeningNlp = false;
       this.cdr.detectChanges();
       if (this.nlpPrompt && this.nlpPrompt.trim().length > 0) {
-        this.generarReporteNLP();
+        const cmd = this.nlpPrompt.toLowerCase().trim();
+        if (cmd.includes('exportar pdf') || cmd.includes('descargar pdf') || cmd.includes('guardar pdf')) {
+          this.nlpPrompt = '';
+          this.exportarNlpPDF();
+        } else if (cmd.includes('exportar excel') || cmd.includes('descargar excel') || cmd.includes('guardar excel') || cmd.includes('exportar csv')) {
+          this.nlpPrompt = '';
+          this.exportarNlpExcel();
+        } else {
+          this.generarReporteNLP();
+        }
       }
     };
   }

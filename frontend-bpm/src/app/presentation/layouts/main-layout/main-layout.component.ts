@@ -137,9 +137,9 @@ import { OfflineService } from '../../../data/services/offline.service';
               <span class="material-symbols-outlined icon">monitoring</span>
               <span class="label" *ngIf="!isCollapsed()">Supervisión</span>
             </a>
-            <a routerLink="/app/insights" routerLinkActive="active" class="nav-item" *ngIf="isAdmin()" [title]="isCollapsed() ? 'IA Insights' : ''">
+            <a routerLink="/app/insights" routerLinkActive="active" class="nav-item" *ngIf="isAdmin()" [title]="isCollapsed() ? 'Reportes y Analíticas' : ''">
               <span class="material-symbols-outlined icon">smart_toy</span>
-              <span class="label" *ngIf="!isCollapsed()">Reportes Dinamicos</span>
+              <span class="label" *ngIf="!isCollapsed()">Reportes y Analíticas</span>
             </a>
           </nav>
 

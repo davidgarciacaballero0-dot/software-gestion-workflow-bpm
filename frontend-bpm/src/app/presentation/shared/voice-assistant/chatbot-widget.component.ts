@@ -303,6 +303,20 @@ export class ChatbotWidgetComponent implements AfterViewChecked {
     private politicaService: PoliticaWorkflowService
   ) {
     this.initSpeechRecognition();
+    this.initVoices();
+  }
+
+  private initVoices() {
+    if ('speechSynthesis' in window) {
+      // Cargar voces inmediatamente
+      window.speechSynthesis.getVoices();
+      
+      // Escuchar cuando se carguen asíncronamente
+      window.speechSynthesis.onvoiceschanged = () => {
+        const voices = window.speechSynthesis.getVoices();
+        console.log('--- VOCES CARGADAS ASÍNCRONAMENTE ---', voices.map(v => `${v.name} (${v.lang})`));
+      };
+    }
   }
 
   private initSpeechRecognition() {
@@ -311,14 +325,38 @@ export class ChatbotWidgetComponent implements AfterViewChecked {
       this.recognition = new webkitSpeechRecognition();
       this.recognition.lang = 'es-ES';
       this.recognition.continuous = false;
+      this.recognition.interimResults = false;
+
+      this.recognition.onstart = () => {
+        this.zone.run(() => {
+          this.isListening = true;
+        });
+      };
+
       this.recognition.onresult = (event: any) => {
         const text = event.results[0][0].transcript;
         this.zone.run(() => {
           this.userInput = text;
+          this.isListening = false;
+          try {
+            this.recognition.stop();
+          } catch (e) {}
           this.sendMessage();
         });
       };
-      this.recognition.onend = () => this.zone.run(() => this.isListening = false);
+
+      this.recognition.onerror = (event: any) => {
+        console.error('Error de reconocimiento de voz:', event.error);
+        this.zone.run(() => {
+          this.isListening = false;
+        });
+      };
+
+      this.recognition.onend = () => {
+        this.zone.run(() => {
+          this.isListening = false;
+        });
+      };
     }
   }
 
@@ -338,11 +376,23 @@ export class ChatbotWidgetComponent implements AfterViewChecked {
   }
 
   toggleListening() {
+    if (!this.recognition) {
+      alert('Tu navegador no soporta reconocimiento de voz.');
+      return;
+    }
+
     if (this.isListening) {
-      this.recognition.stop();
+      try {
+        this.recognition.stop();
+      } catch (e) {}
+      this.isListening = false;
     } else {
-      this.isListening = true;
-      this.recognition.start();
+      try {
+        this.recognition.start();
+      } catch (e) {
+        console.error('Error al iniciar reconocimiento de voz:', e);
+        this.isListening = false;
+      }
     }
   }
 
@@ -589,6 +639,35 @@ export class ChatbotWidgetComponent implements AfterViewChecked {
     utterance.lang = 'es-ES';
     utterance.rate = 1.0;
     utterance.pitch = 1.0;
+    
+    // Obtener las voces disponibles en el navegador
+    const voices = window.speechSynthesis.getVoices();
+    console.log('--- VOCES DISPONIBLES ---', voices.map(v => `${v.name} (${v.lang})`));
+    if (voices && voices.length > 0) {
+      // Filtrar voces que hablen español
+      const spanishVoices = voices.filter(v => v.lang.toLowerCase().startsWith('es'));
+      
+      if (spanishVoices.length > 0) {
+        // Priorizar en orden de preferencia: voces naturales de Edge/Google, Sabina, Helena, y evitar a Raul si es posible
+        const preferredKeywords = ['natural', 'google', 'sabina', 'helena'];
+        let selectedVoice = null;
+        
+        for (const keyword of preferredKeywords) {
+          selectedVoice = spanishVoices.find(v => v.name.toLowerCase().includes(keyword));
+          if (selectedVoice) break;
+        }
+        
+        // Si no se encontró ninguna de las preferidas, usar cualquiera que no sea Raúl
+        if (!selectedVoice) {
+          selectedVoice = spanishVoices.find(v => !v.name.toLowerCase().includes('raul'));
+        }
+        
+        // Si al final encontramos una voz mejor, la asignamos
+        if (selectedVoice) {
+          utterance.voice = selectedVoice;
+        }
+      }
+    }
     
     window.speechSynthesis.speak(utterance);
   }

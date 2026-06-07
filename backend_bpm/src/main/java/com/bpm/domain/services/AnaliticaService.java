@@ -386,6 +386,8 @@ public class AnaliticaService {
     public static class NlpReportParams {
         private String dimension;
         private String metric;
+        @com.fasterxml.jackson.annotation.JsonProperty("chart_type")
+        private String chartType;
         private Map<String, Object> filters;
     }
 

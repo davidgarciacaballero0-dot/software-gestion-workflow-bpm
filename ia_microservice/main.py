@@ -406,10 +406,11 @@ async def parsear_reporte_nlp(request: Request):
             "{\n"
             '  "dimension": "department" | "status" | "priority" | "month",\n'
             '  "metric": "count" | "average_duration",\n'
+            '  "chart_type": "bar" | "line" | "pie" | "doughnut" | null, // Si el usuario solicita un tipo de gráfico explícito (ej. "torta", "dona", "circular", "barras", "líneas")\n'
             '  "filters": {\n'
             '    "department": string | null, // Nombre o ID del departamento si se menciona en el prompt\n'
             '    "status": "EN_PROGRESO" | "FINALIZADO" | "RECHAZADO" | null, // Estado mencionado\n'
-            '    "priority": "HIGH" | "MEDIUM" | "LOW" | null, // Prioridad mencionada\n'
+            '    "priority": "HIGH" | "MEDIUM" | "LOW" | null, // Prioridad mencionado\n'
             '    "days": int | null // Rango de días mencionado (ej. 30 días, 90 días, último mes -> 30)\n'
             '  }\n'
             "}\n\n"
@@ -422,6 +423,7 @@ async def parsear_reporte_nlp(request: Request):
             "- 'metric' debe ser:\n"
             "  * 'count' para contar cantidad o volumen de trámites.\n"
             "  * 'average_duration' para promedios de tiempo, duración, demora o velocidad de atención.\n"
+            "- 'chart_type' debe extraerse si el usuario explícitamente pide un formato visual (ej. 'torta' -> 'pie', 'dona' -> 'doughnut', 'circular' -> 'pie', 'barras' -> 'bar', 'líneas' -> 'line'). Si no lo pide explícitamente, retorna null.\n"
             "- Extrae filtros si se especifica un departamento, estado o periodo concreto.\n"
             "- Si el prompt no especifica una dimensión de manera clara, usa 'status' por defecto.\n"
             "- Si el prompt no especifica una métrica clara, usa 'count' por defecto.\n"
@@ -1028,10 +1030,13 @@ class ResumirReporteRequest(BaseModel):
 async def resumir_reporte_nlp(request: ResumirReporteRequest):
     try:
         system_prompt = (
-            "Eres un analista de negocios y consultor de procesos BPM experto.\n"
-            "Tu tarea es analizar el resultado de una consulta de datos del sistema BPM y redactar un informe o resumen muy breve, conciso y profesional para el administrador (máximo 3 frases).\n"
-            "El resumen debe explicar qué significan los números de forma amigable y analítica, destacando si hay algún valor inusualmente alto o algún detalle relevante.\n"
-            "Habla en español. No uses tecnicismos de programación ni menciones bases de datos, colecciones de MongoDB o sentencias de código. Dirígete al administrador."
+            "Eres un analista de datos y procesos (BPM) altamente preciso y objetivo.\n"
+            "Tu única tarea es analizar los datos estructurados en formato JSON y redactar una conclusión breve (máximo 2 líneas) en español que responda directamente a la consulta del usuario.\n"
+            "REGLAS ESTRICTAS:\n"
+            "1. NO inventes información, no asumas contexto externo (ej. no menciones 'PDFs' o 'documentos' si los datos no lo dicen explícitamente).\n"
+            "2. Basa tu respuesta ÚNICAMENTE en las cifras y categorías proporcionadas en los 'Datos obtenidos'.\n"
+            "3. La respuesta debe ser una oración completa y coherente, nunca la dejes a medias.\n"
+            "4. Sé profesional, directo y conciso."
         )
 
         user_content = (
@@ -1046,13 +1051,48 @@ async def resumir_reporte_nlp(request: ResumirReporteRequest):
             contents=user_content,
             config=types.GenerateContentConfig(
                 system_instruction=system_prompt,
-                temperature=0.7,
+                temperature=0.1,  # Temperatura baja para mayor determinismo y menor alucinación
                 max_output_tokens=300
             )
         )
         return {"resumen": (response.text or "").strip()}
     except Exception as e:
         return {"resumen": "No se pudo generar el análisis automático debido a un error temporal."}
+
+@app.post("/ia/consultoria-reporte")
+async def consultoria_reporte(request: ResumirReporteRequest):
+    try:
+        system_prompt = (
+            "Eres un consultor experto en optimización de procesos (BPM).\n"
+            "Tu tarea es analizar los datos estructurados adjuntos (que provienen de un reporte interactivo) "
+            "y proveer un análisis cualitativo junto con recomendaciones estratégicas.\n"
+            "ESTRUCTURA DE TU RESPUESTA (Formato Markdown):\n"
+            "### Diagnóstico\n¿Qué indican estos números?\n"
+            "### Puntos Críticos\n¿Hay cuellos de botella o ineficiencias visibles en los datos?\n"
+            "### Recomendaciones de Optimización\nPasos accionables (ej. reasignar personal, modificar prioridades, automatizar pasos) respaldados por los datos.\n"
+            "Sé analítico, prescriptivo, directo y profesional."
+        )
+
+        user_content = (
+            f"Consulta original: '{request.prompt}'\n"
+            f"Dimensión analizada: {request.dimension}\n"
+            f"Métrica: {request.metric}\n"
+            f"Datos numéricos del reporte:\n{json.dumps(request.data, ensure_ascii=False)}"
+        )
+
+        response = generate_with_fallback(
+            MODEL_FLASH,
+            contents=user_content,
+            config=types.GenerateContentConfig(
+                system_instruction=system_prompt,
+                temperature=0.6,
+                max_output_tokens=800
+            )
+        )
+        return {"consultoria": (response.text or "").strip()}
+    except Exception as e:
+        print(f"Error en consultoria-reporte: {e}")
+        return {"consultoria": "No se pudo generar la consultoría en este momento debido a un error temporal con la IA."}
 
 if __name__ == "__main__":
     import uvicorn

@@ -475,6 +475,30 @@ public class OptimizacionController {
         }
     }
 
+    @PostMapping("/consultoria-reporte")
+    public ResponseEntity<Map<String, Object>> getConsultoriaReporte(@RequestBody Map<String, Object> requestPayload) {
+        try {
+            @SuppressWarnings("unchecked")
+            Class<Map<String, Object>> responseType = (Class<Map<String, Object>>) (Class<?>) Map.class;
+            ResponseEntity<Map<String, Object>> response = restTemplate.postForEntity(
+                IA_URL + "/consultoria-reporte",
+                requestPayload,
+                responseType
+            );
+            return ResponseEntity.ok(response.getBody());
+        } catch (HttpStatusCodeException e) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", "Error en la IA al generar la consultoría.");
+            error.put("details", e.getResponseBodyAsString());
+            return ResponseEntity.status(e.getStatusCode()).body(error);
+        } catch (Exception e) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", "Error al ejecutar consultoría de reporte.");
+            error.put("details", e.getMessage());
+            return ResponseEntity.status(500).body(error);
+        }
+    }
+
     @PostMapping("/nlp-policy-assignment")
     public ResponseEntity<Map<String, Object>> assignPolicyByIntent(@RequestBody Map<String, String> requestPayload) {
         String requerimiento = requestPayload.get("requerimiento");

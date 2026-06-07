@@ -34,7 +34,8 @@ public class IntentService {
     }
 
     /**
-     * CU-26: Asignar Política de Negocio mediante Análisis de Intención (Embeddings)
+     * CU-26: Asignar Política de Negocio mediante Análisis de Intención
+     * (Embeddings)
      */
     public Map<String, Object> asignarPoliticaPorIntencion(String requerimiento) {
         log.info("🔍 Analizando intención de política para: {}", requerimiento);
@@ -68,6 +69,7 @@ public class IntentService {
             throw new RuntimeException("Respuesta vacía del motor de IA (embeddings).");
         }
 
-        return iaResponse; // Retorna { "politica_asignada": {...}, "score": 0.85, "metodo": "embeddings..." }
+        return iaResponse; // Retorna { "politica_asignada": {...}, "score": 0.85, "metodo":
+                           // "embeddings..." }
     }
 }
