@@ -13,7 +13,7 @@ class DelayPredictor:
     def _load_or_build(self):
         if os.path.exists(self.model_path):
             print(f"Loading DelayPredictor from {self.model_path}")
-            self.model = load_model(self.model_path)
+            self.model = load_model(self.model_path, compile=False)
         else:
             print("Building new DelayPredictor model")
             self._build_model()
@@ -32,6 +32,7 @@ class DelayPredictor:
         
     def train(self, X_train, y_train, epochs=50, batch_size=32):
         print("Training DelayPredictor...")
+        self.model.compile(optimizer='adam', loss='mse', metrics=['mae'])
         history = self.model.fit(X_train, y_train, epochs=epochs, batch_size=batch_size, validation_split=0.2)
         # Ensure dir exists
         os.makedirs(os.path.dirname(self.model_path), exist_ok=True)

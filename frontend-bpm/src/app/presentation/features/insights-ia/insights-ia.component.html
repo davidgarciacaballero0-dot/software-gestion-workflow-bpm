@@ -301,12 +301,27 @@
           </div>
           
           <div class="report-result" style="padding:1rem;">
-            <div style="background:rgba(99, 102, 241, 0.05); padding:1rem; border-radius:10px; border-left:4px solid #6366f1; margin-bottom:1rem;">
-              <h4 style="color:#6366f1; margin:0 0 0.5rem 0; font-size:0.9rem; font-weight:600;">Traducción de Intención IA:</h4>
-              <p style="margin:0.2rem 0; font-size:0.85rem;"><strong style="color:#475569;">Dimensión:</strong> {{ nlpReportData.params.dimension | uppercase }}</p>
-              <p style="margin:0.2rem 0; font-size:0.85rem;"><strong style="color:#475569;">Métrica:</strong> {{ nlpReportData.params.metric | uppercase }}</p>
-              <p style="margin:0.2rem 0; font-size:0.85rem;"><strong style="color:#475569;">Filtros Aplicados:</strong> {{ nlpReportData.params.filters | json }}</p>
+            <!-- Informe de Análisis IA -->
+            <div style="background:rgba(16, 185, 129, 0.06); padding:1rem; border-radius:12px; border-left:4px solid #10b981; margin-bottom:1rem; border-top:1px solid rgba(16, 185, 129, 0.1); border-right:1px solid rgba(16, 185, 129, 0.1); border-bottom:1px solid rgba(16, 185, 129, 0.1);">
+              <h4 style="color:#10b981; margin:0 0 0.5rem 0; font-size:0.9rem; font-weight:600; display:flex; align-items:center; gap:0.4rem;">
+                <span class="material-symbols-outlined" style="font-size:18px;">analytics</span> Informe de Análisis IA
+              </h4>
+              <p style="margin:0; font-size:0.85rem; line-height:1.5; color:#f1f5f9; font-style:italic;">
+                "{{ nlpReportData.summary }}"
+              </p>
             </div>
+
+            <!-- Detalles Técnicos -->
+            <details style="margin-bottom: 1rem; cursor: pointer;">
+              <summary style="font-size:0.8rem; color:#64748b; font-weight:600; outline:none; user-select:none; display:flex; align-items:center; gap:0.2rem;">
+                <span class="material-symbols-outlined" style="font-size:14px;">settings</span> Mostrar Detalles de Traducción Técnica
+              </summary>
+              <div style="background:rgba(99, 102, 241, 0.03); padding:0.8rem; border-radius:8px; border:1px solid rgba(99, 102, 241, 0.1); margin-top:0.4rem;">
+                <p style="margin:0.2rem 0; font-size:0.8rem; color:#94a3b8;"><strong style="color:#64748b;">Dimensión:</strong> {{ nlpReportData.params.dimension | uppercase }}</p>
+                <p style="margin:0.2rem 0; font-size:0.8rem; color:#94a3b8;"><strong style="color:#64748b;">Métrica:</strong> {{ nlpReportData.params.metric | uppercase }}</p>
+                <p style="margin:0.2rem 0; font-size:0.8rem; color:#94a3b8;"><strong style="color:#64748b;">Filtros Aplicados:</strong> {{ nlpReportData.params.filters | json }}</p>
+              </div>
+            </details>
             
             <h4 style="margin:0 0 0.5rem 0; font-size:0.9rem; font-weight:600; color:var(--text-primary);">Datos Obtenidos:</h4>
             <div style="max-height:160px; overflow-y:auto; border:1px solid rgba(0,0,0,0.05); border-radius:8px; padding:0.5rem;">

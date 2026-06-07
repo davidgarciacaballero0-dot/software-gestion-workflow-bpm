@@ -1,1 +1,64 @@
-<p>documento-preview works!</p>
+<div class="preview-modal-overlay" (click)="onClose()">
+  <div class="preview-modal-container" (click)="$event.stopPropagation()">
+    <div class="preview-modal-header">
+      <div class="file-info">
+        <span class="material-symbols-outlined file-icon">
+          {{ isPdf() ? 'picture_as_pdf' : isImage() ? 'image' : isVideo() ? 'movie' : 'draft' }}
+        </span>
+        <span class="file-name" [title]="nombreOriginal">{{ nombreOriginal }}</span>
+      </div>
+      <button class="close-btn" (click)="onClose()" title="Cerrar vista previa">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <div class="preview-modal-body">
+      <!-- VISOR PDF -->
+      <ng-container *ngIf="isPdf() && safeUrl">
+        <iframe [src]="safeUrl" class="pdf-viewer-frame"></iframe>
+      </ng-container>
+
+      <!-- VISOR IMAGEN -->
+      <ng-container *ngIf="isImage() && safeUrl">
+        <div class="image-viewer-wrapper">
+          <div class="image-controls">
+            <button class="control-btn" (click)="zoomIn()" title="Acercar">
+              <span class="material-symbols-outlined">zoom_in</span>
+            </button>
+            <button class="control-btn" (click)="zoomOut()" title="Alejar">
+              <span class="material-symbols-outlined">zoom_out</span>
+            </button>
+            <button class="control-btn" (click)="rotateRight()" title="Rotar 90°">
+              <span class="material-symbols-outlined">rotate_right</span>
+            </button>
+            <button class="control-btn" (click)="resetControls()" title="Restablecer">
+              <span class="material-symbols-outlined">restart_alt</span>
+            </button>
+          </div>
+          <div class="img-viewport">
+            <img [src]="safeUrl" [style.transform]="'scale(' + zoomLevel + ') rotate(' + rotationAngle + 'deg)'" class="preview-img" alt="Vista previa" />
+          </div>
+        </div>
+      </ng-container>
+
+      <!-- VISOR VIDEO -->
+      <ng-container *ngIf="isVideo() && safeUrl">
+        <div class="video-viewer-wrapper">
+          <video [src]="safeUrl" controls autoplay class="video-viewer-player"></video>
+        </div>
+      </ng-container>
+
+      <!-- FALLBACK FORMATO NO SOPORTADO -->
+      <ng-container *ngIf="!isPdf() && !isImage() && !isVideo()">
+        <div class="fallback-preview">
+          <span class="material-symbols-outlined fallback-icon">warning</span>
+          <h3>La previsualización no está disponible</h3>
+          <p>Este tipo de formato no admite visualización interactiva inline.</p>
+          <a [href]="'/api/v1/archivos/download/' + archivoId + '?idUsuario=' + userId" class="download-fallback-btn">
+            <span class="material-symbols-outlined">download</span> Descargar para ver
+          </a>
+        </div>
+      </ng-container>
+    </div>
+  </div>
+</div>

@@ -47,4 +47,12 @@
   <div *ngIf="!loading && documentos.length === 0" class="empty-state">
     <p>No se encontraron documentos.</p>
   </div>
+
+  <app-documento-preview 
+    *ngIf="previewDoc" 
+    [archivoId]="previewDoc.id" 
+    [nombreOriginal]="previewDoc.nombreOriginal" 
+    [contentType]="previewDoc.contentType" 
+    (close)="previewDoc = null">
+  </app-documento-preview>
 </div>

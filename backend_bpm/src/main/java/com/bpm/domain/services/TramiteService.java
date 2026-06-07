@@ -57,7 +57,7 @@ public class TramiteService {
     private static RestTemplate createRestTemplate() {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(3000);
-        factory.setReadTimeout(5000);
+        factory.setReadTimeout(60000);
         return new RestTemplate(factory);
     }
 

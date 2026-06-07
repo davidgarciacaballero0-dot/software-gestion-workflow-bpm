@@ -4,6 +4,11 @@ import com.bpm.data.entities.BitacoraAcceso;
 import com.bpm.data.entities.ArchivoAdjunto;
 import com.bpm.app.dto.TramiteResponseDTO;
 import com.bpm.data.repositories.BitacoraAccesoRepository;
+import com.bpm.domain.services.OnlyOfficeService;
+import com.bpm.data.repositories.UsuarioRepository;
+import com.bpm.data.repositories.RolRepository;
+import com.bpm.data.entities.Usuario;
+import com.bpm.data.entities.Rol;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +34,9 @@ import java.util.stream.Collectors;
 public class BitacoraAccesoAspect {
 
     private final BitacoraAccesoRepository bitacoraRepository;
+    private final OnlyOfficeService onlyOfficeService;
+    private final UsuarioRepository usuarioRepository;
+    private final RolRepository rolRepository;
 
     @AfterReturning(pointcut = "execution(* com.bpm.app.controllers.ArchivoController.*(..))", returning = "result")
     public void auditarArchivo(JoinPoint joinPoint, Object result) {
@@ -130,6 +138,14 @@ public class BitacoraAccesoAspect {
                 action = "LECTURA";
                 details = "Descarga de archivo por OnlyOffice Document Server";
                 resourceId = getArgValue(joinPoint, 0); // archivoId
+                String authHeader = getArgValue(joinPoint, 1); // authHeader
+                if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                    String token = authHeader.substring(7);
+                    String userId = onlyOfficeService.getUserIdFromToken(token);
+                    if (userId != null) {
+                        explicitUsername = userId;
+                    }
+                }
             } else if (methodName.equals("callback")) {
                 action = "MODIFICACION";
                 details = "Edición y guardado colaborativo en OnlyOffice";
@@ -205,6 +221,21 @@ public class BitacoraAccesoAspect {
             }
         } else {
             role = "USUARIO/COLABORADOR";
+            try {
+                if (usuarioRepository != null) {
+                    Usuario usr = usuarioRepository.findById(username).orElse(null);
+                    if (usr != null) {
+                        if (rolRepository != null && usr.getIdRol() != null) {
+                            Rol r = rolRepository.findById(usr.getIdRol()).orElse(null);
+                            if (r != null) {
+                                role = r.getNombre();
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                // Ignore
+            }
         }
 
         String ipAddress = "N/A";

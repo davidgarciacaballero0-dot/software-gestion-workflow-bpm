@@ -431,10 +431,34 @@ public class OptimizacionController {
             // 2. Ejecutar la agregación parametrizada y segura en Spring Boot / MongoDB
             AnaliticaService.NlpReportResult result = analiticaService.ejecutarReporteDinamicoNLP(params);
 
-            // 3. Empaquetar y devolver respuesta con metadatos para renderizado premium
+            // 3. Generar el resumen narrativo del reporte usando Gemini
+            String resumenNarrativo = "No se pudo generar el análisis automático de los datos.";
+            try {
+                Map<String, Object> summarizeRequest = new HashMap<>();
+                summarizeRequest.put("prompt", prompt);
+                summarizeRequest.put("dimension", params.getDimension());
+                summarizeRequest.put("metric", params.getMetric());
+                summarizeRequest.put("data", result.getData());
+
+                @SuppressWarnings("unchecked")
+                Class<Map<String, Object>> responseType = (Class<Map<String, Object>>) (Class<?>) Map.class;
+                ResponseEntity<Map<String, Object>> summarizeResponse = restTemplate.postForEntity(
+                    IA_URL + "/resumir-reporte-nlp",
+                    summarizeRequest,
+                    responseType
+                );
+                if (summarizeResponse.getBody() != null && summarizeResponse.getBody().containsKey("resumen")) {
+                    resumenNarrativo = (String) summarizeResponse.getBody().get("resumen");
+                }
+            } catch (Exception sumErr) {
+                System.err.println("Error generating NLP report summary: " + sumErr.getMessage());
+            }
+
+            // 4. Empaquetar y devolver respuesta con metadatos para renderizado premium
             Map<String, Object> response = new HashMap<>();
             response.put("params", params);
             response.put("result", result);
+            response.put("summary", resumenNarrativo);
             response.put("status", "success");
             return ResponseEntity.ok(response);
 

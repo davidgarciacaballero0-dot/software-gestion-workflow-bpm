@@ -28,7 +28,8 @@ public class DocumentPermissionService {
             Rol rol = rolRepository.findById(usuario.getIdRol()).orElse(null);
             if (rol != null) {
                 String roleName = rol.getNombre();
-                if ("ADMINISTRADOR".equals(roleName) || "GERENTE_GENERAL".equals(roleName) || "ADMIN".equals(roleName)) {
+                if ("ADMINISTRADOR".equals(roleName) || "GERENTE_GENERAL".equals(roleName)
+                        || "ADMIN".equals(roleName)) {
                     return true;
                 }
             }
@@ -93,7 +94,8 @@ public class DocumentPermissionService {
             case "USER":
                 return usuario.getId().equals(perm.getSujetoId());
             case "ROLE":
-                if (usuario.getIdRol() == null) return false;
+                if (usuario.getIdRol() == null)
+                    return false;
                 Rol rol = rolRepository.findById(usuario.getIdRol()).orElse(null);
                 return rol != null && rol.getNombre().equals(perm.getSujetoId());
             case "DEPARTMENT":
@@ -154,7 +156,7 @@ public class DocumentPermissionService {
                         .nivel("WRITE")
                         .build());
             }
-            
+
             // Permisos globales a funcionarios y jefes
             permisos.add(ArchivoAdjunto.DocumentPermission.builder()
                     .sujetoId("FUNCIONARIO")

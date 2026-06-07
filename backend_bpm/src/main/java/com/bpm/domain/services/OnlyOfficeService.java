@@ -85,6 +85,35 @@ public class OnlyOfficeService {
         }
     }
 
+    public String getUserIdFromToken(String token) {
+        try {
+            io.jsonwebtoken.Claims claims = Jwts.parser()
+                    .verifyWith(key)
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+            
+            java.util.Map<?, ?> payloadMap = claims;
+            if (claims.containsKey("payload")) {
+                Object p = claims.get("payload");
+                if (p instanceof java.util.Map) {
+                    payloadMap = (java.util.Map<?, ?>) p;
+                }
+            }
+
+            java.util.Map<?, ?> editorConfig = (java.util.Map<?, ?>) payloadMap.get("editorConfig");
+            if (editorConfig != null) {
+                java.util.Map<?, ?> user = (java.util.Map<?, ?>) editorConfig.get("user");
+                if (user != null) {
+                    return (String) user.get("id");
+                }
+            }
+        } catch (Exception e) {
+            // Ignore
+        }
+        return null;
+    }
+
     public byte[] createBlankWord() {
         try (XWPFDocument doc = new XWPFDocument();
              ByteArrayOutputStream out = new ByteArrayOutputStream()) {

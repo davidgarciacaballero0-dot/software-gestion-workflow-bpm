@@ -16,7 +16,7 @@ class IntentClassifier:
     def _load_or_build(self):
         if os.path.exists(self.model_path):
             print(f"Loading IntentClassifier from {self.model_path}")
-            self.model = load_model(self.model_path)
+            self.model = load_model(self.model_path, compile=False)
         else:
             print("Building new IntentClassifier model")
             self._build_model()
@@ -33,6 +33,7 @@ class IntentClassifier:
         
     def train(self, X_train, y_train, epochs=20, batch_size=32):
         print("Training IntentClassifier...")
+        self.model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
         history = self.model.fit(X_train, y_train, epochs=epochs, batch_size=batch_size, validation_split=0.2)
         os.makedirs(os.path.dirname(self.model_path), exist_ok=True)
         self.model.save(self.model_path)

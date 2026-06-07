@@ -9,11 +9,12 @@ import { PoliticaWorkflowService } from '../../../data/services/politica-workflo
 import { AuthService } from '../../../data/services/auth.service';
 import { FileUploaderComponent } from '../../shared/file-uploader/file-uploader.component';
 import { switchMap, finalize } from 'rxjs';
+import { DocumentoPreviewComponent } from '../documentos/documento-preview/documento-preview';
 
 @Component({
   selector: 'app-tramite-atencion',
   standalone: true,
-  imports: [CommonModule, FormsModule, FileUploaderComponent],
+  imports: [CommonModule, FormsModule, FileUploaderComponent, DocumentoPreviewComponent],
   templateUrl: './tramite-atencion.component.html',
   styleUrls: ['./tramite-atencion.component.css']
 })
@@ -33,6 +34,8 @@ export class TramiteAtencionComponent implements OnInit {
   showSuccessModal = false;
   targetNodeName = '';
   targetDeptName = '';
+  
+  previewDoc: any = null;
 
   private userId = '';
 
@@ -289,5 +292,9 @@ export class TramiteAtencionComponent implements OnInit {
         this.errorMessage = 'No se pudo crear el documento en blanco.';
       }
     });
+  }
+
+  verPreview(doc: any): void {
+    this.previewDoc = doc;
   }
 }

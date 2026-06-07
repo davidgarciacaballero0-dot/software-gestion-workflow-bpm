@@ -3,16 +3,18 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DocumentoService, ArchivoAdjunto } from '../../../../data/services/documento.service';
 import { AuthService } from '../../../../data/services/auth.service';
+import { DocumentoPreviewComponent } from '../documento-preview/documento-preview';
 
 @Component({
   selector: 'app-documentos-explorer',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, DocumentoPreviewComponent],
   templateUrl: './documentos-explorer.html',
   styleUrls: ['./documentos-explorer.css']
 })
 export class DocumentosExplorerComponent implements OnInit {
   documentos: ArchivoAdjunto[] = [];
+  previewDoc: ArchivoAdjunto | null = null;
   filtroActual: 'TODOS' | 'CLIENTE' | 'POLITICA' = 'TODOS';
   filtroId: string = '';
   loading = false;
@@ -73,6 +75,6 @@ export class DocumentosExplorerComponent implements OnInit {
   }
 
   verPreview(doc: ArchivoAdjunto) {
-    console.log('Ver preview', doc.id);
+    this.previewDoc = doc;
   }
 }

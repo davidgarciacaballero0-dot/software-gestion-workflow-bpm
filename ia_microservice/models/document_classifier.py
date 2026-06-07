@@ -17,7 +17,7 @@ class DocumentClassifier:
     def _load_or_build(self):
         if os.path.exists(self.model_path):
             print(f"Loading DocumentClassifier from {self.model_path}")
-            self.model = load_model(self.model_path)
+            self.model = load_model(self.model_path, compile=False)
         else:
             print("Building new DocumentClassifier model")
             self._build_model()
@@ -37,6 +37,7 @@ class DocumentClassifier:
         
     def train(self, train_dataset, val_dataset, epochs=10):
         print("Training DocumentClassifier...")
+        self.model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
         history = self.model.fit(train_dataset, validation_data=val_dataset, epochs=epochs)
         os.makedirs(os.path.dirname(self.model_path), exist_ok=True)
         self.model.save(self.model_path)

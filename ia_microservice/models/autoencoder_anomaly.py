@@ -14,7 +14,7 @@ class AnomalyDetector:
     def _load_or_build(self):
         if os.path.exists(self.model_path):
             print(f"Loading AnomalyDetector from {self.model_path}")
-            self.model = load_model(self.model_path)
+            self.model = load_model(self.model_path, compile=False)
         else:
             print("Building new AnomalyDetector model")
             self._build_model()
@@ -31,6 +31,7 @@ class AnomalyDetector:
         
     def train(self, X_train, epochs=50, batch_size=32):
         print("Training AnomalyDetector...")
+        self.model.compile(optimizer='adam', loss='mse')
         # Autoencoder trains to predict its input
         history = self.model.fit(X_train, X_train, epochs=epochs, batch_size=batch_size, validation_split=0.2)
         

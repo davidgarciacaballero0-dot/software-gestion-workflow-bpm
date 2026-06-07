@@ -463,20 +463,7 @@ async def analisis_intencion_politica(request: Request):
         if not politicas:
             raise HTTPException(status_code=400, detail="La lista de políticas no puede estar vacía.")
 
-        # 1. Clasificación con TensorFlow
-        tf_class_idx = -1
-        tf_score = 0.0
-        try:
-            text_sequence = _extract_intent_sequence({"requerimiento": requerimiento})
-            classifier = get_intent_classifier()
-            pred = classifier.predict(text_sequence)
-            tf_class_idx = pred["class_idx"]
-            tf_score = pred["score"]
-            print(f"🧠 TensorFlow CNN clasificó intención: class_idx={tf_class_idx}, score={tf_score}")
-        except Exception as tf_err:
-            print(f"WARN: TensorFlow classifier falló ({str(tf_err)})")
-
-        # 2. Embeddings con Vertex AI / Gemini
+        # 1. Embeddings con Vertex AI / Gemini
         use_fallback = False
         req_vector = []
         politica_vectors = []
@@ -523,7 +510,7 @@ async def analisis_intencion_politica(request: Request):
                 return 0.0
             return len(intersection) / len(union)
 
-        # 3. Evaluar similitudes y fusionar con la predicción de TensorFlow
+        # 2. Evaluar similitudes
         resultados = []
         for i, pol in enumerate(politicas):
             if not use_fallback:
@@ -531,30 +518,26 @@ async def analisis_intencion_politica(request: Request):
             else:
                 texto_pol = f"{pol.get('nombre', '')} {pol.get('description', pol.get('descripcion', ''))}"
                 sim = lexical_similarity(requerimiento, texto_pol)
-            
-            # Ponderación: Si el índice modular de la clase predicha por TF coincide con el de la política, se le da un bonus.
-            is_tf_match = (tf_class_idx != -1 and (tf_class_idx % len(politicas)) == i)
-            tf_bonus = 0.4 if is_tf_match else 0.0
-            # Score final combinado
-            combined_score = 0.6 * sim + tf_bonus
 
             resultados.append({
                 "politica": pol,
-                "score": combined_score,
+                "score": sim,
                 "score_semantic_lexical": sim,
-                "tf_match": is_tf_match
+                "tf_match": False
             })
 
         resultados.sort(key=lambda x: x["score"], reverse=True)
-        mejor_coincidencia = resultados[0]["politica"] if resultados else None
-        mejor_score = resultados[0]["score"] if resultados else 0.0
+        
+        # Filtro de confianza mínimo: si la mayor coincidencia es menor a 0.35, no recomendamos nada
+        mejor_coincidencia = resultados[0]["politica"] if resultados and resultados[0]["score"] >= 0.35 else None
+        mejor_score = resultados[0]["score"] if mejor_coincidencia else 0.0
 
         return {
             "politica_asignada": mejor_coincidencia,
             "score": mejor_score,
-            "metodo": "tensorflow_cnn_hybrid",
-            "tf_intent_class": tf_class_idx,
-            "tf_intent_score": tf_score,
+            "metodo": "vertex_ai_embeddings",
+            "tf_intent_class": -1,
+            "tf_intent_score": 0.0,
             "detalles": resultados
         }
     except Exception as e:
@@ -1034,6 +1017,42 @@ IMPORTANTE: Responde SOLO el JSON array, sin texto adicional, sin markdown."""
         if is_quota_error(e):
             raise HTTPException(status_code=429, detail="Cuota de IA agotada. Intente en unos minutos.")
         raise HTTPException(status_code=500, detail=f"Error generando sugerencias: {str(e)}")
+
+class ResumirReporteRequest(BaseModel):
+    prompt: str
+    dimension: str
+    metric: str
+    data: List[dict]
+
+@app.post("/ia/resumir-reporte-nlp")
+async def resumir_reporte_nlp(request: ResumirReporteRequest):
+    try:
+        system_prompt = (
+            "Eres un analista de negocios y consultor de procesos BPM experto.\n"
+            "Tu tarea es analizar el resultado de una consulta de datos del sistema BPM y redactar un informe o resumen muy breve, conciso y profesional para el administrador (máximo 3 frases).\n"
+            "El resumen debe explicar qué significan los números de forma amigable y analítica, destacando si hay algún valor inusualmente alto o algún detalle relevante.\n"
+            "Habla en español. No uses tecnicismos de programación ni menciones bases de datos, colecciones de MongoDB o sentencias de código. Dirígete al administrador."
+        )
+
+        user_content = (
+            f"Consulta del usuario: '{request.prompt}'\n"
+            f"Dimensión analizada: {request.dimension}\n"
+            f"Métrica: {request.metric}\n"
+            f"Datos obtenidos:\n{json.dumps(request.data, ensure_ascii=False)}"
+        )
+
+        response = generate_with_fallback(
+            MODEL_FLASH,
+            contents=user_content,
+            config=types.GenerateContentConfig(
+                system_instruction=system_prompt,
+                temperature=0.7,
+                max_output_tokens=300
+            )
+        )
+        return {"resumen": (response.text or "").strip()}
+    except Exception as e:
+        return {"resumen": "No se pudo generar el análisis automático debido a un error temporal."}
 
 if __name__ == "__main__":
     import uvicorn

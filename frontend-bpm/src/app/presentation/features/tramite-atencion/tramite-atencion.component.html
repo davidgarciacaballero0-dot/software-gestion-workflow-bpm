@@ -172,12 +172,15 @@
             <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.5rem;">
               Tamaño: {{ arch.tamano / 1024 | number:'1.0-1' }} KB | Tipo: {{ arch.contentType }}
             </div>
-            <div style="display:flex; gap:0.5rem;">
-              <button class="btn btn-secondary w-full" (click)="descargarArchivo(arch.id)" style="font-size:0.75rem; padding:6px 10px; display:flex; align-items:center; justify-content:center; gap:0.3rem; cursor:pointer;">
+            <div style="display:flex; gap:0.3rem;">
+              <button class="btn btn-secondary" (click)="descargarArchivo(arch.id)" style="font-size:0.75rem; padding:6px 8px; display:flex; align-items:center; justify-content:center; gap:0.2rem; cursor:pointer; flex: 1;" title="Descargar archivo">
                 <span class="material-symbols-outlined" style="font-size:14px;">download</span> Descargar
               </button>
-              <button class="btn-premium btn-premium-primary w-full" (click)="iniciarEdicionColaborativa(arch.id)" style="font-size:0.75rem; padding:6px 10px; display:flex; align-items:center; justify-content:center; gap:0.3rem; cursor:pointer;">
-                <span class="material-symbols-outlined" style="font-size:14px;">edit_document</span> Editar en OnlyOffice
+              <button class="btn btn-primary" (click)="verPreview(arch)" style="font-size:0.75rem; padding:6px 8px; display:flex; align-items:center; justify-content:center; gap:0.2rem; cursor:pointer; flex: 1;" title="Previsualizar archivo" *ngIf="arch.contentType && (arch.contentType === 'application/pdf' || arch.contentType.startsWith('image/') || arch.contentType.startsWith('video/'))">
+                <span class="material-symbols-outlined" style="font-size:14px;">visibility</span> Ver
+              </button>
+              <button class="btn-premium btn-premium-primary" (click)="iniciarEdicionColaborativa(arch.id)" style="font-size:0.75rem; padding:6px 8px; display:flex; align-items:center; justify-content:center; gap:0.2rem; cursor:pointer; flex: 1.5;" *ngIf="arch.contentType && (arch.contentType.includes('word') || arch.contentType.includes('spreadsheet') || arch.contentType.includes('officedocument'))">
+                <span class="material-symbols-outlined" style="font-size:14px;">edit_document</span> Editar
               </button>
             </div>
           </div>
@@ -257,4 +260,12 @@
     </div>
   </div>
 </div>
+
+<app-documento-preview 
+  *ngIf="previewDoc" 
+  [archivoId]="previewDoc.id" 
+  [nombreOriginal]="previewDoc.nombreOriginal" 
+  [contentType]="previewDoc.contentType" 
+  (close)="previewDoc = null">
+</app-documento-preview>
 

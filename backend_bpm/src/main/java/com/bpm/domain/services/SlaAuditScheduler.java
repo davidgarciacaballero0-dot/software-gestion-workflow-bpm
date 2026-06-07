@@ -42,7 +42,7 @@ public class SlaAuditScheduler {
     private static RestTemplate createRestTemplate() {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(5_000);  // 5 seg
-        factory.setReadTimeout(10_000);    // 10 seg (job asíncrono, no bloquea al usuario)
+        factory.setReadTimeout(60_000);    // 60 seg (job asíncrono, no bloquea al usuario)
         return new RestTemplate(factory);
     }
 

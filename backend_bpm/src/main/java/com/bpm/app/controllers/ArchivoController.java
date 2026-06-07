@@ -20,6 +20,8 @@ import com.bpm.data.entities.TramiteInstancia;
 import com.bpm.data.repositories.TramiteInstanciaRepository;
 import com.bpm.data.entities.BitacoraAcceso;
 import com.bpm.data.repositories.BitacoraAccesoRepository;
+import com.bpm.data.entities.Usuario;
+import com.bpm.data.repositories.UsuarioRepository;
 import org.springframework.http.HttpStatus;
 
 @RestController
@@ -31,6 +33,7 @@ public class ArchivoController {
     private final DocumentPermissionService permissionService;
     private final TramiteInstanciaRepository tramiteRepository;
     private final BitacoraAccesoRepository bitacoraRepository;
+    private final UsuarioRepository usuarioRepository;
 
     private static final Set<String> ALLOWED_TYPES = Set.of(
         "application/pdf", "application/msword",
@@ -45,12 +48,14 @@ public class ArchivoController {
     public ArchivoController(StorageService storageService, ArchivoAdjuntoRepository archivoRepository,
             DocumentPermissionService permissionService,
             TramiteInstanciaRepository tramiteRepository,
-            BitacoraAccesoRepository bitacoraRepository) {
+            BitacoraAccesoRepository bitacoraRepository,
+            UsuarioRepository usuarioRepository) {
         this.storageService = storageService;
         this.archivoRepository = archivoRepository;
         this.permissionService = permissionService;
         this.tramiteRepository = tramiteRepository;
         this.bitacoraRepository = bitacoraRepository;
+        this.usuarioRepository = usuarioRepository;
     }
 
     @PostMapping("/upload")
@@ -121,6 +126,25 @@ public class ArchivoController {
                 .body(new InputStreamResource(stream));
     }
 
+    @GetMapping("/preview/{id}")
+    public ResponseEntity<?> previewFile(
+            @PathVariable String id,
+            @RequestParam("idUsuario") String idUsuario) {
+        ArchivoAdjunto adjunto = archivoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Metadata de archivo no encontrada: " + id));
+
+        if (!permissionService.verificarPermiso(adjunto, idUsuario, "READ")) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Acceso denegado: no tiene permisos de lectura.");
+        }
+
+        InputStream stream = storageService.downloadFile(adjunto.getGridFsId());
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + adjunto.getNombreOriginal() + "\"")
+                .contentType(MediaType.parseMediaType(adjunto.getContentType()))
+                .body(new InputStreamResource(stream));
+    }
+
     // --- NUEVOS ENDPOINTS DE BÚSQUEDA ---
 
     @GetMapping("/cliente/{idCliente}")
@@ -187,7 +211,46 @@ public class ArchivoController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
-        return ResponseEntity.ok(bitacoraRepository.findByResourceId(id));
+        List<BitacoraAcceso> historial = bitacoraRepository.findByResourceId(id);
+        
+        // Reemplazar IDs de usuario o "anonymousUser" con nombres legibles
+        for (BitacoraAcceso b : historial) {
+            String u = b.getUsername();
+            if (u != null && !u.equals("ANONIMO") && !u.equals("SISTEMA")) {
+                if (u.equals("anonymousUser")) {
+                    b.setUsername("ANONIMO (Document Server)");
+                } else if (u.contains(",")) {
+                    String[] parts = u.split(",");
+                    List<String> names = new java.util.ArrayList<>();
+                    for (String part : parts) {
+                        String cleanPart = part.trim();
+                        Usuario usr = usuarioRepository.findById(cleanPart).orElse(null);
+                        if (usr != null) {
+                            names.add((usr.getNombre() + " " + (usr.getApellidos() != null ? usr.getApellidos() : "")).trim());
+                        } else {
+                            names.add(cleanPart);
+                        }
+                    }
+                    b.setUsername(String.join(", ", names));
+                } else {
+                    Usuario usr = null;
+                    if (u.contains("@")) {
+                        List<Usuario> byEmail = usuarioRepository.findByEmail(u);
+                        if (byEmail != null && !byEmail.isEmpty()) {
+                            usr = byEmail.get(0);
+                        }
+                    } else {
+                        usr = usuarioRepository.findById(u).orElse(null);
+                    }
+                    if (usr != null) {
+                        String nombre = usr.getNombre() + " " + (usr.getApellidos() != null ? usr.getApellidos() : "");
+                        b.setUsername(nombre.trim());
+                    }
+                }
+            }
+        }
+
+        return ResponseEntity.ok(historial);
     }
 
 }

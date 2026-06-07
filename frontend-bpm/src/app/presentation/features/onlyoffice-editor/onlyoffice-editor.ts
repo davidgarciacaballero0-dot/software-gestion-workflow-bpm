@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, AfterViewInit } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
@@ -91,8 +91,8 @@ declare var DocsAPI: any;
     .editor-container {
       display: flex;
       flex-direction: column;
-      height: 100vh;
-      width: 100vw;
+      height: 100%;
+      width: 100%;
       overflow: hidden;
       background: #121212;
       font-family: 'Inter', system-ui, sans-serif;
@@ -101,12 +101,12 @@ declare var DocsAPI: any;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 10px 20px;
-      background: #1e1e1e;
+      padding: 10px 30px; /* Margen y padding mayor para responsividad */
+      background: var(--primary, #070235); /* Azul marino del logo BPM */
       color: white;
       box-shadow: 0 2px 10px rgba(0,0,0,0.4);
       z-index: 10;
-      border-bottom: 1px solid #2d2d2d;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     }
     .fallback-warning-banner {
       display: flex;
@@ -126,7 +126,7 @@ declare var DocsAPI: any;
       gap: 8px;
       background: transparent;
       color: #e0e0e0;
-      border: 1px solid #444;
+      border: 1px solid rgba(255, 255, 255, 0.25);
       padding: 8px 16px;
       border-radius: 6px;
       cursor: pointer;
@@ -134,9 +134,9 @@ declare var DocsAPI: any;
       transition: all 0.2s ease;
     }
     .back-button:hover {
-      background: #2a2a2a;
+      background: rgba(255, 255, 255, 0.1);
       color: white;
-      border-color: #666;
+      border-color: rgba(255, 255, 255, 0.4);
     }
     .header-title {
       font-weight: 500;
@@ -147,25 +147,28 @@ declare var DocsAPI: any;
       display: flex;
       align-items: center;
       gap: 6px;
-      background: #2563eb;
+      background: var(--primary-container, #1E1B4B); /* Botón de actividad a tono con la paleta */
       color: white;
-      border: none;
+      border: 1px solid rgba(255, 255, 255, 0.2);
       padding: 8px 16px;
+      margin-right: 15px; /* Mover el botón un poco a la izquierda */
       border-radius: 6px;
       cursor: pointer;
       font-size: 14px;
       font-weight: 500;
-      transition: background 0.2s ease;
+      transition: all 0.2s ease;
     }
     .history-toggle-btn:hover {
-      background: #1d4ed8;
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.4);
     }
     .main-layout {
       display: flex;
       flex: 1;
       width: 100%;
-      height: calc(100vh - 60px);
+      height: calc(100% - 60px);
       overflow: hidden;
+      position: relative; /* Habilitar posicionamiento absoluto de los hijos */
     }
     .editor-section {
       flex: 1;
@@ -210,35 +213,43 @@ declare var DocsAPI: any;
     
     /* SIDEBAR STYLES */
     .history-sidebar {
-      width: 0;
-      background: #1a1a1a;
-      border-left: 1px solid #2d2d2d;
+      position: absolute;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      width: 350px;
+      transform: translateX(100%);
+      background: rgba(255, 255, 255, 0.72); /* Fondo claro frosted glass similar al perfil */
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border-left: 1px solid rgba(255, 255, 255, 0.4);
       display: flex;
       flex-direction: column;
-      transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      overflow: hidden;
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 8;
       height: 100%;
+      box-shadow: -10px 0 30px rgba(0, 0, 0, 0.08);
     }
     .history-sidebar.open {
-      width: 350px;
+      transform: translateX(0);
     }
     .sidebar-header {
       padding: 16px 20px;
-      border-bottom: 1px solid #2d2d2d;
+      border-bottom: 1px solid rgba(7, 2, 53, 0.08);
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: #202020;
+      background: rgba(255, 255, 255, 0.45); /* Encabezado de barra lateral traslúcido */
     }
     .sidebar-header h3 {
       margin: 0;
       font-size: 16px;
       font-weight: 600;
-      color: #e2e8f0;
+      color: var(--primary, #070235); /* Color azul del logo BPM */
     }
     .refresh-btn {
       background: transparent;
-      color: #a0aec0;
+      color: var(--primary, #070235);
       border: none;
       cursor: pointer;
       padding: 4px;
@@ -248,8 +259,8 @@ declare var DocsAPI: any;
       transition: all 0.2s ease;
     }
     .refresh-btn:hover {
-      color: white;
-      background: #2d2d2d;
+      color: var(--primary, #070235);
+      background: rgba(7, 2, 53, 0.06);
     }
     .sidebar-content {
       flex: 1;
@@ -262,13 +273,13 @@ declare var DocsAPI: any;
       align-items: center;
       justify-content: center;
       height: 200px;
-      color: #718096;
+      color: #4a5568;
       text-align: center;
       gap: 10px;
     }
     .history-empty-icon {
       font-size: 32px;
-      color: #4a5568;
+      color: #718096;
     }
     .history-timeline {
       display: flex;
@@ -283,22 +294,23 @@ declare var DocsAPI: any;
       bottom: 0;
       left: 16px;
       width: 2px;
-      background: #2d2d2d;
+      background: rgba(7, 2, 53, 0.12); /* Línea de tiempo azulada clara */
     }
     .history-item {
       display: flex;
       gap: 14px;
       position: relative;
-      background: #222;
-      border: 1px solid #2d2d2d;
+      background: rgba(255, 255, 255, 0.6); /* Tarjeta clara traslúcida */
+      border: 1px solid rgba(7, 2, 53, 0.08);
       border-radius: 8px;
       padding: 12px;
-      transition: transform 0.2s ease, border-color 0.2s ease;
+      transition: transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
     }
     .history-item:hover {
       transform: translateY(-2px);
-      border-color: #444;
-      background: #262626;
+      border-color: rgba(7, 2, 53, 0.18);
+      background: rgba(255, 255, 255, 0.95);
+      box-shadow: 0 4px 12px rgba(7, 2, 53, 0.04);
     }
     .item-icon-wrapper {
       width: 32px;
@@ -307,7 +319,7 @@ declare var DocsAPI: any;
       display: flex;
       align-items: center;
       justify-content: center;
-      background: #333;
+      background: #e2e8f0;
       z-index: 1;
       flex-shrink: 0;
     }
@@ -316,10 +328,10 @@ declare var DocsAPI: any;
     }
     
     /* Action Type Themes */
-    .item-icon-wrapper.creacion { background: rgba(16, 185, 129, 0.15); color: #10b981; }
-    .item-icon-wrapper.lectura { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
-    .item-icon-wrapper.modificacion { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
-    .item-icon-wrapper.eliminacion { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+    .item-icon-wrapper.creacion { background: rgba(16, 185, 129, 0.12); color: #10b981; }
+    .item-icon-wrapper.lectura { background: rgba(59, 130, 246, 0.12); color: #3b82f6; }
+    .item-icon-wrapper.modificacion { background: rgba(245, 158, 11, 0.12); color: #f59e0b; }
+    .item-icon-wrapper.eliminacion { background: rgba(239, 68, 68, 0.12); color: #ef4444; }
 
     .action-badge {
       font-size: 10px;
@@ -328,10 +340,10 @@ declare var DocsAPI: any;
       border-radius: 4px;
       text-transform: uppercase;
     }
-    .action-badge.creacion { background: rgba(16, 185, 129, 0.2); color: #34d399; }
-    .action-badge.lectura { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
-    .action-badge.modificacion { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
-    .action-badge.eliminacion { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+    .action-badge.creacion { background: rgba(16, 185, 129, 0.15); color: #059669; }
+    .action-badge.lectura { background: rgba(59, 130, 246, 0.15); color: #2563eb; }
+    .action-badge.modificacion { background: rgba(245, 158, 11, 0.15); color: #d97706; }
+    .action-badge.eliminacion { background: rgba(239, 68, 68, 0.15); color: #dc2626; }
 
     .item-details {
       flex: 1;
@@ -348,12 +360,12 @@ declare var DocsAPI: any;
     .user-actor {
       font-weight: 600;
       font-size: 13px;
-      color: #e2e8f0;
+      color: var(--primary, #070235); /* Color de actor en azul de la marca */
     }
     .action-description {
       margin: 0;
       font-size: 12px;
-      color: #cbd5e0;
+      color: #2d3748; /* Texto descriptivo en gris oscuro legible */
       line-height: 1.4;
     }
     .item-footer {
@@ -362,7 +374,7 @@ declare var DocsAPI: any;
       font-size: 10px;
       color: #718096;
       margin-top: 4px;
-      border-top: 1px solid #2d2d2d;
+      border-top: 1px solid rgba(0, 0, 0, 0.06);
       padding-top: 4px;
     }
     
@@ -389,7 +401,8 @@ export class OnlyofficeEditor implements OnInit, AfterViewInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private http: HttpClient,
-    private authService: AuthService
+    private authService: AuthService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit() {
@@ -402,6 +415,7 @@ export class OnlyofficeEditor implements OnInit, AfterViewInit, OnDestroy {
     if (!this.archivoId) {
       this.error = "No se especificó un archivo para editar.";
       this.loading = false;
+      this.cdr.detectChanges();
       return;
     }
     this.initEditor();
@@ -420,9 +434,11 @@ export class OnlyofficeEditor implements OnInit, AfterViewInit, OnDestroy {
     this.http.get<any>(`/api/v1/onlyoffice/config/${this.archivoId}?idUsuario=${idUsuario}`).subscribe({
       next: (config) => {
         this.loading = false;
+        this.cdr.detectChanges();
         
         if (typeof DocsAPI === 'undefined') {
           this.error = "No se pudo cargar la API de OnlyOffice. Verifica que el Document Server esté en ejecución.";
+          this.cdr.detectChanges();
           return;
         }
 
@@ -441,12 +457,14 @@ export class OnlyofficeEditor implements OnInit, AfterViewInit, OnDestroy {
         } catch (err) {
           console.error(err);
           this.error = "Error al inicializar el editor.";
+          this.cdr.detectChanges();
         }
       },
       error: (err) => {
         console.error(err);
         this.error = "No se pudo obtener la configuración del documento. Verifica tus permisos.";
         this.loading = false;
+        this.cdr.detectChanges();
       }
     });
   }
@@ -466,15 +484,22 @@ export class OnlyofficeEditor implements OnInit, AfterViewInit, OnDestroy {
     
     this.http.get<any[]>(`/api/v1/archivos/${this.archivoId}/historial?idUsuario=${idUsuario}`).subscribe({
       next: (data) => {
-        this.history = data;
+        // Ordenar de forma descendente por timestamp (los más recientes primero)
+        this.history = [...data].sort((a, b) => {
+          if (!a.timestamp) return 1;
+          if (!b.timestamp) return -1;
+          return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+        });
         this.isFallback = data.some(item => 
           item.details && item.details.includes("Archivo físico ausente")
         );
         this.loadingHistory = false;
+        this.cdr.detectChanges();
       },
       error: (err) => {
         console.error("Error al cargar historial del archivo:", err);
         this.loadingHistory = false;
+        this.cdr.detectChanges();
       }
     });
   }
