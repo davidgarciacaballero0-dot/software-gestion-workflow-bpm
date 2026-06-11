@@ -2,6 +2,8 @@ package com.bpm.app.controllers;
 
 import com.bpm.data.entities.TramiteInstancia;
 import com.bpm.data.repositories.TramiteInstanciaRepository;
+import com.bpm.app.dto.StartProcedureRequestDTO;
+import com.bpm.domain.services.TramiteService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,10 +18,12 @@ import java.util.Map;
 public class SyncController {
 
     private final TramiteInstanciaRepository tramiteRepository;
+    private final TramiteService tramiteService;
 
     @Autowired
-    public SyncController(TramiteInstanciaRepository tramiteRepository) {
+    public SyncController(TramiteInstanciaRepository tramiteRepository, TramiteService tramiteService) {
         this.tramiteRepository = tramiteRepository;
+        this.tramiteService = tramiteService;
     }
 
     /**
@@ -27,6 +31,7 @@ public class SyncController {
      * y las aplica secuencialmente.
      */
     @PostMapping("/batch")
+    @SuppressWarnings("unchecked")
     public ResponseEntity<Map<String, Object>> syncBatch(@RequestBody List<SyncOperation> operations) {
         List<String> successIds = new ArrayList<>();
         List<String> failedIds = new ArrayList<>();
@@ -46,8 +51,20 @@ public class SyncController {
                         failedIds.add(op.getId());
                     }
                 } else if ("CREATE_TRAMITE".equals(op.getType())) {
-                    // Logic to create tramite
-                    // ...
+                    // Logic to create tramite offline
+                    StartProcedureRequestDTO startRequest = new StartProcedureRequestDTO();
+                    startRequest.setId(op.getId()); // Usar el UUID/localId generado offline
+                    startRequest.setIdPolitica((String) op.getPayload().get("idPolitica"));
+                    startRequest.setIdUsuarioSolicitante((String) op.getPayload().get("idUsuarioSolicitante"));
+                    
+                    if (op.getPayload().containsKey("prioridad")) {
+                        startRequest.setPrioridad((Integer) op.getPayload().get("prioridad"));
+                    }
+                    if (op.getPayload().containsKey("datosIniciales")) {
+                        startRequest.setDatosIniciales((Map<String, Object>) op.getPayload().get("datosIniciales"));
+                    }
+                    
+                    tramiteService.iniciarTramite(startRequest);
                     successIds.add(op.getId());
                 } else {
                     failedIds.add(op.getId());
