@@ -43,8 +43,79 @@
 
   <!-- Contenido de Bandeja -->
   <div class="grid-card monolith-surface" style="padding: 1.5rem;">
-    <div *ngIf="loading" class="loading-state">
-      <span class="spinner"></span> Sincronizando trámites...
+    
+    <!-- ESQUELETO DE CARGA PREMIUM (CINEMÁTICA) -->
+    <div *ngIf="loading" class="skeleton-container animate-pulse">
+      
+      <!-- Vista Funcionario / Administrador Skeleton -->
+      <ng-container *ngIf="!isClient">
+        <div class="skeleton-row" *ngFor="let i of [1, 2, 3]">
+          <div class="skeleton-main">
+            <div class="skeleton-info-group">
+              <div class="skeleton-bar skeleton-code"></div>
+              <div class="skeleton-bar skeleton-priority"></div>
+              <div class="skeleton-bar skeleton-badge"></div>
+            </div>
+            <div class="skeleton-bar skeleton-details" style="margin-top: 0.5rem;"></div>
+          </div>
+          <div class="skeleton-actions">
+            <div class="skeleton-btn"></div>
+            <div class="skeleton-btn"></div>
+          </div>
+        </div>
+      </ng-container>
+
+      <!-- Vista Cliente Externo Skeleton -->
+      <ng-container *ngIf="isClient">
+        <!-- Bloque Activos -->
+        <div class="skeleton-section-block">
+          <div class="skeleton-bar skeleton-section-title"></div>
+          <div class="skeleton-table">
+            <div class="skeleton-table-header">
+              <div class="skeleton-bar skeleton-th" style="width: 25%"></div>
+              <div class="skeleton-bar skeleton-th" style="width: 15%"></div>
+              <div class="skeleton-bar skeleton-th" style="width: 40%"></div>
+              <div class="skeleton-bar skeleton-th" style="width: 20%"></div>
+            </div>
+            <div class="skeleton-table-row" *ngFor="let i of [1, 2]">
+              <div class="skeleton-bar skeleton-td" style="width: 25%"></div>
+              <div class="skeleton-bar skeleton-td" style="width: 15%"></div>
+              <div class="skeleton-bar skeleton-td" style="width: 40%"></div>
+              <div class="skeleton-bar skeleton-td" style="width: 20%"></div>
+            </div>
+          </div>
+        </div>
+        <!-- Bloque Historial -->
+        <div class="skeleton-section-block" style="margin-top: 2.5rem;">
+          <div class="skeleton-bar skeleton-section-title"></div>
+          <div class="skeleton-table">
+            <div class="skeleton-table-header">
+              <div class="skeleton-bar skeleton-th" style="width: 30%"></div>
+              <div class="skeleton-bar skeleton-th" style="width: 20%"></div>
+              <div class="skeleton-bar skeleton-th" style="width: 30%"></div>
+              <div class="skeleton-bar skeleton-th" style="width: 20%"></div>
+            </div>
+            <div class="skeleton-table-row" *ngFor="let i of [1]">
+              <div class="skeleton-bar skeleton-td" style="width: 30%"></div>
+              <div class="skeleton-bar skeleton-td" style="width: 20%"></div>
+              <div class="skeleton-bar skeleton-td" style="width: 30%"></div>
+              <div class="skeleton-bar skeleton-td" style="width: 20%"></div>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+
+      <!-- Mensaje flotante de sincronización con micro-animación -->
+      <div class="loading-status-overlay">
+        <div class="glass-loader-card">
+          <div class="quantum-spinner">
+            <div class="quantum-circle"></div>
+            <div class="quantum-circle"></div>
+            <div class="quantum-circle"></div>
+          </div>
+          <span class="loading-text">Sincronizando con el servidor central...</span>
+        </div>
+      </div>
     </div>
 
     <div class="inbox-list" *ngIf="!loading">
@@ -167,9 +238,6 @@
           </div>
         </div>
 
-        <div *ngIf="loading" class="loading-state mt-4">
-           Sincronizando con el servidor central...
-        </div>
       </ng-container>
 
     </div>

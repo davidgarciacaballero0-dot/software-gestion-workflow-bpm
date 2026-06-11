@@ -19,7 +19,7 @@
       </ng-container>
 
       <!-- VISOR IMAGEN -->
-      <ng-container *ngIf="isImage() && safeUrl">
+      <ng-container *ngIf="isImage() && previewUrl">
         <div class="image-viewer-wrapper">
           <div class="image-controls">
             <button class="control-btn" (click)="zoomIn()" title="Acercar">
@@ -36,15 +36,15 @@
             </button>
           </div>
           <div class="img-viewport">
-            <img [src]="safeUrl" [style.transform]="'scale(' + zoomLevel + ') rotate(' + rotationAngle + 'deg)'" class="preview-img" alt="Vista previa" />
+            <img [src]="previewUrl" [style.transform]="'scale(' + zoomLevel + ') rotate(' + rotationAngle + 'deg)'" class="preview-img" alt="Vista previa" />
           </div>
         </div>
       </ng-container>
 
       <!-- VISOR VIDEO -->
-      <ng-container *ngIf="isVideo() && safeUrl">
+      <ng-container *ngIf="isVideo() && previewUrl">
         <div class="video-viewer-wrapper">
-          <video [src]="safeUrl" controls autoplay class="video-viewer-player"></video>
+          <video [src]="previewUrl" controls autoplay class="video-viewer-player"></video>
         </div>
       </ng-container>
 

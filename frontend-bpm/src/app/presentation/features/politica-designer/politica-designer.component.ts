@@ -609,6 +609,18 @@ export class PoliticaDesignerComponent implements OnInit {
 
     this.autoAsignarDepartamentos();
 
+    const LANE_WIDTH = 400;
+    const LANE_PADDING = 40; // margen interno del carril
+
+    // 1) Construir un mapa de departamentoId → índice de carril
+    const deptToLaneIndex: Record<string, number> = {};
+    this.activeLanes.forEach((lane, idx) => {
+      if (lane.departamentoId) {
+        deptToLaneIndex[lane.departamentoId] = idx;
+      }
+    });
+
+    // 2) Usar Dagre solo para calcular la jerarquía vertical (Y)
     const g = new dagre.graphlib.Graph();
     g.setGraph({
       rankdir: 'TB',
@@ -632,19 +644,59 @@ export class PoliticaDesignerComponent implements OnInit {
 
     dagre.layout(g);
 
+    // 3) Calcular el centro horizontal de todo el lienzo (para nodos compartidos)
+    const totalLanesWidth = this.activeLanes.length * LANE_WIDTH;
+    const canvasCenterX = totalLanesWidth / 2;
+
+    // 4) Asignar posiciones: Y de Dagre + X mapeado al carril correcto
     this.nodes.forEach(node => {
       const layoutNode = g.node(node.id);
-      if (layoutNode) {
-        node.uiPosition = {
-          x: layoutNode.x - (this.getNodeWidth(node) / 2),
-          y: layoutNode.y - (this.getNodeHeight(node) / 2)
-        };
+      if (!layoutNode) return;
+
+      const nodeW = this.getNodeWidth(node);
+      const nodeH = this.getNodeHeight(node);
+
+      // Posición Y del layout de Dagre (siempre se respeta)
+      const yPos = layoutNode.y - (nodeH / 2);
+
+      // Posición X: depende de si el nodo tiene departamento asignado
+      let xPos: number;
+      const isLaneNode = node.type === NodeType.USER_TASK && node.departmentId;
+
+      if (isLaneNode) {
+        // Nodo con departamento → centrar dentro de su carril
+        const laneIdx = deptToLaneIndex[node.departmentId!];
+        if (laneIdx !== undefined) {
+          const laneStartX = laneIdx * LANE_WIDTH;
+          xPos = laneStartX + (LANE_WIDTH / 2) - (nodeW / 2);
+        } else {
+          // Departamento sin carril asignado → centro general
+          xPos = canvasCenterX - (nodeW / 2);
+        }
+      } else {
+        // Nodos compartidos (START, END, GATEWAY) → centro de todos los carriles
+        xPos = canvasCenterX - (nodeW / 2);
+      }
+
+      node.uiPosition = { x: xPos, y: yPos };
+    });
+
+    // 5) Resolver colisiones verticales: si hay múltiples USER_TASKs en el mismo
+    //    carril con la misma Y (paralelas), escalonarlas verticalmente
+    const laneYMap: Record<number, number[]> = {};
+    this.nodes.forEach(node => {
+      if (node.type === NodeType.USER_TASK && node.departmentId) {
+        const laneIdx = deptToLaneIndex[node.departmentId] ?? -1;
+        if (laneIdx >= 0) {
+          if (!laneYMap[laneIdx]) laneYMap[laneIdx] = [];
+          laneYMap[laneIdx].push(node.uiPosition.y);
+        }
       }
     });
 
     // Force refresh of Foblex positions
     this.nodes = [...this.nodes];
-    console.log('Dagre auto-layout aplicado:', this.nodes.length, 'nodos');
+    console.log('Dagre auto-layout (swimlane-aware) aplicado:', this.nodes.length, 'nodos');
     this.cd.detectChanges();
     this.triggerCanvasRedraw();
   }

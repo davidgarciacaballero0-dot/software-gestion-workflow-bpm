@@ -151,16 +151,16 @@
         </div>
       </div>
 
-      <!-- Gestión Documental en la Nube (GCS & OnlyOffice) -->
+      <!-- Gestión Documental en la Nube (OnlyOffice) -->
       <div class="grid-card glass-premium shadow-ambient mt-2">
         <h3 style="display:flex; align-items:center; gap:0.5rem; margin-bottom: 1rem;"><span class="material-symbols-outlined">cloud_done</span> Gestión Documental (OnlyOffice)</h3>
         
         <div class="create-docs-actions" style="display:flex; gap:0.5rem; margin-bottom:1rem;">
-          <button class="btn btn-primary w-full" (click)="crearDocumentoBlanco('word')" style="font-size:0.75rem; padding:6px 10px; display:flex; align-items:center; justify-content:center; gap:0.3rem; cursor:pointer;">
-            <span class="material-symbols-outlined" style="font-size:14px;">description</span> Crear Word
+          <button (click)="abrirModalCrearDoc('word')" style="flex:1; font-size:0.8rem; padding:8px 12px; display:flex; align-items:center; justify-content:center; gap:0.4rem; cursor:pointer; background: linear-gradient(135deg, #4d40ff, #3730a3); color: white; border: none; border-radius: 8px; font-weight: 600; transition: all 0.2s ease; box-shadow: 0 2px 8px rgba(77, 64, 255, 0.25);">
+            <span class="material-symbols-outlined" style="font-size:16px;">description</span> Crear Word
           </button>
-          <button class="btn btn-primary w-full" (click)="crearDocumentoBlanco('excel')" style="font-size:0.75rem; padding:6px 10px; display:flex; align-items:center; justify-content:center; gap:0.3rem; cursor:pointer;">
-            <span class="material-symbols-outlined" style="font-size:14px;">table</span> Crear Excel
+          <button (click)="abrirModalCrearDoc('excel')" style="flex:1; font-size:0.8rem; padding:8px 12px; display:flex; align-items:center; justify-content:center; gap:0.4rem; cursor:pointer; background: linear-gradient(135deg, #4d40ff, #3730a3); color: white; border: none; border-radius: 8px; font-weight: 600; transition: all 0.2s ease; box-shadow: 0 2px 8px rgba(77, 64, 255, 0.25);">
+            <span class="material-symbols-outlined" style="font-size:16px;">table</span> Crear Excel
           </button>
         </div>
 
@@ -172,15 +172,18 @@
             <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.5rem;">
               Tamaño: {{ arch.tamano / 1024 | number:'1.0-1' }} KB | Tipo: {{ arch.contentType }}
             </div>
-            <div style="display:flex; gap:0.3rem;">
-              <button class="btn btn-secondary" (click)="descargarArchivo(arch.id)" style="font-size:0.75rem; padding:6px 8px; display:flex; align-items:center; justify-content:center; gap:0.2rem; cursor:pointer; flex: 1;" title="Descargar archivo">
+            <div style="display:flex; gap:0.3rem; flex-wrap: wrap;">
+              <button class="btn btn-secondary" (click)="descargarArchivo(arch.id)" style="font-size:0.75rem; padding:6px 8px; display:flex; align-items:center; justify-content:center; gap:0.2rem; cursor:pointer; flex: 1; min-width: 80px;" title="Descargar archivo">
                 <span class="material-symbols-outlined" style="font-size:14px;">download</span> Descargar
               </button>
-              <button class="btn btn-primary" (click)="verPreview(arch)" style="font-size:0.75rem; padding:6px 8px; display:flex; align-items:center; justify-content:center; gap:0.2rem; cursor:pointer; flex: 1;" title="Previsualizar archivo" *ngIf="arch.contentType && (arch.contentType === 'application/pdf' || arch.contentType.startsWith('image/') || arch.contentType.startsWith('video/'))">
+              <button class="btn btn-primary" (click)="verPreview(arch)" style="font-size:0.75rem; padding:6px 8px; display:flex; align-items:center; justify-content:center; gap:0.2rem; cursor:pointer; flex: 1; min-width: 60px;" title="Previsualizar archivo" *ngIf="arch.contentType && (arch.contentType === 'application/pdf' || arch.contentType.startsWith('image/') || arch.contentType.startsWith('video/'))">
                 <span class="material-symbols-outlined" style="font-size:14px;">visibility</span> Ver
               </button>
-              <button class="btn-premium btn-premium-primary" (click)="iniciarEdicionColaborativa(arch.id)" style="font-size:0.75rem; padding:6px 8px; display:flex; align-items:center; justify-content:center; gap:0.2rem; cursor:pointer; flex: 1.5;" *ngIf="arch.contentType && (arch.contentType.includes('word') || arch.contentType.includes('spreadsheet') || arch.contentType.includes('officedocument'))">
+              <button class="btn-premium btn-premium-primary" (click)="iniciarEdicionColaborativa(arch.id)" style="font-size:0.75rem; padding:6px 8px; display:flex; align-items:center; justify-content:center; gap:0.2rem; cursor:pointer; flex: 1.5; min-width: 80px;" *ngIf="arch.contentType && (arch.contentType.includes('word') || arch.contentType.includes('spreadsheet') || arch.contentType.includes('officedocument'))">
                 <span class="material-symbols-outlined" style="font-size:14px;">edit_document</span> Editar
+              </button>
+              <button class="btn btn-secondary" (click)="eliminarArchivo(arch.id)" style="font-size:0.75rem; padding:6px 8px; display:flex; align-items:center; justify-content:center; gap:0.2rem; cursor:pointer; flex: 1; min-width: 80px; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.25);" title="Eliminar permanentemente" *ngIf="puedoEliminar(arch)">
+                <span class="material-symbols-outlined" style="font-size:14px;">delete</span> Eliminar
               </button>
             </div>
           </div>
@@ -261,6 +264,66 @@
   </div>
 </div>
 
+<!-- MODAL DE CONFIRMACIÓN DE ELIMINACIÓN -->
+<div class="success-overlay animate-fade-in" *ngIf="showDeleteConfirmModal">
+  <div class="success-modal glass-premium shadow-premium animate-zoom-in" style="max-width: 420px; padding: 2rem;">
+    <div class="success-icon-wrapper" style="margin-bottom: 1rem;">
+      <div class="success-icon-circle" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; box-shadow: 0 10px 25px rgba(239, 68, 68, 0.2);">
+        <span class="material-symbols-outlined" style="font-size: 36px;">warning</span>
+      </div>
+    </div>
+
+    <div class="success-content">
+      <h2 style="font-size: 1.35rem; color: #ef4444; margin-bottom: 1.5rem; text-align: center; font-weight: 600; line-height: 1.4;">¿Desea eliminar este documento de forma definitiva?</h2>
+
+      <div class="success-actions" style="display: flex; gap: 0.8rem;">
+        <button (click)="cancelarEliminacion()" style="flex: 1; padding: 10px; font-weight: 600; cursor: pointer; border-radius: 8px; border: 1px solid var(--outline-variant); background: transparent; color: var(--text-main); font-family: 'Inter', sans-serif;">
+          Cancelar
+        </button>
+        <button (click)="confirmarEliminacion()" style="flex: 1; padding: 10px; font-weight: 600; cursor: pointer; background: #ef4444; color: white; border: none; border-radius: 8px; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2); font-family: 'Inter', sans-serif;">
+          Confirmar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DE CREACIÓN DE DOCUMENTO -->
+<div class="success-overlay animate-fade-in" *ngIf="showCreateDocModal">
+  <div class="success-modal glass-premium shadow-premium animate-zoom-in" style="max-width: 440px; padding: 2rem;">
+    <div class="success-icon-wrapper" style="margin-bottom: 1rem;">
+      <div class="success-icon-circle" style="background: linear-gradient(135deg, #4d40ff, #3730a3); color: white; box-shadow: 0 10px 25px rgba(77, 64, 255, 0.25);">
+        <span class="material-symbols-outlined" style="font-size: 36px;">{{ newDocType === 'word' ? 'description' : 'table' }}</span>
+      </div>
+    </div>
+
+    <div class="success-content">
+      <h2 style="font-size: 1.3rem; color: var(--primary); margin-bottom: 0.4rem; text-align: center; font-weight: 600;">
+        Crear nuevo {{ newDocType === 'word' ? 'Documento Word' : 'Documento Excel' }}
+      </h2>
+      <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.2rem; text-align: center;">
+        Ingrese el nombre para identificar este documento.
+      </p>
+
+      <input 
+        type="text" 
+        [(ngModel)]="newDocName" 
+        placeholder="Nombre del documento"
+        style="width: 100%; padding: 10px 14px; border: 1px solid rgba(77, 64, 255, 0.25); border-radius: 10px; font-size: 0.95rem; margin-bottom: 1.2rem; outline: none; font-family: 'Inter', sans-serif; box-sizing: border-box;"
+        (keydown.enter)="confirmarCrearDoc()">
+
+      <div class="success-actions" style="display: flex; gap: 0.8rem;">
+        <button (click)="cancelarCrearDoc()" style="flex: 1; padding: 10px; font-weight: 600; cursor: pointer; border-radius: 8px; border: 1px solid var(--outline-variant); background: transparent; color: var(--text-main); font-family: 'Inter', sans-serif;">
+          Cancelar
+        </button>
+        <button (click)="confirmarCrearDoc()" style="flex: 1; padding: 10px; font-weight: 600; cursor: pointer; background: linear-gradient(135deg, #4d40ff, #3730a3); color: white; border: none; border-radius: 8px; box-shadow: 0 4px 12px rgba(77, 64, 255, 0.25); font-family: 'Inter', sans-serif;">
+          Crear
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <app-documento-preview 
   *ngIf="previewDoc" 
   [archivoId]="previewDoc.id" 
@@ -268,4 +331,3 @@
   [contentType]="previewDoc.contentType" 
   (close)="previewDoc = null">
 </app-documento-preview>
-

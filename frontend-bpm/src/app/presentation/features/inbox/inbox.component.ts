@@ -21,7 +21,7 @@ export class InboxComponent implements OnInit {
   tramitesFinalizados: any[] = [];
   isClient = false;
   hasDept = false;
-  loading = false;
+  loading = true;
   searchTerm = '';
   resultsSearch: any[] = [];
 
@@ -56,7 +56,7 @@ export class InboxComponent implements OnInit {
 
     // Escuchar notificaciones para refrescar la bandeja en tiempo real
     this.notificationService.getNotifications().subscribe(() => {
-      this.loadInbox();
+      this.loadInbox(true);
     });
   }
 
@@ -65,7 +65,7 @@ export class InboxComponent implements OnInit {
     this.loadInbox();
   }
 
-  loadInbox(): void {
+  loadInbox(isBackground = false): void {
     if (this.activeTab === 'department' && !this.deptId) {
        console.warn('Inbox: El usuario no tiene departamento asignado. No se pueden cargar trámites departamentales.');
        this.loading = false;
@@ -73,8 +73,12 @@ export class InboxComponent implements OnInit {
        return;
     }
 
-    this.loading = true;
-    this.tramites = [];
+    if (!isBackground) {
+      this.loading = true;
+      this.tramites = [];
+      this.tramitesActivos = [];
+      this.tramitesFinalizados = [];
+    }
 
     const safetyTimer = setTimeout(() => {
       this.zone.run(() => {

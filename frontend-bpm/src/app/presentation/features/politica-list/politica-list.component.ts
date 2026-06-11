@@ -38,6 +38,8 @@ export class PoliticaListComponent implements OnInit {
   suggestedPolicy: PoliticaWorkflow | null = null;
   suggestedScore = 0;
   aiSearchErrorMessage: string | null = null;
+  isListening = false;
+  recognition: any = null;
   
   // Modal de Nueva Política
   showNewModal = false;
@@ -55,6 +57,7 @@ export class PoliticaListComponent implements OnInit {
     apellidos: '',
     celular: ''
   };
+  selectedFile: File | null = null;
 
   constructor(
     private politicaService: PoliticaWorkflowService,
@@ -135,17 +138,47 @@ export class PoliticaListComponent implements OnInit {
   }
 
   iniciarTramite(politica: PoliticaWorkflow): void {
-    const id = politica.id || politica._id;
-    if (!id || politica.status !== PolicyStatus.PUBLISHED) return;
-    // Show confirm dialog instead of blocking confirm()
+    const id = politica.id || (politica as any)._id;
+    const status = (politica.status || '').toUpperCase();
+    if (!id || status !== 'PUBLISHED') {
+      console.warn('No se puede iniciar el trámite. ID faltante o estado no publicado:', politica);
+      return;
+    }
     this.pendingPolitica = politica;
     this.showConfirmDialog = true;
+    this.selectedFile = null; // Limpiar archivo seleccionado previo
+
+    // Pre-rellenar los datos del formulario con el usuario actual si es CLIENTE
+    if (this.isClient) {
+      const user = this.authService.currentUser();
+      if (user) {
+        this.clientData = {
+          ci: user.ci || '',
+          nombre: user.nombre || '',
+          apellidos: user.apellidos || '',
+          celular: user.celular || ''
+        };
+      }
+    } else {
+      this.clientData = { ci: '', nombre: '', apellidos: '', celular: '' };
+    }
+  }
+
+  onFileSelected(event: any): void {
+    const file = event.target.files[0];
+    if (file) {
+      this.selectedFile = file;
+    }
   }
 
   confirmarInicio(): void {
     if (!this.pendingPolitica) return;
     const user = this.authService.currentUser();
-    if (!user) return;
+    if (!user) {
+      alert('Tu sesión ha expirado o no es válida. Por favor, inicia sesión nuevamente.');
+      this.authService.logout();
+      return;
+    }
 
     const token = this.authService.getToken();
     let userId = user.nombre;
@@ -157,8 +190,8 @@ export class PoliticaListComponent implements OnInit {
     }
 
     const request: StartProcedureRequestDTO = {
-      idPolitica: this.pendingPolitica.id!,
-      idUsuarioSolicitante: userId,
+      idPolitica: this.pendingPolitica.id || (this.pendingPolitica as any)._id,
+      idUsuarioSolicitante: user.id || userId,
       datosIniciales: {
         timestamp_inicio: new Date().toISOString(),
         procedencia: 'Front-End BPM - ' + (this.isClient ? 'External Client' : 'Internal User'),
@@ -175,6 +208,30 @@ export class PoliticaListComponent implements OnInit {
         this.resultMessage = `🚀 Instancia Creada exitosamente. Código: ${res.codigoTramite}. Puede seguir el estado en su Bandeja de Entrada.`;
         this.resultIsError = false;
         this.pendingPolitica = null;
+
+        // Subir el archivo si fue seleccionado
+        if (this.selectedFile && res.id) {
+          const formData = new FormData();
+          formData.append('file', this.selectedFile);
+          formData.append('idTramite', res.id);
+          formData.append('idUsuario', userId);
+          if (user.idOrganizacion) {
+            formData.append('idOrganizacion', user.idOrganizacion);
+          }
+          this.http.post<any>('/api/v1/archivos/upload', formData).subscribe({
+            next: (uploadRes) => {
+              console.log('✅ Documento inicial subido exitosamente:', uploadRes);
+            },
+            error: (uploadErr) => {
+              console.error('❌ Error al subir documento inicial:', uploadErr);
+              alert('Trámite iniciado, pero ocurrió un error al subir el documento adjunto.');
+            }
+          });
+        }
+
+        if (user.id) {
+          this.cargarTramitesActivos(user.id);
+        }
       },
       error: (err) => {
         this.resultMessage = 'Error de Ejecución: ' + (err.error?.message || 'Falla en el motor de procesos');
@@ -340,6 +397,74 @@ export class PoliticaListComponent implements OnInit {
     this.suggestedPolicy = null;
     this.suggestedScore = 0;
     this.aiSearchErrorMessage = null;
+    this.cd.detectChanges();
+  }
+
+  initVoiceRecognition() {
+    const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+    if (!SpeechRecognition) return;
+
+    this.recognition = new SpeechRecognition();
+    this.recognition.lang = 'es-ES';
+    this.recognition.interimResults = true;
+
+    this.recognition.onresult = (event: any) => {
+      let transcript = '';
+      for (let i = 0; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
+      }
+      this.aiSearchQuery = transcript;
+      this.cd.detectChanges();
+    };
+
+    this.recognition.onerror = (event: any) => {
+      console.error('Speech recognition error in catalog:', event.error);
+      this.isListening = false;
+      
+      let msg = '';
+      if (event.error === 'network') {
+        msg = 'Error de red en el reconocimiento de voz. Por favor, verifique su conexión a internet.';
+        this.aiSearchErrorMessage = 'Error de red en el reconocimiento de voz. Verifique su conexión.';
+      } else if (event.error === 'not-allowed') {
+        msg = 'Permiso denegado para el uso del micrófono. Habilítelo en la configuración de su navegador.';
+        this.aiSearchErrorMessage = 'Permiso de micrófono denegado. Habilite el acceso en su navegador.';
+      } else {
+        msg = 'Error en el reconocimiento de voz: ' + event.error;
+        this.aiSearchErrorMessage = msg;
+      }
+      alert(msg);
+      
+      this.cd.detectChanges();
+    };
+
+    this.recognition.onend = () => {
+      this.isListening = false;
+      this.cd.detectChanges();
+      if (this.aiSearchQuery && this.aiSearchQuery.trim().length > 0) {
+        this.buscarPoliticaPorIntencion();
+      }
+    };
+  }
+
+  startVoice() {
+    if (!this.recognition) {
+      this.initVoiceRecognition();
+    }
+    if (!this.recognition) {
+      alert('Tu navegador no soporta reconocimiento de voz. Usa Google Chrome.');
+      return;
+    }
+    this.aiSearchQuery = '';
+    this.isListening = true;
+    this.recognition.start();
+    this.cd.detectChanges();
+  }
+
+  stopVoice() {
+    if (this.recognition) {
+      this.recognition.stop();
+    }
+    this.isListening = false;
     this.cd.detectChanges();
   }
 }

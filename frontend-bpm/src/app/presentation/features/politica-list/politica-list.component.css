@@ -547,3 +547,18 @@
   background: #fef2f2;
   border-color: #dc2626;
 }
+
+/* --- Voice Interaction Enhancements --- */
+.listening-pulse-dot {
+  width: 10px;
+  height: 10px;
+  background-color: #ef4444;
+  border-radius: 50%;
+  display: inline-block;
+  animation: pulse-dot-anim 1s infinite alternate;
+}
+
+@keyframes pulse-dot-anim {
+  from { transform: scale(0.8); opacity: 0.5; }
+  to { transform: scale(1.2); opacity: 1; }
+}

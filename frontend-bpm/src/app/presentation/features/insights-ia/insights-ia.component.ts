@@ -731,11 +731,52 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  private _forceDownload(blob: Blob, filename: string, mimeType: string) {
+  private async _forceDownload(blob: Blob, filename: string, mimeType: string) {
+    if ('showSaveFilePicker' in window) {
+      try {
+        let extension = '';
+        if (mimeType === 'application/pdf') extension = 'pdf';
+        else if (mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') extension = 'xlsx';
+        else if (mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') extension = 'docx';
+
+        if (extension && !filename.toLowerCase().endsWith('.' + extension)) {
+            filename += '.' + extension;
+        }
+        
+        const fallbackExt = filename.split('.').pop() || 'bin';
+        const finalExt = extension || fallbackExt;
+
+        const options = {
+          suggestedName: filename,
+          types: [{
+            description: 'Archivo de Reporte',
+            accept: { [mimeType]: ['.' + finalExt] },
+          }],
+        };
+        const handle = await (window as any).showSaveFilePicker(options);
+        const writable = await handle.createWritable();
+        await writable.write(blob);
+        await writable.close();
+        return;
+      } catch (err: any) {
+        if (err.name !== 'AbortError') {
+          console.error('Error al guardar con showSaveFilePicker:', err);
+        }
+        return; // El usuario canceló o hubo error, no hacemos fallback automático
+      }
+    }
+    // Fallback tradicional (si no soporta showSaveFilePicker)
     try {
-      saveAs(blob, filename);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
     } catch (e) {
-      console.error('Error al descargar el archivo con file-saver:', e);
+      console.error('Error en descarga de fallback:', e);
     }
   }
 
@@ -1185,7 +1226,7 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
     });
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const filename = `Reporte_IA_NLP_${new Date().getTime()}.csv`;
+    const filename = `informe_ia_consultoria.csv`;
     this._forceDownload(blob, filename, 'text/csv');
   }
 
@@ -1226,7 +1267,7 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
     ).subscribe({
       next: (resp) => {
         const blob = resp.body!;
-        const filename = `Reporte_IA_NLP_${new Date().getTime()}.pdf`;
+        const filename = `informe_ia_consultoria.pdf`;
         this._forceDownload(blob, filename, 'application/pdf');
       },
       error: () => {
@@ -1255,6 +1296,17 @@ export class InsightsIAComponent implements OnInit, AfterViewInit, OnDestroy {
     this.recognitionNlp.onerror = (event: any) => {
       console.error('Speech recognition error in NLP:', event.error);
       this.isListeningNlp = false;
+      
+      let msg = '';
+      if (event.error === 'network') {
+        msg = 'Error de red en el reconocimiento de voz. Por favor, verifique su conexión a internet.';
+      } else if (event.error === 'not-allowed') {
+        msg = 'Permiso denegado para el uso del micrófono. Habilítelo en la configuración de su navegador.';
+      } else {
+        msg = 'Error en el reconocimiento de voz: ' + event.error;
+      }
+      alert(msg);
+      
       this.cdr.detectChanges();
     };
 

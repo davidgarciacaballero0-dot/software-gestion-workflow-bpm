@@ -16,6 +16,7 @@ export class DocumentoPreviewComponent implements OnInit, OnChanges {
   @Input() contentType: string = '';
   @Output() close = new EventEmitter<void>();
 
+  previewUrl: string = '';
   safeUrl: SafeResourceUrl | null = null;
   userId: string = '';
   zoomLevel: number = 1.0;
@@ -40,12 +41,13 @@ export class DocumentoPreviewComponent implements OnInit, OnChanges {
 
   private updatePreviewUrl(): void {
     if (this.archivoId && this.userId) {
-      const rawUrl = `/api/v1/archivos/preview/${this.archivoId}?idUsuario=${this.userId}`;
-      this.safeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(rawUrl);
+      this.previewUrl = `/api/v1/archivos/preview/${this.archivoId}?idUsuario=${this.userId}`;
+      this.safeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.previewUrl);
       // Reset controls
       this.zoomLevel = 1.0;
       this.rotationAngle = 0;
     } else {
+      this.previewUrl = '';
       this.safeUrl = null;
     }
   }

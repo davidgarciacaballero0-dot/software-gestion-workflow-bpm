@@ -145,6 +145,35 @@ public class ArchivoController {
                 .body(new InputStreamResource(stream));
     }
 
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteFile(
+            @PathVariable String id,
+            @RequestParam("idUsuario") String idUsuario) {
+        ArchivoAdjunto adjunto = archivoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Archivo no encontrado: " + id));
+
+        // Verificar si es el creador del archivo o tiene permisos de ADMIN
+        boolean esCreador = idUsuario.equals(adjunto.getIdUsuarioSubida());
+        boolean esAdmin = permissionService.verificarPermiso(adjunto, idUsuario, "ADMIN");
+
+        if (!esCreador && !esAdmin) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("No autorizado: solo el creador del archivo o administradores pueden eliminarlo.");
+        }
+
+        // Eliminar del almacenamiento físico (S3 o GridFS)
+        try {
+            storageService.deleteFile(adjunto.getGridFsId());
+        } catch (Exception e) {
+            // Continuar borrando de la BD
+        }
+
+        // Eliminar de la base de datos
+        archivoRepository.delete(adjunto);
+
+        return ResponseEntity.ok().build();
+    }
+
     // --- NUEVOS ENDPOINTS DE BÚSQUEDA ---
 
     @GetMapping("/cliente/{idCliente}")

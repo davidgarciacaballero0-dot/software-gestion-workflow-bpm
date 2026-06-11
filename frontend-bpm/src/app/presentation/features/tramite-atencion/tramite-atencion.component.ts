@@ -34,10 +34,20 @@ export class TramiteAtencionComponent implements OnInit {
   showSuccessModal = false;
   targetNodeName = '';
   targetDeptName = '';
+
+  showDeleteConfirmModal = false;
+  fileToDeleteId = '';
   
   previewDoc: any = null;
 
-  private userId = '';
+  // Modal para crear documento
+  showCreateDocModal = false;
+  newDocType = '';
+  newDocName = '';
+
+  get userId(): string {
+    return this.authService.currentUser()?.id || '';
+  }
 
   constructor(
     private route: ActivatedRoute,
@@ -52,20 +62,11 @@ export class TramiteAtencionComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    const token = this.authService.getToken();
-    if (token) {
-      try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        this.userId = payload.userId || '';
-      } catch (e) {}
-    }
-
     const tramiteId = this.route.snapshot.paramMap.get('id');
     if (tramiteId) {
       this.cargarTramite(tramiteId);
       this.cargarArchivosTramite(tramiteId);
     }
-
   }
 
   cargarTramite(id: string): void {
@@ -275,26 +276,111 @@ export class TramiteAtencionComponent implements OnInit {
     });
   }
 
-  crearDocumentoBlanco(tipo: string): void {
+  abrirModalCrearDoc(tipo: string): void {
+    console.log('📝 abrirModalCrearDoc invocado. Tipo:', tipo);
+    this.newDocType = tipo;
+    this.newDocName = tipo === 'word' ? 'Nuevo Documento' : 'Nueva Hoja de Calculo';
+    this.showCreateDocModal = true;
+  }
+
+  cancelarCrearDoc(): void {
+    this.showCreateDocModal = false;
+    this.newDocName = '';
+    this.newDocType = '';
+  }
+
+  confirmarCrearDoc(): void {
+    const tipo = this.newDocType;
+    const nombre = this.newDocName.trim();
+    this.showCreateDocModal = false;
+
+    console.log('📝 confirmarCrearDoc. Tipo:', tipo, 'Nombre:', nombre);
+
+    if (!nombre) {
+      alert('Debe ingresar un nombre para el documento.');
+      return;
+    }
+
+    if (!this.tramite || !this.tramite.id) {
+      console.error('❌ ERROR: this.tramite es null o no tiene id');
+      alert('Error: No se pudo identificar el trámite actual.');
+      return;
+    }
+
+    if (!this.userId) {
+      console.error('❌ ERROR: this.userId está vacío');
+      alert('Error: No se pudo identificar al usuario actual.');
+      return;
+    }
+
     const url = `/api/v1/onlyoffice/create-blank`;
     const formData = new FormData();
     formData.append('tipo', tipo);
     formData.append('idTramite', this.tramite.id);
     formData.append('idUsuario', this.userId);
+    formData.append('nombre', nombre);
+
+    console.log('📝 Enviando POST a:', url, '{ tipo:', tipo, ', idTramite:', this.tramite.id, ', idUsuario:', this.userId, ', nombre:', nombre, '}');
 
     this.http.post(url, formData).subscribe({
       next: (archivo: any) => {
+        console.log('✅ Documento creado exitosamente:', archivo);
+        this.newDocName = '';
+        this.newDocType = '';
         this.cargarArchivosTramite(this.tramite.id);
         this.iniciarEdicionColaborativa(archivo.id);
       },
       error: (err) => {
-        console.error('Error creando documento en blanco', err);
-        this.errorMessage = 'No se pudo crear el documento en blanco.';
+        console.error('❌ Error creando documento en blanco:', err);
+        console.error('❌ Status:', err.status, 'StatusText:', err.statusText);
+        console.error('❌ Error body:', err.error);
+        alert('Error al crear el documento: ' + (err.status === 403 ? 'No tiene permisos. Verifique que el backend esté compilado con los últimos cambios.' : err.statusText || 'Error desconocido'));
       }
     });
   }
 
   verPreview(doc: any): void {
     this.previewDoc = doc;
+  }
+
+  puedoEliminar(archivo: any): boolean {
+    const user = this.authService.currentUser();
+    const isOwner = archivo.idUsuarioSubida === this.userId;
+    const isAdmin = user?.nombreRol === 'ADMIN' || user?.nombreRol === 'GERENTE_GENERAL';
+    return isOwner || isAdmin;
+  }
+
+  eliminarArchivo(archivoId: string): void {
+    console.log('🗑️ eliminarArchivo invocado. archivoId:', archivoId);
+    this.fileToDeleteId = archivoId;
+    this.showDeleteConfirmModal = true;
+  }
+
+  cancelarEliminacion(): void {
+    this.showDeleteConfirmModal = false;
+    this.fileToDeleteId = '';
+  }
+
+  confirmarEliminacion(): void {
+    if (!this.fileToDeleteId) return;
+    const archivoId = this.fileToDeleteId;
+    this.showDeleteConfirmModal = false;
+    this.fileToDeleteId = '';
+
+    console.log('🗑️ confirmarEliminacion. archivoId:', archivoId, 'userId:', this.userId);
+
+    this.http.delete(`/api/v1/archivos/${archivoId}?idUsuario=${this.userId}`).subscribe({
+      next: () => {
+        console.log('✅ Archivo eliminado exitosamente:', archivoId);
+        if (this.tramite && this.tramite.id) {
+          this.cargarArchivosTramite(this.tramite.id);
+        }
+      },
+      error: (err) => {
+        console.error('❌ Error al eliminar archivo:', err);
+        console.error('❌ Status:', err.status, 'Body:', err.error);
+        alert('Error: No tienes permisos para eliminar este archivo o el servicio falló.');
+      }
+    });
   }
 }

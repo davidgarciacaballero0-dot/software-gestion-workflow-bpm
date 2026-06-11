@@ -2,7 +2,10 @@
   <!-- Barra Superior: Control de Versiones y Estado -->
   <header class="designer-header glass-premium shadow-ambient">
     <div class="policy-info">
-      <h2>{{ currentPolicy.nombre }}</h2>
+      <input *ngIf="canEdit(); else staticNombre" type="text" [(ngModel)]="currentPolicy.nombre" class="policy-name-input" placeholder="Nombre de la Política" title="Nombre de la Política">
+      <ng-template #staticNombre>
+        <h2>{{ currentPolicy.nombre }}</h2>
+      </ng-template>
       <span class="chip" [ngClass]="{'neutral': currentPolicy.status === 'DRAFT', 'error': currentPolicy.status === 'PUBLISHED'}">{{ currentPolicy.status }}</span>
       <div class="version-box">
         <span>v</span>

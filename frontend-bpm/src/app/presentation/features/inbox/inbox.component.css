@@ -247,3 +247,208 @@
 .ml-1 { margin-left: 0.5rem; }
 .font-strong { font-weight: 700; }
 
+/* --- PREMIUM SKELETON LOADERS & CINEMATICS --- */
+@keyframes skeletonPulse {
+  0% { opacity: 0.6; background-color: var(--surface-container-high); }
+  50% { opacity: 0.3; background-color: var(--surface-container-low); }
+  100% { opacity: 0.6; background-color: var(--surface-container-high); }
+}
+
+.skeleton-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  position: relative;
+  min-height: 250px;
+}
+
+.skeleton-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 1.5rem;
+  background: var(--surface-container-lowest);
+  border-radius: 0.5rem;
+  border: 1px solid rgba(200, 197, 208, 0.08);
+}
+
+.skeleton-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  flex-grow: 1;
+}
+
+.skeleton-info-group {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.skeleton-bar {
+  border-radius: 4px;
+  animation: skeletonPulse 1.5s infinite ease-in-out;
+}
+
+.skeleton-code {
+  width: 100px;
+  height: 1.25rem;
+}
+
+.skeleton-priority {
+  width: 80px;
+  height: 1.1rem;
+  border-radius: 9999px;
+}
+
+.skeleton-badge {
+  width: 70px;
+  height: 1.1rem;
+  border-radius: 9999px;
+}
+
+.skeleton-details {
+  width: 60%;
+  height: 0.85rem;
+}
+
+.skeleton-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.skeleton-btn {
+  width: 90px;
+  height: 2.1rem;
+  border-radius: 0.5rem;
+  animation: skeletonPulse 1.5s infinite ease-in-out;
+}
+
+/* Client Skeleton Specifics */
+.skeleton-section-block {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.skeleton-section-title {
+  width: 220px;
+  height: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.skeleton-table {
+  width: 100%;
+  background: white;
+  border-radius: 1rem;
+  overflow: hidden;
+  box-shadow: var(--shadow-ambient);
+  border: 1px solid rgba(200, 197, 208, 0.1);
+}
+
+.skeleton-table-header {
+  display: flex;
+  padding: 1rem 1.5rem;
+  background: var(--surface-container-low);
+  border-bottom: 1px solid rgba(200, 197, 208, 0.15);
+}
+
+.skeleton-table-row {
+  display: flex;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid rgba(200, 197, 208, 0.1);
+}
+
+.skeleton-th {
+  height: 0.8rem;
+}
+
+.skeleton-td {
+  height: 1rem;
+}
+
+/* Quantum Spinner & Glass Overlay */
+.loading-status-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(247, 249, 251, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 0.5rem;
+  z-index: 10;
+}
+
+.glass-loader-card {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 20px 40px rgba(7, 2, 53, 0.12), var(--shadow-ambient);
+  padding: 2rem 2.5rem;
+  border-radius: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  max-width: 350px;
+  text-align: center;
+}
+
+.loading-text {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--primary);
+  letter-spacing: -0.01em;
+}
+
+/* Quantum Cinematic Spinner */
+.quantum-spinner {
+  position: relative;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.quantum-circle {
+  position: absolute;
+  border: 3px solid transparent;
+  border-radius: 50%;
+  animation: quantumRotate 2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+}
+
+.quantum-circle:nth-child(1) {
+  width: 100%;
+  height: 100%;
+  border-top-color: #070235; /* Primary Deep Navy */
+  border-bottom-color: #1e1b4b; /* Indigo Container */
+  animation-duration: 1.5s;
+}
+
+.quantum-circle:nth-child(2) {
+  width: 75%;
+  height: 75%;
+  border-left-color: #6366f1; /* Premium Accent Purple */
+  border-right-color: rgba(99, 102, 241, 0.2);
+  animation-direction: reverse;
+  animation-duration: 1.2s;
+}
+
+.quantum-circle:nth-child(3) {
+  width: 50%;
+  height: 50%;
+  border-top-color: #3b82f6; /* Blue */
+  border-bottom-color: transparent;
+  animation-duration: 0.8s;
+}
+
+@keyframes quantumRotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

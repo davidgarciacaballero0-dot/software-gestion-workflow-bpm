@@ -64,26 +64,47 @@ app = FastAPI(title="BPM AI Microservice (Vertex AI Agent Platform Edition)")
 GCP_PROJECT_ID = os.getenv("GCP_PROJECT_ID", "workflow-smart-ia-798ae")
 GCP_LOCATION = os.getenv("GCP_LOCATION", "us-central1")
 
+client = None
+
+# Intentar inicializar Vertex AI
 try:
     # PRIORIDAD 1: Vertex AI (proyecto con billing, sin límites free-tier)
-    client = genai.Client(
+    client_test = genai.Client(
         vertexai=True, 
         project=GCP_PROJECT_ID, 
         location=GCP_LOCATION
     )
-    print(f"INFO: Google Gen AI Client inicializado en Vertex AI: {GCP_PROJECT_ID} ({GCP_LOCATION})")
+    # Validamos con una llamada rápida
+    client_test.models.embed_content(
+        model="text-embedding-004",
+        contents="ping"
+    )
+    client = client_test
+    print(f"INFO: Google Gen AI Client inicializado y VALIDADO en Vertex AI: {GCP_PROJECT_ID} ({GCP_LOCATION})")
 except Exception as e:
-    print(f"WARN: Vertex AI falló ({str(e)}), intentando con API Key...")
-    # PRIORIDAD 2: API Key (fallback, sujeta a cuotas free-tier)
+    print(f"WARN: Vertex AI falló en la validación inicial ({str(e)}), intentando con API Key...")
+
+# Fallback a API Key si Vertex AI falló o no se inicializó
+if client is None:
     try:
         api_key = os.getenv("GEMINI_API_KEY")
         if api_key:
-            client = genai.Client(api_key=api_key)
-            print("INFO: Google Gen AI Client inicializado con API Key (fallback)")
+            client_test = genai.Client(api_key=api_key)
+            # Validamos con gemini-embedding-001 que está disponible para API Key
+            client_test.models.embed_content(
+                model="gemini-embedding-001",
+                contents="ping"
+            )
+            client = client_test
+            print("INFO: Google Gen AI Client inicializado y VALIDADO con API Key (fallback)")
         else:
-            raise RuntimeError("No hay GEMINI_API_KEY configurada y Vertex AI falló.")
+            raise RuntimeError("No hay GEMINI_API_KEY configurada.")
     except Exception as e2:
-        print(f"CRITICAL: Error al inicializar el cliente Gen AI: {str(e2)}")
+        print(f"CRITICAL: Error al inicializar el cliente Gen AI con API Key: {str(e2)}")
+        try:
+            client = genai.Client(api_key=api_key or "DUMMY_KEY")
+        except Exception:
+            pass
 
 
 MODEL_PRO = "gemini-2.5-pro"          # Análisis profundo (analizar-rendimiento)
@@ -470,10 +491,21 @@ async def analisis_intencion_politica(request: Request):
         req_vector = []
         politica_vectors = []
         try:
-            req_res = client.models.embed_content(
-                model="text-embedding-004",
-                contents=requerimiento
-            )
+            # Intentar con text-embedding-004 primero
+            model_name = "text-embedding-004"
+            try:
+                req_res = client.models.embed_content(
+                    model=model_name,
+                    contents=requerimiento
+                )
+            except Exception as e_model:
+                print(f"WARN: Error con {model_name} ({str(e_model)}). Intentando con gemini-embedding-001...")
+                model_name = "gemini-embedding-001"
+                req_res = client.models.embed_content(
+                    model=model_name,
+                    contents=requerimiento
+                )
+                
             if req_res and req_res.embeddings and len(req_res.embeddings) > 0:
                 req_vector = req_res.embeddings[0].values
             else:
@@ -482,7 +514,7 @@ async def analisis_intencion_politica(request: Request):
             for pol in politicas:
                 texto_pol = f"{pol.get('nombre', '')}. {pol.get('description', pol.get('descripcion', ''))}"
                 pol_res = client.models.embed_content(
-                    model="text-embedding-004",
+                    model=model_name,
                     contents=texto_pol
                 )
                 if pol_res and pol_res.embeddings and len(pol_res.embeddings) > 0:
@@ -491,7 +523,7 @@ async def analisis_intencion_politica(request: Request):
                     raise ValueError(f"No se obtuvieron embeddings para la política: {pol.get('nombre')}")
                 
         except Exception as embed_err:
-            print(f"WARN: Error en embeddings de Vertex AI ({str(embed_err)}). Usando fallback léxico...")
+            print(f"WARN: Error en embeddings de Vertex AI/Gemini ({str(embed_err)}). Usando fallback léxico...")
             use_fallback = True
 
         import math
@@ -1067,10 +1099,11 @@ async def consultoria_reporte(request: ResumirReporteRequest):
             "Tu tarea es analizar los datos estructurados adjuntos (que provienen de un reporte interactivo) "
             "y proveer un análisis cualitativo junto con recomendaciones estratégicas.\n"
             "ESTRUCTURA DE TU RESPUESTA (Formato Markdown):\n"
-            "### Diagnóstico\n¿Qué indican estos números?\n"
-            "### Puntos Críticos\n¿Hay cuellos de botella o ineficiencias visibles en los datos?\n"
-            "### Recomendaciones de Optimización\nPasos accionables (ej. reasignar personal, modificar prioridades, automatizar pasos) respaldados por los datos.\n"
-            "Sé analítico, prescriptivo, directo y profesional."
+            "### Análisis\n"
+            "Identifica de manera específica la problemática. ¿Hay cuellos de botella o ineficiencias visibles en los datos?\n"
+            "### Recomendación\n"
+            "Recomienda optimizar los flujos de los procesos si es que hubiera algun cuello de botella especifico ahi. Provee pasos accionables (ej. reasignar personal, modificar prioridades, automatizar pasos) respaldados por los datos.\n"
+            "Sé analítico, prescriptivo, directo y breve."
         )
 
         user_content = (

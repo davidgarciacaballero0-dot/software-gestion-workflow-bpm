@@ -32,6 +32,27 @@
   color: var(--primary);
 }
 
+.policy-name-input {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--primary);
+  background: rgba(7, 2, 53, 0.05);
+  border: 1px dashed rgba(7, 2, 53, 0.2);
+  border-radius: 6px;
+  padding: 0.25rem 0.6rem;
+  outline: none;
+  font-family: 'Inter', sans-serif;
+  width: 200px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.policy-name-input:focus {
+  background: rgba(7, 2, 53, 0.08);
+  border-style: solid;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(7, 2, 53, 0.15);
+}
+
 .header-actions {
   display: flex;
   gap: 0.75rem;

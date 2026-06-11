@@ -182,7 +182,8 @@ public class OnlyOfficeController {
     public ResponseEntity<ArchivoAdjunto> createBlankDocument(
             @RequestParam("tipo") String tipo,
             @RequestParam("idTramite") String idTramite,
-            @RequestParam("idUsuario") String idUsuario) {
+            @RequestParam("idUsuario") String idUsuario,
+            @RequestParam(value = "nombre", required = false) String nombre) {
         
         byte[] fileData;
         String contentType;
@@ -200,7 +201,11 @@ public class OnlyOfficeController {
             return ResponseEntity.badRequest().build();
         }
 
-        String nombreOriginal = "Nuevo Documento " + System.currentTimeMillis() + extension;
+        String baseNombre = "Nuevo Documento " + System.currentTimeMillis();
+        if (nombre != null && !nombre.trim().isEmpty()) {
+            baseNombre = nombre.trim().replaceAll("[\\\\/:*?\"<>|]", "_");
+        }
+        String nombreOriginal = baseNombre + extension;
         String gridFsId = storageService.uploadFileHierarchical(
                 new ByteArrayInputStream(fileData),
                 nombreOriginal,
