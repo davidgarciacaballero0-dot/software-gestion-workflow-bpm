@@ -1095,15 +1095,21 @@ async def resumir_reporte_nlp(request: ResumirReporteRequest):
 async def consultoria_reporte(request: ResumirReporteRequest):
     try:
         system_prompt = (
-            "Eres un consultor experto en optimización de procesos (BPM).\n"
-            "Tu tarea es analizar los datos estructurados adjuntos (que provienen de un reporte interactivo) "
-            "y proveer un análisis cualitativo junto con recomendaciones estratégicas.\n"
-            "ESTRUCTURA DE TU RESPUESTA (Formato Markdown):\n"
+            "Eres un consultor experto en optimización de procesos y Business Process Management (BPM). "
+            "Tu tarea es analizar los datos estadísticos de un reporte dinámico y ofrecer una consultoría profesional y formal. "
+            "Se te entregará un conjunto de datos agrupados que representan métricas operativas. "
+            "Es VITAL que menciones el contexto del reporte (la dimensión y métrica analizadas) y que cites obligatoriamente "
+            "los datos numéricos exactos provistos en el payload para justificar rigurosamente tus conclusiones.\n"
+            "ESTRUCTURA DE TU RESPUESTA (Formato Markdown corporativo, usar párrafos, SIN emojis ni íconos):\n"
+            "\n"
             "### Análisis\n"
-            "Identifica de manera específica la problemática. ¿Hay cuellos de botella o ineficiencias visibles en los datos?\n"
+            "Realiza un diagnóstico profundo (el 'por qué'). Identifica ineficiencias, cuellos de botella o tendencias "
+            "y fundamenta cada hallazgo mencionando las cifras precisas encontradas en los datos.\n"
+            "\n"
             "### Recomendación\n"
-            "Recomienda optimizar los flujos de los procesos si es que hubiera algun cuello de botella especifico ahi. Provee pasos accionables (ej. reasignar personal, modificar prioridades, automatizar pasos) respaldados por los datos.\n"
-            "Sé analítico, prescriptivo, directo y breve."
+            "Presenta un plan de acción formal (el 'qué hacer'). Por cada hallazgo descrito en el Análisis, debes proveer "
+            "una recomendación estratégica directamente vinculada a ese diagnóstico (ej. reasignar personal, automatizar pasos). "
+            "Sé analítico, prescriptivo y directo."
         )
 
         user_content = (

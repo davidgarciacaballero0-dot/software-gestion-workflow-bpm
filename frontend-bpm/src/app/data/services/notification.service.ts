@@ -46,7 +46,7 @@ export class NotificationService {
     const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     const wsUrl = isLocalhost
       ? '/ws-bpm'
-      : 'https://backend-spring-wyjjtm2n6a-uc.a.run.app/ws-bpm';
+      : 'https://backend-spring-241130514391.us-central1.run.app/ws-bpm';
 
     const socket = new SockJS(wsUrl);
     this.stompClient = new Client({

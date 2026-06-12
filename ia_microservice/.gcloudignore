@@ -1,0 +1,12 @@
+# .gcloudignore
+# Excluir el entorno virtual y temporales de Python para evitar subir gigabytes a Cloud Build
+# y solucionar los errores de límites de ruta (Long Paths) en Windows.
+.gcloudignore
+.git
+.gitignore
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.env
+gcp-creds.json

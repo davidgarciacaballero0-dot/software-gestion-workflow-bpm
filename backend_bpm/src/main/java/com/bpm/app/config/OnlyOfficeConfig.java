@@ -9,7 +9,7 @@ public class OnlyOfficeConfig {
     @Value("${ONLYOFFICE_JWT_SECRET:super-secret-jwt-onlyoffice-2026-secure}")
     private String jwtSecret;
 
-    @Value("${BASE_URL:http://localhost:8080}")
+    @Value("${bpm.base.url:http://localhost:8080}")
     private String baseUrl;
 
     public String getJwtSecret() {

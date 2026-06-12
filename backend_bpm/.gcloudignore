@@ -1,0 +1,13 @@
+# .gcloudignore
+# Permitir subir target/ para el despliegue del JAR precompilado
+.gcloudignore
+.git
+.gitignore
+src/
+pom.xml
+mvnw
+mvnw.cmd
+.mvn/
+HELP.md
+*.log
+*.txt

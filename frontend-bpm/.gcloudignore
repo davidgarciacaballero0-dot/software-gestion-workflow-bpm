@@ -1,0 +1,11 @@
+# .gcloudignore
+# Especifica qué archivos no deben subirse a Google Cloud Build.
+# Debe permitir subir el directorio /dist.
+
+.gcloudignore
+.git
+.gitignore
+node_modules/
+.angular/
+tmp/
+out-tsc/
